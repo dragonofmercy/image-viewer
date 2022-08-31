@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
+        <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+        <RootNamespace>ImageViewer</RootNamespace>
+        <Platforms>x64</Platforms>
+        <RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
+        <UseWinUI>true</UseWinUI>
+        <WindowsPackageType>None</WindowsPackageType>
+        <StartupObject>ImageViewer.Startup</StartupObject>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <AssemblyName>ImageViewer</AssemblyName>
+		<Title>Image Viewer</Title>
+		<Product>Image Viewer</Product>
+		<Company>Dragon Industries</Company>
+		<Authors>DragonOfMercy</Authors>
+		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
+    </PropertyGroup>
+	
+    <ItemGroup>
+		<Content Include="ImageViewer.ico" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.4" />
+        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.1" />
+        <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+        <PackageReference Include="WinUIEx" Version="1.8.0" />
+        <Manifest Include="$(ApplicationManifest)" />
+    </ItemGroup>
+	
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Exec Command="xcopy /y /d  &quot;$(ProjectDir)Vendor\*.dll&quot; &quot;$(ProjectDir)$(OutDir)&quot;" />
+		<Exec Condition="'$(Configuration)'=='Release'" Command="del &quot;$(ProjectDir)$(OutDir)\*.xbf&quot;" />
+		<Exec Condition="'$(Configuration)'=='Release'" Command="del &quot;$(ProjectDir)$(OutDir)\*.pdb&quot;" />
+    </Target>
+</Project>
