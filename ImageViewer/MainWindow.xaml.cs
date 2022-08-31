@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 using Microsoft.UI;
 using Microsoft.UI.Input;
@@ -9,9 +12,10 @@ using Microsoft.UI.Windowing;
 
 using Windows.UI.Core;
 using Windows.Foundation;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 
 using WinRT.Interop;
-using System.Runtime.InteropServices;
 
 namespace ImageViewer
 {
@@ -240,6 +244,40 @@ namespace ImageViewer
         private void ButtonFileSave_Click(object sender, RoutedEventArgs e)
         {
             Context.Instance().SaveAs();
+        }
+
+        private async void Global_Drop(object sender, DragEventArgs e)
+        {
+            try
+            {
+                if(e.DataView.Contains(StandardDataFormats.StorageItems))
+                {
+                    IReadOnlyList<IStorageItem> items = await e.DataView.GetStorageItemsAsync();
+
+                    if(items.Count > 0)
+                    {
+                        Context.Instance().LoadImageFromString(items[0].Path);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private void Global_DragOver(object sender, DragEventArgs e)
+        {
+            try
+            {
+                e.AcceptedOperation = DataPackageOperation.Move;
+                e.DragUIOverride.IsCaptionVisible = false;
+                e.DragUIOverride.IsGlyphVisible = false;
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
         }
     }
 }

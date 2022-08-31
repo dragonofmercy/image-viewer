@@ -69,7 +69,7 @@
                 </StackPanel>
             </SplitView.Pane>
 
-            <local:CustomGrid x:Name="ImageContainer" x:FieldModifier="public">
+            <local:CustomGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="Global_Drop" DragOver="Global_DragOver" AllowDrop="True">
                 <ScrollViewer 
                     PointerMoved="ScrollView_PointerMoved"
                     PointerExited="ScrollView_PointerExited" 
