@@ -56,13 +56,21 @@ namespace ImageViewer
         }
 
         /// <summary>
+        /// Check if file can be open.
+        /// </summary>
+        public bool CheckFileExtension(string path)
+        {
+            return FileTypes.Any(x => path.EndsWith(x, true, null));
+        }
+
+        /// <summary>
         /// Load image if program is opened with open with command.
         /// </summary>
         public void LoadDefaultImage()
         {
             if(LaunchArgs.Length > 0)
             {
-                if(FileTypes.Any(x => LaunchArgs[0].EndsWith(x, true, null)))
+                if(CheckFileExtension(LaunchArgs[0]))
                 {
                     if(LoadImageFromString(LaunchArgs[0]))
                     {
@@ -145,7 +153,7 @@ namespace ImageViewer
             InitializeWithWindow.Initialize(OpenFilePicker, WinRT.Interop.WindowNative.GetWindowHandle(MainWindow));
             StorageFile file = await OpenFilePicker.PickSingleFileAsync();
 
-            if(file != null)
+            if(file != null && CheckFileExtension(file.Path))
             {
                 using IRandomAccessStream fileStream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
 
@@ -165,7 +173,7 @@ namespace ImageViewer
         /// </summary>
         public bool LoadImageFromString(string image_path)
         {
-            if(File.Exists(image_path))
+            if(File.Exists(image_path) && CheckFileExtension(image_path))
             {
                 CreateImage();
 
