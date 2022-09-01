@@ -464,7 +464,7 @@ namespace ImageViewer
         }
 
         /// <summary>
-        /// Event: When image is loaded.
+        /// Event: When image is opened.
         /// </summary>
         private void CurrentImage_ImageOpened(object sender, RoutedEventArgs e)
         {
@@ -484,6 +484,19 @@ namespace ImageViewer
         }
 
         /// <summary>
+        /// Event: When image loaded failed.
+        /// </summary>
+        private void CurrentImage_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        {
+            MainWindow.TextBlockAppTitle.Text = GetProductName();
+            MainWindow.ImageLoadingIndicator.IsActive = false;
+
+            CurrentImage = null;
+
+            UpdateButtonsAccessiblity();
+        }
+
+        /// <summary>
         /// Create new image object.
         /// </summary>
         private void CreateImage()
@@ -497,6 +510,7 @@ namespace ImageViewer
                 CreateOptions = BitmapCreateOptions.IgnoreImageCache
             };
             CurrentImage.ImageOpened += CurrentImage_ImageOpened;
+            CurrentImage.ImageFailed += CurrentImage_ImageFailed;
         }
 
         /// <summary>
