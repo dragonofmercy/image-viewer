@@ -14,6 +14,7 @@ using Windows.UI.Core;
 using Windows.Foundation;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Windows.Storage.Streams;
 
 using WinRT.Interop;
 
@@ -58,6 +59,18 @@ namespace ImageViewer
             titleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
 
             TextBlockAppTitle.Text = m_AppWindow.Title;
+        }
+
+        public void UpdateTitle(string before = null)
+        {
+            if(before != null)
+            {
+                TextBlockAppTitle.Text = string.Concat(before, " - ", Context.GetProductName());
+            }
+            else
+            {
+                TextBlockAppTitle.Text = Context.GetProductName();
+            }
         }
 
         private AppWindow GetAppWindowForCurrentWindow()
@@ -246,7 +259,7 @@ namespace ImageViewer
             Context.Instance().SaveAs();
         }
 
-        private async void Global_Drop(object sender, DragEventArgs e)
+        private async void ImageContainer_Drop(object sender, DragEventArgs e)
         {
             try
             {
@@ -256,7 +269,7 @@ namespace ImageViewer
 
                     if(items.Count > 0)
                     {
-                        Context.Instance().LoadImageFromString(items[0].Path);
+                        Context.Instance().LoadImageFromString(items[0].Path, true);
                     }
                 }
             }
@@ -266,17 +279,24 @@ namespace ImageViewer
             }
         }
 
-        private void Global_DragOver(object sender, DragEventArgs e)
+        private void ImageContainer_DragOver(object sender, DragEventArgs e)
         {
-            try
+            e.AcceptedOperation = DataPackageOperation.Move;
+            e.DragUIOverride.IsCaptionVisible = false;
+            e.DragUIOverride.IsGlyphVisible = false;
+        }
+
+        private async void Window_Paste(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+        {
+            DataPackageView clipboard = Clipboard.GetContent();
+
+            if(clipboard.Contains(StandardDataFormats.Bitmap))
             {
-                e.AcceptedOperation = DataPackageOperation.Move;
-                e.DragUIOverride.IsCaptionVisible = false;
-                e.DragUIOverride.IsGlyphVisible = false;
-            }
-            catch(Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
+                ImageView.Opacity = 0;
+                ImageLoadingIndicator.IsActive = true;
+
+                RandomAccessStreamReference clipboard_image = await clipboard.GetBitmapAsync();
+                Context.Instance().LoadImageFromBuffer(clipboard_image);
             }
         }
     }

@@ -1,14 +1,13 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media.Imaging;
-
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -39,12 +38,13 @@ namespace ImageViewer
 
         private string[] FolderFiles;
         private int CurrentIndex;
+        private bool memory_only = false;
 
         public string[] LaunchArgs;
         public MainWindow MainWindow;
         public WindowManager Manager;
 
-        public BitmapImage CurrentImage { get; protected set; }
+        public Bitmap CurrentImage { get; protected set; }
         public string CurrentFilePath { get; protected set; }
 
         /// <summary>
@@ -150,36 +150,50 @@ namespace ImageViewer
                 OpenFilePicker.FileTypeFilter.Add(file_type);
             }
 
-            InitializeWithWindow.Initialize(OpenFilePicker, WinRT.Interop.WindowNative.GetWindowHandle(MainWindow));
-            StorageFile file = await OpenFilePicker.PickSingleFileAsync();
+            InitializeWithWindow.Initialize(OpenFilePicker, WindowNative.GetWindowHandle(MainWindow));
+            StorageFile selected_file = await OpenFilePicker.PickSingleFileAsync();
 
-            if(file != null && CheckFileExtension(file.Path))
+            if(selected_file != null && CheckFileExtension(selected_file.Path))
             {
-                using IRandomAccessStream fileStream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                CurrentFilePath = selected_file.Path;
+                memory_only = false;
 
-                CreateImage();
-                CurrentFilePath = file.Path;
-
-                await CurrentImage.SetSourceAsync(fileStream);
-                MainWindow.ImageView.Source = CurrentImage;
-
+                LoadBitmap();
+                LoadImageView();
                 LoadDirectoryFiles();
-                file = null;
             }
+        }
+
+        public async void LoadImageFromBuffer(RandomAccessStreamReference clipboard)
+        {
+            IRandomAccessStreamWithContentType stream_for_bitmap = await clipboard.OpenReadAsync();
+
+            CurrentFilePath = null;
+            memory_only = true;
+
+            CurrentImage = (Bitmap)Image.FromStream(stream_for_bitmap.AsStreamForRead());
+            LoadImageView(true);
+
+            MainWindow.UpdateTitle(Culture.GetString("SYSTEM_PASTED_CONTENT"));
         }
 
         /// <summary>
         /// Load an image from path.
         /// </summary>
-        public bool LoadImageFromString(string image_path)
+        public bool LoadImageFromString(string image_path, bool reload_directories = false)
         {
             if(File.Exists(image_path) && CheckFileExtension(image_path))
             {
-                CreateImage();
+                CurrentFilePath = image_path;
+                memory_only = false;
 
-                CurrentImage.UriSource = new(image_path);
-                CurrentFilePath = CurrentImage.UriSource.LocalPath;
-                MainWindow.ImageView.Source = CurrentImage;
+                LoadBitmap();
+                LoadImageView();
+
+                if(reload_directories)
+                {
+                    LoadDirectoryFiles();
+                }
 
                 return true;
             }
@@ -219,34 +233,15 @@ namespace ImageViewer
                 { ImageInfos.FolderPath, "" }
             };
 
-            Image tmp_image;
             FileInfo fileinfo = new(CurrentFilePath);
 
             dict[ImageInfos.FileName] = Path.GetFileName(CurrentFilePath);
             dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString();
-            dict[ImageInfos.ImageDimensions] = String.Concat(CurrentImage.PixelWidth, " x ", CurrentImage.PixelHeight);
+            dict[ImageInfos.ImageDimensions] = String.Concat(CurrentImage.Width, " x ", CurrentImage.Height);
             dict[ImageInfos.ImageSize] = HumanizeBytes(fileinfo.Length);
             dict[ImageInfos.FolderPath] = Path.GetDirectoryName(CurrentFilePath);
-
-            try
-            {
-                if(IsWebp())
-                {
-                    using WebP webp = new();
-                    tmp_image = webp.Load(CurrentFilePath);
-                }
-                else
-                {
-                    tmp_image = Image.FromFile(CurrentFilePath);
-                }
-
-                dict[ImageInfos.ImageDpi] = string.Concat(Math.Round(tmp_image.HorizontalResolution, 2).ToString(), " dpi");
-                dict[ImageInfos.ImageDepth] = string.Concat(Image.GetPixelFormatSize(tmp_image.PixelFormat).ToString(), " bit");
-                tmp_image.Dispose();
-            }
-            catch(Exception)
-            {
-            }
+            dict[ImageInfos.ImageDpi] = string.Concat(Math.Round(CurrentImage.HorizontalResolution, 2).ToString(), " dpi");
+            dict[ImageInfos.ImageDepth] = string.Concat(Image.GetPixelFormatSize(CurrentImage.PixelFormat).ToString(), " bit");
 
             return dict;
         }
@@ -258,8 +253,12 @@ namespace ImageViewer
         {
             try
             {
-                File.Delete(CurrentFilePath);
-                FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
+                if(CurrentFilePath != null)
+                {
+                    File.Delete(CurrentFilePath);
+                    CurrentFilePath = null;
+                    FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
+                }
 
                 if(FolderFiles != null && FolderFiles.Length > 0)
                 {
@@ -267,12 +266,14 @@ namespace ImageViewer
                 }
                 else
                 {
+                    CurrentImage.Dispose();
                     CurrentImage = null;
-                    MainWindow.TextBlockAppTitle.Text = GetProductName();
+
+                    MainWindow.UpdateTitle();
                     MainWindow.ImageView.Opacity = 0;
                     MainWindow.SplitViewContainer.IsPaneOpen = false;
                 }
-
+ 
                 UpdateButtonsAccessiblity();
             }
             catch(Exception)
@@ -285,7 +286,7 @@ namespace ImageViewer
         /// </summary>
         public bool IsWebp()
         {
-            return Path.GetExtension(CurrentFilePath).ToLower() == ".webp";
+            return CurrentFilePath != null && Path.GetExtension(CurrentFilePath).ToLower() == ".webp";
         }
 
         /// <summary>
@@ -305,7 +306,7 @@ namespace ImageViewer
 
             float zoom_factor = GetAdjustedZoomFactor();
 
-            Thread.Sleep(50);
+            //Thread.Sleep(50);
             MainWindow.ScrollView.ChangeView(0, 0, zoom_factor, true);
             MainWindow.ScrollView.ZoomToFactor(zoom_factor);
         }
@@ -319,10 +320,10 @@ namespace ImageViewer
 
             if(CurrentImage == null) return zoom_factor;
 
-            if(CurrentImage.PixelHeight > MainWindow.ImageContainer.ActualHeight || CurrentImage.PixelWidth > MainWindow.ImageContainer.ActualWidth)
+            if(CurrentImage.Height > MainWindow.ImageContainer.ActualHeight || CurrentImage.Width > MainWindow.ImageContainer.ActualWidth)
             {
-                double zoom_factory_h = MainWindow.ImageContainer.ActualHeight / CurrentImage.PixelHeight;
-                double zoom_factory_w = MainWindow.ImageContainer.ActualWidth / CurrentImage.PixelWidth;
+                double zoom_factory_h = MainWindow.ImageContainer.ActualHeight / CurrentImage.Height;
+                double zoom_factory_w = MainWindow.ImageContainer.ActualWidth / CurrentImage.Width;
 
                 zoom_factor = (float)((zoom_factory_h < zoom_factory_w) ? zoom_factory_h : zoom_factory_w);
             }
@@ -343,33 +344,8 @@ namespace ImageViewer
         /// </summary>
         public void RotateFlip(RotateFlipType angle)
         {
-            Bitmap bmp;
-
-            if(IsWebp())
-            {
-                using WebP webp = new();
-                bmp = webp.Load(CurrentFilePath);
-            }
-            else
-            {
-                bmp = (Bitmap)Image.FromFile(CurrentFilePath);
-            }
-
-            bmp.RotateFlip(angle);
-
-            if(IsWebp())
-            {
-                using WebP webp = new();
-                webp.Save(bmp, CurrentFilePath, 100);
-            }
-            else
-            {
-                bmp.Save(CurrentFilePath);
-            }
-
-            bmp.Dispose();
-
-            LoadImageFromString(CurrentFilePath);
+            CurrentImage.RotateFlip(angle);
+            LoadImageView(true);
         }
 
         /// <summary>
@@ -386,10 +362,10 @@ namespace ImageViewer
 
                 MainWindow.ButtonImageAdjust.IsEnabled = true;
                 MainWindow.ButtonImageZoomFull.IsEnabled = true;
-                MainWindow.ButtonImageTransform.IsEnabled = !ReadOnlyTypes.Contains(Path.GetExtension(CurrentFilePath));
-                
+
+                MainWindow.ButtonImageTransform.IsEnabled = memory_only || (CurrentFilePath != null && !ReadOnlyTypes.Contains(Path.GetExtension(CurrentFilePath)));
+
                 MainWindow.ButtonImageDelete.IsEnabled = true;
-                MainWindow.ButtonFileInfo.IsEnabled = true;
                 MainWindow.ButtonFileSave.IsEnabled = true;
             }
             else
@@ -402,7 +378,6 @@ namespace ImageViewer
                 MainWindow.ButtonImageTransform.IsEnabled = false;
 
                 MainWindow.ButtonImageDelete.IsEnabled = false;
-                MainWindow.ButtonFileInfo.IsEnabled = false;
                 MainWindow.ButtonFileSave.IsEnabled = false;
             }
 
@@ -416,6 +391,13 @@ namespace ImageViewer
                 MainWindow.ButtonImagePrevious.IsEnabled = false;
                 MainWindow.ButtonImageNext.IsEnabled = false;
             }
+
+            MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
+
+            MainWindow.ButtonImageTransformFlipHorizontal.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
+            MainWindow.ButtonImageTransformFlipVertical.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
+            MainWindow.ButtonImageTransformRotateLeft.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
+            MainWindow.ButtonImageTransformRotateRight.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
         }
 
         /// <summary>
@@ -429,38 +411,87 @@ namespace ImageViewer
             };
             SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_JPG"), new List<string>() { ".jpg" });
             SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_PNG"), new List<string>() { ".png" });
+            SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_WEBP"), new List<string>() { ".webp" });
 
-            InitializeWithWindow.Initialize(SaveFilePicker, WinRT.Interop.WindowNative.GetWindowHandle(MainWindow));
+            InitializeWithWindow.Initialize(SaveFilePicker, WindowNative.GetWindowHandle(MainWindow));
             StorageFile output_file = await SaveFilePicker.PickSaveFileAsync();
 
             if(output_file != null)
             {
-                Bitmap bmp;
-
-                if(IsWebp())
+                if(CurrentImage != null)
                 {
-                    using WebP webp = new();
-                    bmp = webp.Load(CurrentFilePath);
-                }
-                else
-                {
-                    bmp = (Bitmap)Image.FromFile(CurrentFilePath);
-                }
+                    switch(output_file.FileType)
+                    {
+                        case ".jpg":
+                            CurrentImage.SaveJpeg(output_file.Path, 100);
+                            break;
 
-                switch(output_file.ContentType)
-                {
-                    case "image/jpeg":
-                        bmp.SaveJpeg(output_file.Path, 100);
-                        break;
+                        case ".png":
+                            CurrentImage.Save(output_file.Path, ImageFormat.Png);
+                            break;
 
-                    case "image/png":
-                        bmp.Save(output_file.Path, ImageFormat.Png);
-                        break;
+                        case ".webp":
+                            using(WebP webp = new())
+                            {
+                                webp.Save(CurrentImage, output_file.Path, 100);
+                            }
+                            break;
+                        default:
+                            return;
+                    }
+
+                    LoadDirectoryFiles();
                 }
-
-                bmp.Dispose();
-                LoadDirectoryFiles();
             }
+        }
+
+        /// <summary>
+        /// Load current bitmap
+        /// </summary>
+        private void LoadBitmap()
+        {
+            MainWindow.ImageView.Opacity = 0;
+            MainWindow.ImageLoadingIndicator.IsActive = true;
+
+            if(IsWebp())
+            {
+                using WebP webp = new();
+                CurrentImage = webp.Load(CurrentFilePath);
+                webp.Dispose();
+            }
+            else
+            {
+                byte[] bytes = File.ReadAllBytes(CurrentFilePath);
+                MemoryStream ms = new(bytes);
+                CurrentImage = (Bitmap)Image.FromStream(ms);
+            }
+        }
+
+        /// <summary>
+        /// Load bitmap (CurrentImage) inside image view
+        /// </summary>
+        private void LoadImageView(bool from_memory = false)
+        {
+            BitmapImage bitmap_image = new()
+            {
+                CreateOptions = BitmapCreateOptions.IgnoreImageCache
+            };
+            bitmap_image.ImageOpened += CurrentImage_ImageOpened;
+            bitmap_image.ImageFailed += CurrentImage_ImageFailed;
+
+            if(from_memory)
+            {
+                using MemoryStream memory = new();
+                CurrentImage.Save(memory, ImageFormat.Png);
+                memory.Position = 0;
+                bitmap_image.SetSource(memory.AsRandomAccessStream());
+            }
+            else
+            {
+                bitmap_image.UriSource = new(CurrentFilePath);
+            }
+
+            MainWindow.ImageView.Source = bitmap_image;
         }
 
         /// <summary>
@@ -468,13 +499,16 @@ namespace ImageViewer
         /// </summary>
         private void CurrentImage_ImageOpened(object sender, RoutedEventArgs e)
         {
-            MainWindow.TextBlockAppTitle.Text = string.Concat(Path.GetFileName(CurrentFilePath), " - ", GetProductName());
+            if(CurrentFilePath != null)
+            {
+                MainWindow.UpdateTitle(Path.GetFileName(CurrentFilePath));
+            }
+
             MainWindow.ImageLoadingIndicator.IsActive = false;
 
             UpdateButtonsAccessiblity();
             AdjustImage();
 
-            Thread.Sleep(50);
             MainWindow.ImageView.Opacity = 1;
 
             if(MainWindow.SplitViewContainer.IsPaneOpen)
@@ -488,29 +522,12 @@ namespace ImageViewer
         /// </summary>
         private void CurrentImage_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            MainWindow.TextBlockAppTitle.Text = GetProductName();
+            MainWindow.UpdateTitle();
             MainWindow.ImageLoadingIndicator.IsActive = false;
 
             CurrentImage = null;
 
             UpdateButtonsAccessiblity();
-        }
-
-        /// <summary>
-        /// Create new image object.
-        /// </summary>
-        private void CreateImage()
-        {
-            MainWindow.ImageView.Opacity = 0;
-            MainWindow.ImageLoadingIndicator.IsActive = true;
-
-            CurrentImage = null;
-            CurrentImage = new()
-            {
-                CreateOptions = BitmapCreateOptions.IgnoreImageCache
-            };
-            CurrentImage.ImageOpened += CurrentImage_ImageOpened;
-            CurrentImage.ImageFailed += CurrentImage_ImageFailed;
         }
 
         /// <summary>

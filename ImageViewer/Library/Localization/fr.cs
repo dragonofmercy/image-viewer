@@ -8,8 +8,11 @@ namespace ImageViewer.Localization
         {
             return new Dictionary<string, string>(){
 
+                { "SYSTEM_PASTED_CONTENT", "Contenu collé" },
+
                 { "FILE_TYPE_IMAGE_JPG", "Image JPEG" },
                 { "FILE_TYPE_IMAGE_PNG", "Image PNG" },
+                { "FILE_TYPE_IMAGE_WEBP", "Image WEBP" },
 
                 { "FILE_INFORMATION_TITLE", "Informations de l'image" },
                 { "FILE_INFORMATION_DIMENSIONS", "Dimension de l'image" },
