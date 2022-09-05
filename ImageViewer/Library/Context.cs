@@ -166,12 +166,10 @@ namespace ImageViewer
 
         public async void LoadImageFromBuffer(RandomAccessStreamReference clipboard)
         {
-            IRandomAccessStreamWithContentType stream_for_bitmap = await clipboard.OpenReadAsync();
-
             CurrentFilePath = null;
             memory_only = true;
 
-            CurrentImage = (Bitmap)Image.FromStream(stream_for_bitmap.AsStreamForRead());
+            LoadBitmap(await clipboard.OpenReadAsync());
             LoadImageView(true);
 
             MainWindow.UpdateTitle(Culture.GetString("SYSTEM_PASTED_CONTENT"));
@@ -448,22 +446,29 @@ namespace ImageViewer
         /// <summary>
         /// Load current bitmap
         /// </summary>
-        private void LoadBitmap()
+        private void LoadBitmap(IRandomAccessStreamWithContentType stream = null)
         {
             MainWindow.ImageView.Opacity = 0;
             MainWindow.ImageLoadingIndicator.IsActive = true;
 
-            if(IsWebp())
+            if(stream != null)
             {
-                using WebP webp = new();
-                CurrentImage = webp.Load(CurrentFilePath);
-                webp.Dispose();
+                CurrentImage = (Bitmap)Image.FromStream(stream.AsStreamForRead());
             }
             else
             {
-                byte[] bytes = File.ReadAllBytes(CurrentFilePath);
-                MemoryStream ms = new(bytes);
-                CurrentImage = (Bitmap)Image.FromStream(ms);
+                if(IsWebp())
+                {
+                    using WebP webp = new();
+                    CurrentImage = webp.Load(CurrentFilePath);
+                    webp.Dispose();
+                }
+                else
+                {
+                    byte[] bytes = File.ReadAllBytes(CurrentFilePath);
+                    MemoryStream ms = new(bytes);
+                    CurrentImage = (Bitmap)Image.FromStream(ms);
+                }
             }
         }
 
