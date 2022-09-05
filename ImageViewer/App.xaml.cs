@@ -1,12 +1,11 @@
 ﻿using Microsoft.UI.Xaml;
+
 using WinUIEx;
 
 namespace ImageViewer
 {
     public static class Startup
     {
-        public static string[] Args;
-
         [global::System.Runtime.InteropServices.DllImport("Microsoft.ui.xaml.dll")]
         private static extern void XamlCheckProcessRequirements();
 
@@ -15,9 +14,12 @@ namespace ImageViewer
         [global::System.STAThreadAttribute]
         static void Main(string[] args)
         {
-            Args = args;
-
             XamlCheckProcessRequirements();
+
+            _ = new Context()
+            {
+                LaunchArgs = args
+            };
 
             global::WinRT.ComWrappersSupport.InitializeComWrappers();
             global::Microsoft.UI.Xaml.Application.Start((p) => {
@@ -32,17 +34,12 @@ namespace ImageViewer
     {
         public App()
         {
-            Context context = new()
-            {
-                LaunchArgs = Startup.Args
-            };
-
-            this.InitializeComponent();
+            InitializeComponent();
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            MainWindow m_window = new MainWindow();
+            MainWindow m_window = new();
             WindowManager manager = WindowManager.Get(m_window);
 
             _ = new Culture();

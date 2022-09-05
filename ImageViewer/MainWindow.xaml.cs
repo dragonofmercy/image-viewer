@@ -8,6 +8,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Windowing;
 
 using Windows.UI.Core;
@@ -61,15 +62,15 @@ namespace ImageViewer
             TextBlockAppTitle.Text = m_AppWindow.Title;
         }
 
-        public void UpdateTitle(string before = null)
+        public void UpdateTitle(string prefix = null)
         {
-            if(before != null)
+            if(string.IsNullOrEmpty(prefix))
             {
-                TextBlockAppTitle.Text = string.Concat(before, " - ", Context.GetProductName());
+                TextBlockAppTitle.Text = Context.GetProductName();
             }
             else
             {
-                TextBlockAppTitle.Text = Context.GetProductName();
+                TextBlockAppTitle.Text = string.Concat(prefix, " - ", Context.GetProductName());
             }
         }
 
@@ -197,7 +198,7 @@ namespace ImageViewer
             }
         }
 
-        private void ScrollView_ViewChanged(object sender, Microsoft.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs e)
+        private void ScrollView_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
             TextBlockZoomFactor.Text = string.Concat(Math.Round(ScrollView.ZoomFactor * 100).ToString(), "%");
             
@@ -223,7 +224,7 @@ namespace ImageViewer
             }
         }
 
-        private void SplitViewContainer_PaneOpening(Microsoft.UI.Xaml.Controls.SplitView sender, object args)
+        private void SplitViewContainer_PaneOpening(SplitView sender, object args)
         {
             Context.Instance().UpdateFileInfo();
             ScrollView.Focus(FocusState.Programmatic);

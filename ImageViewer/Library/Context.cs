@@ -38,7 +38,7 @@ namespace ImageViewer
 
         private string[] FolderFiles;
         private int CurrentIndex;
-        private bool memory_only = false;
+        private bool MemoryOnly = false;
 
         public string[] LaunchArgs;
         public MainWindow MainWindow;
@@ -156,7 +156,7 @@ namespace ImageViewer
             if(selected_file != null && CheckFileExtension(selected_file.Path))
             {
                 CurrentFilePath = selected_file.Path;
-                memory_only = false;
+                MemoryOnly = false;
 
                 LoadBitmap();
                 LoadImageView();
@@ -167,10 +167,10 @@ namespace ImageViewer
         public async void LoadImageFromBuffer(RandomAccessStreamReference clipboard)
         {
             CurrentFilePath = null;
-            memory_only = true;
+            MemoryOnly = true;
 
             LoadBitmap(await clipboard.OpenReadAsync());
-            LoadImageView(true);
+            LoadImageView(false);
 
             MainWindow.UpdateTitle(Culture.GetString("SYSTEM_PASTED_CONTENT"));
         }
@@ -183,7 +183,7 @@ namespace ImageViewer
             if(File.Exists(image_path) && CheckFileExtension(image_path))
             {
                 CurrentFilePath = image_path;
-                memory_only = false;
+                MemoryOnly = false;
 
                 LoadBitmap();
                 LoadImageView();
@@ -304,7 +304,6 @@ namespace ImageViewer
 
             float zoom_factor = GetAdjustedZoomFactor();
 
-            //Thread.Sleep(50);
             MainWindow.ScrollView.ChangeView(0, 0, zoom_factor, true);
             MainWindow.ScrollView.ZoomToFactor(zoom_factor);
         }
@@ -343,7 +342,7 @@ namespace ImageViewer
         public void RotateFlip(RotateFlipType angle)
         {
             CurrentImage.RotateFlip(angle);
-            LoadImageView(true);
+            LoadImageView(false);
         }
 
         /// <summary>
@@ -361,7 +360,7 @@ namespace ImageViewer
                 MainWindow.ButtonImageAdjust.IsEnabled = true;
                 MainWindow.ButtonImageZoomFull.IsEnabled = true;
 
-                MainWindow.ButtonImageTransform.IsEnabled = memory_only || (CurrentFilePath != null && !ReadOnlyTypes.Contains(Path.GetExtension(CurrentFilePath)));
+                MainWindow.ButtonImageTransform.IsEnabled = MemoryOnly || (CurrentFilePath != null && !ReadOnlyTypes.Contains(Path.GetExtension(CurrentFilePath)));
 
                 MainWindow.ButtonImageDelete.IsEnabled = true;
                 MainWindow.ButtonFileSave.IsEnabled = true;
@@ -475,7 +474,7 @@ namespace ImageViewer
         /// <summary>
         /// Load bitmap (CurrentImage) inside image view
         /// </summary>
-        private void LoadImageView(bool from_memory = false)
+        private void LoadImageView(bool UseUriSource = true)
         {
             BitmapImage bitmap_image = new()
             {
@@ -484,18 +483,18 @@ namespace ImageViewer
             bitmap_image.ImageOpened += CurrentImage_ImageOpened;
             bitmap_image.ImageFailed += CurrentImage_ImageFailed;
 
-            if(from_memory)
+            if(UseUriSource)
+            {
+                bitmap_image.UriSource = new(CurrentFilePath);
+            }
+            else
             {
                 using MemoryStream memory = new();
                 CurrentImage.Save(memory, ImageFormat.Png);
                 memory.Position = 0;
                 bitmap_image.SetSource(memory.AsRandomAccessStream());
             }
-            else
-            {
-                bitmap_image.UriSource = new(CurrentFilePath);
-            }
-
+            
             MainWindow.ImageView.Source = bitmap_image;
         }
 

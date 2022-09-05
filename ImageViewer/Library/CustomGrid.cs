@@ -1,10 +1,15 @@
-﻿namespace ImageViewer
+﻿using Microsoft.UI.Input;
+using Microsoft.UI.Xaml.Controls;
+
+using Windows.UI.Core;
+
+namespace ImageViewer
 {
-    public class CustomGrid : Microsoft.UI.Xaml.Controls.Grid
+    public class CustomGrid : Grid
     {
-        public void SetCursor(Windows.UI.Core.CoreCursor cursor)
+        public void SetCursor(CoreCursor cursor)
         {
-            ProtectedCursor = Microsoft.UI.Input.InputCursor.CreateFromCoreCursor(cursor);
+            ProtectedCursor = InputCursor.CreateFromCoreCursor(cursor);
         }
     }
 }
