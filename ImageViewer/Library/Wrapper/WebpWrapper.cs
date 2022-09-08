@@ -28,7 +28,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace ImageViewer
+namespace ImageViewer.Wrapper
 {
     public sealed class WebP : IDisposable
     {

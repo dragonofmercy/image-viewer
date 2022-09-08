@@ -433,7 +433,7 @@ namespace ImageViewer
                             break;
 
                         case ".webp":
-                            using(WebP webp = new())
+                            using(Wrapper.WebP webp = new())
                             {
                                 webp.Save(CurrentImage, output_file.Path, 100);
                             }
@@ -463,7 +463,7 @@ namespace ImageViewer
             {
                 if(IsWebp())
                 {
-                    using WebP webp = new();
+                    using Wrapper.WebP webp = new();
                     CurrentImage = webp.Load(CurrentFilePath);
                     webp.Dispose();
                 }
