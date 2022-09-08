@@ -23,6 +23,7 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_MENU_FILE_INFO", "Informations de l'image" },
                 { "FOOTER_TOOLBAR_MENU_FILE_SAVE", "Enregistrer sous..." },
                 { "FOOTER_TOOLBAR_MENU_FILE_DELETE", "Supprimer l'image" },
+                { "FOOTER_TOOLBAR_MENU_ABOUT", "A propos" },
                 { "FOOTER_TOOLBAR_MENU_QUIT", "Quitter" },
 
                 { "FOOTER_TOOLBAR_IMAGE_ADJUST", "Ajuster l'image" },
@@ -37,6 +38,13 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT", "Rotation droite" },
                 { "FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ", "Mirroir horizontal" },
                 { "FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT", "Mirroir vertical" },
+
+                { "ABOUT_REMOTE_VERSION_LABEL", "Dernière version :" },
+                { "ABOUT_REMOTE_VERSION_LOADING", "Chargement..." },
+                { "ABOUT_REMOTE_VERSION_ERROR_NO_INTERNET", "Pas d'accès à internet" },
+                { "ABOUT_CURRENT_VERSION_LABEL", "Version installée :" },
+                { "ABOUT_BTN_UPDATE", "Mise à jour" },
+                { "ABOUT_BTN_CLOSE", "Fermer" }
 
             };
         }
