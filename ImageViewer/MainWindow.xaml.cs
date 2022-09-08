@@ -7,7 +7,6 @@ using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Windowing;
 
@@ -36,41 +35,50 @@ namespace ImageViewer
         [DllImport("user32.dll")]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
-        public MainWindow()
+        public MainWindow(ElementTheme theme)
         {
             InitializeComponent();
+            UpdateTheme(theme);
 
             m_AppWindow = GetAppWindowForCurrentWindow();
             m_AppWindow.SetIcon("ImageViewer.ico");
             m_AppWindow.Title = Context.GetProductName();
+        }
 
-            var titleBar = m_AppWindow.TitleBar;
-            titleBar.ExtendsContentIntoTitleBar = true;
-            titleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        public void UpdateTheme(ElementTheme theme)
+        {
+            ThemeHelpers.SetImmersiveDarkMode(WindowNative.GetWindowHandle(this), theme == ElementTheme.Dark);
+            MainPage.RequestedTheme = theme;
 
-            titleBar.ButtonBackgroundColor = titleBar.ButtonInactiveBackgroundColor = (Application.Current.Resources["SubtleFillColorTransparentBrush"] as SolidColorBrush).Color;
-            titleBar.ButtonForegroundColor = titleBar.ButtonInactiveForegroundColor = (Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush).Color;
+            Settings.Theme = MainPage.ActualTheme;
 
-            titleBar.ButtonHoverBackgroundColor = (Application.Current.Resources["ControlFillColorDefaultBrush"] as SolidColorBrush).Color;
-            titleBar.ButtonHoverForegroundColor = (Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush).Color;
+            if(theme == ElementTheme.Dark)
+            {
+                ButtonSwitchThemeDark.IsEnabled = false;
+                ButtonSwitchThemeDark.Visibility = Visibility.Collapsed;
 
-            titleBar.ButtonPressedBackgroundColor = (Application.Current.Resources["ControlFillColorTertiaryBrush"] as SolidColorBrush).Color;
-            titleBar.ButtonPressedForegroundColor = (Application.Current.Resources["TextFillColorSecondaryBrush"] as SolidColorBrush).Color;
+                ButtonSwitchThemeLight.IsEnabled = true;
+                ButtonSwitchThemeLight.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ButtonSwitchThemeDark.IsEnabled = true;
+                ButtonSwitchThemeDark.Visibility = Visibility.Visible;
 
-            titleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
-
-            TextBlockAppTitle.Text = m_AppWindow.Title;
+                ButtonSwitchThemeLight.IsEnabled = false;
+                ButtonSwitchThemeLight.Visibility = Visibility.Collapsed;
+            }
         }
 
         public void UpdateTitle(string prefix = null)
         {
             if(string.IsNullOrEmpty(prefix))
             {
-                TextBlockAppTitle.Text = Context.GetProductName();
+                m_AppWindow.Title = Context.GetProductName();
             }
             else
             {
-                TextBlockAppTitle.Text = string.Concat(prefix, " - ", Context.GetProductName());
+                m_AppWindow.Title = string.Concat(prefix, " - ", Context.GetProductName());
             }
         }
 
@@ -258,6 +266,27 @@ namespace ImageViewer
         private void ButtonFileSave_Click(object sender, RoutedEventArgs e)
         {
             Context.Instance().SaveAs();
+        }
+
+        private async void ButtonAbout_Click(object sender, RoutedEventArgs e)
+        {
+            ContentDialog about_dialog = new()
+            {
+                XamlRoot = Content.XamlRoot
+            };
+            about_dialog.Content = new About(about_dialog);
+            about_dialog.RequestedTheme = MainPage.ActualTheme;
+            await about_dialog.ShowAsync();
+        }
+
+        private void ButtonSwitchThemeDark_Click(object sender, RoutedEventArgs e)
+        {
+            Context.Instance().ChangeTheme(ElementTheme.Dark);
+        }
+
+        private void ButtonSwitchThemeLight_Click(object sender, RoutedEventArgs e)
+        {
+            Context.Instance().ChangeTheme(ElementTheme.Light);
         }
 
         private async void ImageContainer_Drop(object sender, DragEventArgs e)

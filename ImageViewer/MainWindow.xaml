@@ -5,250 +5,252 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:ImageViewer"
+    xmlns:Controls="using:ImageViewer.UI"
     mc:Ignorable="d">
-    <Grid SizeChanged="Grid_SizeChanged" KeyboardAcceleratorPlacementMode="Hidden">
-        <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="Window_Paste" />
-        </Grid.KeyboardAccelerators>
-
-        <Grid.RowDefinitions>
-            <RowDefinition Height="48" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition />
-            <RowDefinition Height="48" />
-        </Grid.RowDefinitions>
-
-        <Grid x:Name="AppTitleBar" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" x:FieldModifier="public">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="144" />
-            </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Source="ImageViewer.ico" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16" Margin="16,0" />
-            <TextBlock Grid.Column="1" x:Name="TextBlockAppTitle" x:FieldModifier="public" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-        </Grid>
-
-        <SplitView Grid.Row="2" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="CompactInline" CompactPaneLength="0" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
-
-            <SplitView.Pane>
-                <StackPanel Orientation="Vertical" Padding="16" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="44" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_INFO')}" />
-                        <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="ButtonFileInfoClose_Click">
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe894;" />
-                        </HyperlinkButton>
-                    </Grid>
-                    <StackPanel Orientation="Horizontal" Margin="0,8">
-                        <FontIcon FontSize="16" Glyph="&#xe91b;" Margin="4,0" />
-                        <TextBlock Margin="12,0" MaxWidth="248" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" x:Name="TextBlockInfoFilename" x:FieldModifier="public" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8">
-                        <FontIcon FontSize="16" Glyph="&#xe787;" Margin="4,0" />
-                        <TextBlock Margin="12,0" MaxWidth="248" x:Name="TextBlockInfoDate" x:FieldModifier="public" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8" VerticalAlignment="Top">
-                        <FontIcon FontSize="16" Glyph="&#xf5ac;" VerticalAlignment="Top" Margin="4,2" />
-                        <StackPanel Orientation="Vertical" Margin="12,0">
-                            <TextBlock MaxWidth="248" Margin="0,0,0,8" Text="{x:Bind local:Culture.GetString('FILE_INFORMATION_DIMENSIONS')}" />
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoDimensions" x:FieldModifier="public" />
-                                <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoSize" x:FieldModifier="public" />
-                                <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoDpi" x:FieldModifier="public" />
-                                <TextBlock FontSize="12" x:Name="TextBlockInfoDepth" x:FieldModifier="public" />
+    <Page x:Name="MainPage">
+        <Grid SizeChanged="Grid_SizeChanged" KeyboardAcceleratorPlacementMode="Hidden">
+            <Grid.KeyboardAccelerators>
+                <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="Window_Paste" />
+            </Grid.KeyboardAccelerators>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+                <RowDefinition Height="48" />
+            </Grid.RowDefinitions>
+            <SplitView Grid.Row="1" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="CompactInline" CompactPaneLength="0" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
+                <SplitView.Pane>
+                    <StackPanel Orientation="Vertical" Padding="16" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="44" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_INFO')}" />
+                            <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="ButtonFileInfoClose_Click">
+                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe894;" />
+                            </HyperlinkButton>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <FontIcon FontSize="16" Glyph="&#xe91b;" Margin="4,0" />
+                            <TextBlock Margin="12,0" MaxWidth="248" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" x:Name="TextBlockInfoFilename" x:FieldModifier="public" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <FontIcon FontSize="16" Glyph="&#xe787;" Margin="4,0" />
+                            <TextBlock Margin="12,0" MaxWidth="248" x:Name="TextBlockInfoDate" x:FieldModifier="public" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8" VerticalAlignment="Top">
+                            <FontIcon FontSize="16" Glyph="&#xEB3C;" VerticalAlignment="Top" Margin="4,2" />
+                            <StackPanel Orientation="Vertical" Margin="12,0">
+                                <TextBlock MaxWidth="248" Margin="0,0,0,8" Text="{x:Bind local:Culture.GetString('FILE_INFORMATION_DIMENSIONS')}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoDimensions" x:FieldModifier="public" />
+                                    <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoSize" x:FieldModifier="public" />
+                                    <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoDpi" x:FieldModifier="public" />
+                                    <TextBlock FontSize="12" x:Name="TextBlockInfoDepth" x:FieldModifier="public" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <FontIcon FontSize="16" Glyph="&#xe838;" VerticalAlignment="Top" Margin="4,2" />
+                            <StackPanel Orientation="Vertical" Margin="12,0">
+                                <TextBlock MaxWidth="248" Margin="0,0,0,8" Text="{x:Bind local:Culture.GetString('FILE_INFORMATION_FOLDER_PATH')}" />
+                                <TextBlock MaxWidth="248" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" FontSize="12" x:Name="TextBlockInfoFolder" x:FieldModifier="public" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8">
-                        <FontIcon FontSize="16" Glyph="&#xe838;" VerticalAlignment="Top" Margin="4,2" />
-                        <StackPanel Orientation="Vertical" Margin="12,0">
-                            <TextBlock MaxWidth="248" Margin="0,0,0,8" Text="{x:Bind local:Culture.GetString('FILE_INFORMATION_FOLDER_PATH')}" />
-                            <TextBlock MaxWidth="248" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" FontSize="12" x:Name="TextBlockInfoFolder" x:FieldModifier="public" />
-                        </StackPanel>
+                </SplitView.Pane>
+                <Controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource SolidBackgroundFillColorSecondary }">
+                    <ScrollViewer 
+                            PointerMoved="ScrollView_PointerMoved"
+                            PointerExited="ScrollView_PointerExited" 
+                            PointerPressed="ScrollView_PointerPressed"
+                            PointerReleased="ScrollView_PointerReleased"
+                            PointerWheelChanged="ScrollView_PointerWheelChanged"
+                            ViewChanged="ScrollView_ViewChanged"
+                            IsScrollInertiaEnabled="True"
+                            IsZoomInertiaEnabled="True"
+                            x:FieldModifier="public" 
+                            x:Name="ScrollView" 
+                            ZoomMode="Enabled"
+                            VerticalScrollMode="Disabled"
+                            HorizontalScrollMode="Disabled"
+                            HorizontalScrollBarVisibility="Hidden" 
+                            VerticalScrollBarVisibility="Hidden"
+                            HorizontalContentAlignment="Center" 
+                            VerticalContentAlignment="Center">
+                        <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
+                    </ScrollViewer>
+                    <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
+                </Controls:CursorGrid>
+            </SplitView>
+            <Grid Grid.Row="2" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CommandBar Grid.Column="0" DefaultLabelPosition="Right" HorizontalAlignment="Left" IsDynamicOverflowEnabled="false">
+                        <CommandBar.PrimaryCommands>
+                            <AppBarButton IsCompact="false" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU')}" Icon="GlobalNavigationButton">
+                                <AppBarButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_OPEN')}" Click="ButtonOpenFile_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE7C5;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="O" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem x:Name="ButtonFileInfo" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_INFO')}" IsEnabled="False" Click="ButtonFileInfo_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE946;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="I" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="ButtonFileSave" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_SAVE')}" IsEnabled="False" Click="ButtonFileSave_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xEA35;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="S" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="ButtonImageDelete" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_DELETE')}" IsEnabled="False" Click="ButtonDelete_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="Delete" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_ABOUT')}" Click="ButtonAbout_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <PathIcon Data="M60.88,0a59.43,59.43,0,0,1,43,17,63.19,63.19,0,0,1,15.82,65.08A61,61,0,0,1,109,101.52a59,59,0,0,1-5,5.4A58.28,58.28,0,0,1,65.59,123,59.1,59.1,0,0,1,26,109.5c-1.13-.92-2.22-1.89-3.29-2.89L6.55,112.26a4.93,4.93,0,0,1-6.08-6.75L9,87.5A62.89,62.89,0,0,1,5.15,76.81a63.69,63.69,0,0,1-2-13.72A62.48,62.48,0,0,1,7.25,38.43,61,61,0,0,1,20.68,17.52,58.89,58.89,0,0,1,39.12,4.82,57.76,57.76,0,0,1,60.88,0ZM59.25,36.15a7.78,7.78,0,0,1,.57-3,7.6,7.6,0,0,1,1.71-2.49A8,8,0,0,1,64,29a7.57,7.57,0,0,1,2.9-.56,7.48,7.48,0,0,1,2.89.56,7.77,7.77,0,0,1,2.44,1.69,7.6,7.6,0,0,1,1.68,2.5,7.88,7.88,0,0,1,.55,3,7.71,7.71,0,0,1-.55,2.93,7.82,7.82,0,0,1-1.67,2.51,7.59,7.59,0,0,1-2.45,1.72,7.27,7.27,0,0,1-2.89.57,7.5,7.5,0,0,1-3-.57,7.25,7.25,0,0,1-2.47-1.7,7.54,7.54,0,0,1-2.23-5.46Zm2.92,45.24L62,82c-.15.63-.36,1.51.13,2.06a.91.91,0,0,0,.34.22,1.35,1.35,0,0,0,.52.09,2.59,2.59,0,0,0,1.37-.61,13,13,0,0,0,2-1.94,35.09,35.09,0,0,0,2.43-3.13q1.26-1.78,2.64-4.1a.36.36,0,0,1,.48-.12l3.1,2.31a.35.35,0,0,1,.09.47,54.27,54.27,0,0,1-4.33,6.5,29.76,29.76,0,0,1-4.48,4.64h0a17.37,17.37,0,0,1-4.65,2.77,13.49,13.49,0,0,1-4.91.93,13.32,13.32,0,0,1-3.86-.51A7.59,7.59,0,0,1,50,90a6.71,6.71,0,0,1-1.76-2.58A9.38,9.38,0,0,1,47.68,84a18.3,18.3,0,0,1,.72-4.58c.17-.64.38-1.35.63-2.14l5.46-16.86.45-1.59c.11-.44.21-.83.28-1.16a8.23,8.23,0,0,0,.15-.86,7.06,7.06,0,0,0,.05-.73,2.59,2.59,0,0,0-.19-1v0a2.12,2.12,0,0,0-.54-.76,2.4,2.4,0,0,0-.89-.52,3.69,3.69,0,0,0-1.2-.18H48.2a.35.35,0,0,1-.35-.35l0-.12L49,48.88a.34.34,0,0,1,.33-.25l22.41-.71a.36.36,0,0,1,.36.34l0,.11-9.94,33ZM97,24.07A49.61,49.61,0,0,0,61.11,9.86a48.05,48.05,0,0,0-18,4A48.88,48.88,0,0,0,27.7,24.43,51.22,51.22,0,0,0,16.43,41.94,52.88,52.88,0,0,0,13,62.75a53.74,53.74,0,0,0,1.68,11.59,52.72,52.72,0,0,0,4,10.63,4.93,4.93,0,0,1,.21,4.62l-4.49,9.49,7.8-2.72a4.92,4.92,0,0,1,5.36,1.19,51.13,51.13,0,0,0,4.68,4.35,49.35,49.35,0,0,0,33,11.28,48.43,48.43,0,0,0,31.87-13.4,49.81,49.81,0,0,0,4.2-4.51,51.54,51.54,0,0,0,9-16.3A53.38,53.38,0,0,0,97,24.07Z" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="F1" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_QUIT')}" Click="ButtonQuit_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xF3B1;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="Q" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </AppBarButton.Flyout>
+                            </AppBarButton>
+                            <AppBarButton x:Name="ButtonImageAdjust" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ADJUST')}" Width="45" IsCompact="false" LabelPosition="Collapsed" Click="ButtonAdjust_Click" Visibility="Collapsed" IsEnabled="False">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xe9a6;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="Number0" Modifiers="Control" />
+                                </AppBarButton.KeyboardAccelerators>
+                            </AppBarButton>
+                            <AppBarButton x:Name="ButtonImageZoomFull" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_100')}" Width="45" IsCompact="false" LabelPosition="Collapsed" Click="ButtonFullsize_Click" IsEnabled="False">
+                                <AppBarButton.Icon>
+                                    <PathIcon Width="16" Height="16" Data="M4.8 5.1C4.9 5.2 5 5.3 5 5.5v5C5 10.8 4.8 11 4.5 11S4 10.8 4 10.5V6.3L3.7 6.4C3.5 6.5 3.2 6.4 3 6.2 2.9 6 3 5.7 3.3 5.6l1-.5C4.4 5 4.6 5 4.8 5.1zM12 5.5c0-.2-.1-.3-.2-.4-.1-.1-.3-.1-.5 0l-1 .5C10 5.7 9.9 6 10.1 6.2c.1.2.4.3.7.2L11 6.3v4.2c0 .3.2.5.5.5s.5-.2.5-.5V5.5zM8 7C8 7 7 7 7 7S7 6 7 6 8 6 8 6zM8 10c0 0 0-1 0-1S7 9 7 9 7 10 7 10zM0 4.8C0 3.2 1.2 2 2.8 2h10.5C14.8 2 16 3.2 16 4.8v6.5c0 1.5-1.2 2.8-2.8 2.8H2.8C1.2 14 0 12.8 0 11.2V4.8zM2.8 3C1.8 3 1 3.8 1 4.8v6.5c0 1 .8 1.8 1.8 1.8h10.5c1 0 1.8-.8 1.8-1.8V4.8c0-1-.8-1.8-1.8-1.8H2.8z" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="Number1" Modifiers="Control" />
+                                </AppBarButton.KeyboardAccelerators>
+                            </AppBarButton>
+                        </CommandBar.PrimaryCommands>
+                    </CommandBar>
+                    <StackPanel Grid.Column="1" Padding="4,0" HorizontalAlignment="Center" Orientation="Horizontal">
+                        <AppBarButton x:Name="ButtonImagePrevious" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_PREVIOUS')}" Width="45" IsCompact="false" Icon="Previous" LabelPosition="Collapsed" Click="ButtonPrevFile_Click" IsEnabled="False">
+                            <AppBarButton.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Left" />
+                                <KeyboardAccelerator Key="Down" />
+                            </AppBarButton.KeyboardAccelerators>
+                        </AppBarButton>
+                        <AppBarButton x:Name="ButtonImageZoomIn" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_IN')}" Width="45" IsCompact="false" Icon="ZoomIn" LabelPosition="Collapsed" Click="ButtonZoomIn_Click" IsEnabled="False">
+                            <AppBarButton.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Add" />
+                            </AppBarButton.KeyboardAccelerators>
+                        </AppBarButton>
+                        <AppBarElementContainer VerticalAlignment="Center">
+                            <TextBlock Text="100%" Margin="8,0" Width="45" TextAlignment="Center" x:Name="TextBlockZoomFactor" x:FieldModifier="public" />
+                        </AppBarElementContainer>
+                        <AppBarButton x:Name="ButtonImageZoomOut" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_OUT')}" Width="45" IsCompact="false" Icon="ZoomOut" LabelPosition="Collapsed" Click="ButtonZoomOut_Click" IsEnabled="False">
+                            <AppBarButton.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Subtract" />
+                            </AppBarButton.KeyboardAccelerators>
+                        </AppBarButton>
+                        <AppBarButton x:Name="ButtonImageNext" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_NEXT')}" Width="45" IsCompact="false" Icon="Next" LabelPosition="Collapsed" Click="ButtonNextFile_Click" IsEnabled="False">
+                            <AppBarButton.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Right" />
+                                <KeyboardAccelerator Key="Up" />
+                            </AppBarButton.KeyboardAccelerators>
+                        </AppBarButton>
                     </StackPanel>
-                </StackPanel>
-            </SplitView.Pane>
-
-            <local:CustomGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True">
-                <ScrollViewer 
-                    PointerMoved="ScrollView_PointerMoved"
-                    PointerExited="ScrollView_PointerExited" 
-                    PointerPressed="ScrollView_PointerPressed"
-                    PointerReleased="ScrollView_PointerReleased"
-                    PointerWheelChanged="ScrollView_PointerWheelChanged"
-                    ViewChanged="ScrollView_ViewChanged"
-                    IsScrollInertiaEnabled="True"
-                    IsZoomInertiaEnabled="True"
-                    x:FieldModifier="public" 
-                    x:Name="ScrollView" 
-                    ZoomMode="Enabled"
-                    VerticalScrollMode="Disabled"
-                    HorizontalScrollMode="Disabled"
-                    HorizontalScrollBarVisibility="Hidden" 
-                    VerticalScrollBarVisibility="Hidden"
-                    HorizontalContentAlignment="Center" 
-                    VerticalContentAlignment="Center">
-                    <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
-                </ScrollViewer>
-                <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
-            </local:CustomGrid>
-
-        </SplitView>
-
-        <Grid Grid.Row="3" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
-
-            <Grid VerticalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <CommandBar Grid.Column="0" DefaultLabelPosition="Right" HorizontalAlignment="Left" IsDynamicOverflowEnabled="false">
-                    <CommandBar.PrimaryCommands>
-                        <AppBarButton IsCompact="false" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU')}" Icon="GlobalNavigationButton">
-                            <AppBarButton.Flyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_OPEN')}" Click="ButtonOpenFile_Click">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xE7C5;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="O" Modifiers="Control" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem x:Name="ButtonFileInfo" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_INFO')}" IsEnabled="False" Click="ButtonFileInfo_Click">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xe946;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="I" Modifiers="Control" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem x:Name="ButtonFileSave" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_SAVE')}" IsEnabled="False" Click="ButtonFileSave_Click">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xea35;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="S" Modifiers="Control" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem x:Name="ButtonImageDelete" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_DELETE')}" IsEnabled="False" Click="ButtonDelete_Click">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xE74D;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="Delete" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_QUIT')}" Click="ButtonQuit_Click">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xe894;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="Q" Modifiers="Control" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                </MenuFlyout>
-                            </AppBarButton.Flyout>
-                        </AppBarButton>
-                        <AppBarButton x:Name="ButtonImageAdjust" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ADJUST')}" Width="45" IsCompact="false" LabelPosition="Collapsed" Click="ButtonAdjust_Click" Visibility="Collapsed" IsEnabled="False">
-                            <AppBarButton.Icon>
-                                <FontIcon Glyph="&#xe9a6;" />
-                            </AppBarButton.Icon>
-                            <AppBarButton.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="Number0" Modifiers="Control" />
-                            </AppBarButton.KeyboardAccelerators>
-                        </AppBarButton>
-                        <AppBarButton x:Name="ButtonImageZoomFull" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_100')}" Width="45" Icon="FullScreen" IsCompact="false" LabelPosition="Collapsed" Click="ButtonFullsize_Click" IsEnabled="False">
-                            <AppBarButton.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="Number1" Modifiers="Control" />
-                            </AppBarButton.KeyboardAccelerators>
-                        </AppBarButton>
-                    </CommandBar.PrimaryCommands>
-                </CommandBar>
-
-                <StackPanel Grid.Column="1" Padding="4,0" HorizontalAlignment="Center" Orientation="Horizontal">
-                    <AppBarButton x:Name="ButtonImagePrevious" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_PREVIOUS')}" Width="45" IsCompact="false" Icon="Previous" LabelPosition="Collapsed" Click="ButtonPrevFile_Click" IsEnabled="False">
-                        <AppBarButton.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="Left" />
-                            <KeyboardAccelerator Key="Down" />
-                        </AppBarButton.KeyboardAccelerators>
-                    </AppBarButton>
-                    <AppBarButton x:Name="ButtonImageZoomIn" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_IN')}" Width="45" IsCompact="false" Icon="ZoomIn" LabelPosition="Collapsed" Click="ButtonZoomIn_Click" IsEnabled="False">
-                        <AppBarButton.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="Add" />
-                        </AppBarButton.KeyboardAccelerators>
-                    </AppBarButton>
-                    <AppBarElementContainer VerticalAlignment="Center">
-                        <TextBlock Text="100%" Margin="8,0" Width="45" TextAlignment="Center" x:Name="TextBlockZoomFactor" x:FieldModifier="public" />
-                    </AppBarElementContainer>
-                    <AppBarButton x:Name="ButtonImageZoomOut" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_OUT')}" Width="45" IsCompact="false" Icon="ZoomOut" LabelPosition="Collapsed" Click="ButtonZoomOut_Click" IsEnabled="False">
-                        <AppBarButton.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="Subtract" />
-                        </AppBarButton.KeyboardAccelerators>
-                    </AppBarButton>
-                    <AppBarButton x:Name="ButtonImageNext" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_IMAGE_NEXT')}" Width="45" IsCompact="false" Icon="Next" LabelPosition="Collapsed" Click="ButtonNextFile_Click" IsEnabled="False">
-                        <AppBarButton.KeyboardAccelerators>
-                            <KeyboardAccelerator Key="Right" />
-                            <KeyboardAccelerator Key="Up" />
-                        </AppBarButton.KeyboardAccelerators>
-                    </AppBarButton>
-                </StackPanel>
-
-                <CommandBar Grid.Column="2" DefaultLabelPosition="Right" HorizontalAlignment="Right" IsDynamicOverflowEnabled="false">
-                    <CommandBar.PrimaryCommands>
-                        <AppBarButton x:Name="ButtonImageTransform" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_MENU')}" Width="45" IsCompact="false" LabelPosition="Collapsed" IsEnabled="false">
-                            <AppBarButton.Icon>
-                                <PathIcon Data="M60.58,52.91,74.86,28.22l9.71,24.56-4.76,5.86c-1,.7-2.94,3.85-4.7,8H19.22V61.83l6-.29L31.12,47l3,10.41H43l7.74-19.93,9.82,15.47ZM10.82,0h83.7a10.86,10.86,0,0,1,10.82,10.82V27.48L99.78,34l-1.21,1.49V11.78a4.08,4.08,0,0,0-4-4H11.78a4.08,4.08,0,0,0-4,4V70.39a4.08,4.08,0,0,0,4,4H72.13a46.38,46.38,0,0,0-1,7.23l-.07.51H10.82A10.86,10.86,0,0,1,0,71.35V10.82A10.86,10.86,0,0,1,10.82,0ZM97.53,78.86,82.29,82.47,84,66.07,97.53,78.86ZM88.68,61l20-22.16a1.44,1.44,0,0,1,1-.5,1.39,1.39,0,0,1,.72.17l12.07,11a1.26,1.26,0,0,1,.39.87,1.23,1.23,0,0,1-.42,1L102.2,73.77,88.66,61ZM30.53,22.27a7.14,7.14,0,1,1-7.14,7.14,7.14,7.14,0,0,1,7.14-7.14Z"></PathIcon>
-                            </AppBarButton.Icon>
-                            <AppBarButton.Flyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem x:Name="ButtonImageTransformRotateLeft" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT')}" Click="ButtonImageRotateLeft_Click" IsEnabled="false">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FlowDirection="RightToLeft" Glyph="&#xe7ad;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="Left" Modifiers="Menu" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem x:Name="ButtonImageTransformRotateRight" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT')}" Click="ButtonImageRotateRight_Click" IsEnabled="false">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xe7ad;" />
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="Right" Modifiers="Menu" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem x:Name="ButtonImageTransformFlipHorizontal" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ')}" Click="ButtonImageFlipHorizontal_Click" IsEnabled="false">
-                                        <MenuFlyoutItem.Icon>
-                                            <PathIcon Data="m72.21 334.61 319.82 150.95V334.61H72.21zm-56.56-94.06c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h19.23c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45H15.65zm82.14 0c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.46c18.19 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45H97.79zm94.37 0c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.45c18.2 0 21.92-26.27 3.74-31.01-1.28-.28-2.39-.45-3.74-.45h-31.45zm94.37 0c-18.2 0-21.92 26.27-3.74 31.01 1.28.28 2.39.45 3.74.45h31.45c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45h-31.45zm94.36 0c-18.19 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.46c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45h-31.46zM21.02 178.98 397.41 1.33c1.51-.85 3.25-1.33 5.1-1.33C408.3 0 413 4.7 413 10.49v177.96c0 5.79-4.7 10.48-10.49 10.48H25.49c-3.92-.03-7.68-2.25-9.47-6.03-2.46-5.22-.22-11.46 5-13.92zm377.03 332.56L21.69 333.9c-3.91-1.53-6.69-5.33-6.69-9.78 0-5.79 4.7-10.48 10.49-10.48h377.02c5.79 0 10.49 4.69 10.49 10.48v177.95c-.02 1.5-.35 3.02-1.03 4.47-2.46 5.22-8.7 7.46-13.92 5z" ></PathIcon>
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="H" Modifiers="Menu" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem x:Name="ButtonImageTransformFlipVertical" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT')}" Click="ButtonImageFlipVertical_Click" IsEnabled="false">
-                                        <MenuFlyoutItem.Icon>
-                                            <PathIcon Data="M333.55 16.79 511 392.75c2.46 5.22.22 11.45-4.99 13.91-1.45.68-2.97 1.01-4.46 1l-177.77.03c-5.78 0-10.47-4.7-10.47-10.48V20.58c0-5.78 4.69-10.47 10.47-10.47 4.44 0 8.25 2.77 9.77 6.68zM240.3 402.16c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-9.45c0-18.18-26.25-21.89-30.98-3.74-.28 1.29-.45 2.4-.45 3.74v9.45zm0-72.3c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-31.42c0-18.18-26.25-21.89-30.98-3.74-.28 1.29-.45 2.4-.45 3.74v31.42zm0-94.27c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-31.42c0-18.18-26.25-21.89-30.98-3.73-.28 1.28-.45 2.39-.45 3.73v31.42zm0-94.26c0 18.17 26.25 21.88 30.98 3.73.28-1.28.45-2.39.45-3.73V109.9c0-18.17-26.25-21.89-30.98-3.73-.28 1.28-.45 2.39-.45 3.73v31.43zm0-94.27c0 18.17 26.25 21.89 30.98 3.73.28-1.28.45-2.39.45-3.73V15.63c0-18.17-26.25-21.88-30.98-3.73-.28 1.29-.45 2.39-.45 3.73v31.43zM1.33 392.11 178.79 16.12c2.46-5.21 8.7-7.45 13.91-4.99 3.78 1.78 5.99 5.54 5.99 9.45l.04 376.63c0 5.78-4.7 10.48-10.48 10.48H10.48c-5.79 0-10.48-4.7-10.48-10.48 0-1.85.48-3.59 1.33-5.1zm483.72-5.37L334.26 67.26v319.48h150.79z" ></PathIcon>
-                                        </MenuFlyoutItem.Icon>
-                                        <MenuFlyoutItem.KeyboardAccelerators>
-                                            <KeyboardAccelerator Key="V" Modifiers="Menu" />
-                                        </MenuFlyoutItem.KeyboardAccelerators>
-                                    </MenuFlyoutItem>
-                                </MenuFlyout>
-                            </AppBarButton.Flyout>
-                        </AppBarButton>
-                    </CommandBar.PrimaryCommands>
-                </CommandBar>
-
+                    <CommandBar Grid.Column="2" DefaultLabelPosition="Right" HorizontalAlignment="Right" IsDynamicOverflowEnabled="false">
+                        <CommandBar.PrimaryCommands>
+                            <AppBarButton Width="45" LabelPosition="Collapsed" Click="ButtonSwitchThemeLight_Click" x:Name="ButtonSwitchThemeLight" x:FieldModifier="public">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE706;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton Width="45" LabelPosition="Collapsed" Click="ButtonSwitchThemeDark_Click" x:Name="ButtonSwitchThemeDark" x:FieldModifier="public">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE708;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton x:Name="ButtonImageTransform" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_MENU')}" Width="45" IsCompact="false" LabelPosition="Collapsed" IsEnabled="false">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE115;"></FontIcon>
+                                </AppBarButton.Icon>
+                                <AppBarButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem x:Name="ButtonImageTransformRotateLeft" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT')}" Click="ButtonImageRotateLeft_Click" IsEnabled="false">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon FlowDirection="RightToLeft" Glyph="&#xE7AD;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="Left" Modifiers="Menu" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="ButtonImageTransformRotateRight" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT')}" Click="ButtonImageRotateRight_Click" IsEnabled="false">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE7AD;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="Right" Modifiers="Menu" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem x:Name="ButtonImageTransformFlipHorizontal" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ')}" Click="ButtonImageFlipHorizontal_Click" IsEnabled="false">
+                                            <MenuFlyoutItem.Icon>
+                                                <PathIcon Data="m72.21 334.61 319.82 150.95V334.61H72.21zm-56.56-94.06c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h19.23c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45H15.65zm82.14 0c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.46c18.19 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45H97.79zm94.37 0c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.45c18.2 0 21.92-26.27 3.74-31.01-1.28-.28-2.39-.45-3.74-.45h-31.45zm94.37 0c-18.2 0-21.92 26.27-3.74 31.01 1.28.28 2.39.45 3.74.45h31.45c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45h-31.45zm94.36 0c-18.19 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.46c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45h-31.46zM21.02 178.98 397.41 1.33c1.51-.85 3.25-1.33 5.1-1.33C408.3 0 413 4.7 413 10.49v177.96c0 5.79-4.7 10.48-10.49 10.48H25.49c-3.92-.03-7.68-2.25-9.47-6.03-2.46-5.22-.22-11.46 5-13.92zm377.03 332.56L21.69 333.9c-3.91-1.53-6.69-5.33-6.69-9.78 0-5.79 4.7-10.48 10.49-10.48h377.02c5.79 0 10.49 4.69 10.49 10.48v177.95c-.02 1.5-.35 3.02-1.03 4.47-2.46 5.22-8.7 7.46-13.92 5z" ></PathIcon>
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="H" Modifiers="Menu" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="ButtonImageTransformFlipVertical" x:FieldModifier="public" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT')}" Click="ButtonImageFlipVertical_Click" IsEnabled="false">
+                                            <MenuFlyoutItem.Icon>
+                                                <PathIcon Data="M333.55 16.79 511 392.75c2.46 5.22.22 11.45-4.99 13.91-1.45.68-2.97 1.01-4.46 1l-177.77.03c-5.78 0-10.47-4.7-10.47-10.48V20.58c0-5.78 4.69-10.47 10.47-10.47 4.44 0 8.25 2.77 9.77 6.68zM240.3 402.16c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-9.45c0-18.18-26.25-21.89-30.98-3.74-.28 1.29-.45 2.4-.45 3.74v9.45zm0-72.3c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-31.42c0-18.18-26.25-21.89-30.98-3.74-.28 1.29-.45 2.4-.45 3.74v31.42zm0-94.27c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-31.42c0-18.18-26.25-21.89-30.98-3.73-.28 1.28-.45 2.39-.45 3.73v31.42zm0-94.26c0 18.17 26.25 21.88 30.98 3.73.28-1.28.45-2.39.45-3.73V109.9c0-18.17-26.25-21.89-30.98-3.73-.28 1.28-.45 2.39-.45 3.73v31.43zm0-94.27c0 18.17 26.25 21.89 30.98 3.73.28-1.28.45-2.39.45-3.73V15.63c0-18.17-26.25-21.88-30.98-3.73-.28 1.29-.45 2.39-.45 3.73v31.43zM1.33 392.11 178.79 16.12c2.46-5.21 8.7-7.45 13.91-4.99 3.78 1.78 5.99 5.54 5.99 9.45l.04 376.63c0 5.78-4.7 10.48-10.48 10.48H10.48c-5.79 0-10.48-4.7-10.48-10.48 0-1.85.48-3.59 1.33-5.1zm483.72-5.37L334.26 67.26v319.48h150.79z" ></PathIcon>
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="V" Modifiers="Menu" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </AppBarButton.Flyout>
+                            </AppBarButton>
+                        </CommandBar.PrimaryCommands>
+                    </CommandBar>
+                </Grid>
             </Grid>
         </Grid>
-    </Grid>
+    </Page>
 </Window>
