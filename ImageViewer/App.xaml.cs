@@ -1,5 +1,4 @@
 ﻿using Microsoft.UI.Xaml;
-
 using WinUIEx;
 
 namespace ImageViewer
@@ -37,23 +36,37 @@ namespace ImageViewer
             InitializeComponent();
         }
 
+        public static ElementTheme CurrentTheme
+        {
+            get
+            {
+                ElementTheme theme_settings = Settings.Theme;
+
+                if(theme_settings == ElementTheme.Default)
+                {
+                    theme_settings = ThemeHelpers.GetAppTheme();
+                }
+
+                return theme_settings;
+            }
+        }
+
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            MainWindow m_window = new();
+            MainWindow m_window = new(CurrentTheme);
             WindowManager manager = WindowManager.Get(m_window);
 
             _ = new Culture();
 
             Context.Instance().Manager = manager;
+            Context.Instance().Manager.MinWidth = 680;
+            Context.Instance().Manager.MinHeight = 400;
             Context.Instance().MainWindow = m_window;
-            Context.Instance().MainWindow.Activate();
             Context.Instance().LoadDefaultImage();
 
             m_window.SetWindowSize(1280, 768);
             m_window.CenterOnScreen();
-
-            Context.Instance().Manager.MinWidth = 680;
-            Context.Instance().Manager.MinHeight = 400;
+            m_window.Activate();
         }
     }
 }

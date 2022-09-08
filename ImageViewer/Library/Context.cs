@@ -55,6 +55,11 @@ namespace ImageViewer
             _Instance = this;
         }
 
+        public void ChangeTheme(ElementTheme theme)
+        {
+            MainWindow.UpdateTheme(theme);
+        }
+
         /// <summary>
         /// Check if file can be open.
         /// </summary>
