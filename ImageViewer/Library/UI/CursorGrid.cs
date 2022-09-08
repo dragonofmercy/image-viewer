@@ -3,9 +3,9 @@ using Microsoft.UI.Xaml.Controls;
 
 using Windows.UI.Core;
 
-namespace ImageViewer
+namespace ImageViewer.UI
 {
-    public class CustomGrid : Grid
+    public class CursorGrid : Grid
     {
         public void SetCursor(CoreCursor cursor)
         {
