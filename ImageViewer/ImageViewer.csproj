@@ -13,20 +13,25 @@
         <StartupObject>ImageViewer.Startup</StartupObject>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <AssemblyName>ImageViewer</AssemblyName>
-		<Title>Image Viewer</Title>
-		<Product>Image Viewer</Product>
+        <Description>Image Viewer for Windows 11</Description>
 		<Company>Dragon Industries</Company>
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
+		<AssemblyVersion>1.0.0</AssemblyVersion>
+		<Copyright>Dragon Industries 2022</Copyright>
+		<FileVersion>1.22.9.8</FileVersion>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      <DebugType>portable</DebugType>
+      <AssemblyName>ImageViewer.Debug</AssemblyName>
+      <AssemblyTitle>Image Viewer (debug)</AssemblyTitle>
+      <Product>Image Viewer (debug)</Product>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      <DebugType>portable</DebugType>
+      <AssemblyName>ImageViewer</AssemblyName>
+      <AssemblyTitle>Image Viewer</AssemblyTitle>
+      <Product>Image Viewer</Product>
     </PropertyGroup>
 	
     <ItemGroup>
