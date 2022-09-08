@@ -556,6 +556,14 @@ namespace ImageViewer
         }
 
         /// <summary>
+        /// Get product version
+        /// </summary>
+        public static string GetProductVersion()
+        {
+            return FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).ProductVersion;
+        }
+
+        /// <summary>
         /// Get a human readable byte value.
         /// </summary>
         public static string HumanizeBytes(double bytes)
