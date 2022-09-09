@@ -241,7 +241,7 @@ namespace ImageViewer
 
             dict[ImageInfos.FileName] = Path.GetFileName(CurrentFilePath);
             dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString();
-            dict[ImageInfos.ImageDimensions] = String.Concat(CurrentImage.Width, " x ", CurrentImage.Height);
+            dict[ImageInfos.ImageDimensions] = string.Concat(CurrentImage.Width, " x ", CurrentImage.Height);
             dict[ImageInfos.ImageSize] = HumanizeBytes(fileinfo.Length);
             dict[ImageInfos.FolderPath] = Path.GetDirectoryName(CurrentFilePath);
             dict[ImageInfos.ImageDpi] = string.Concat(Math.Round(CurrentImage.HorizontalResolution, 2).ToString(), " dpi");
