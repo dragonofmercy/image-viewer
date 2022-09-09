@@ -258,7 +258,12 @@ namespace ImageViewer
             {
                 if(CurrentFilePath != null)
                 {
-                    File.Delete(CurrentFilePath);
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                        CurrentFilePath, 
+                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, 
+                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin
+                    );
+
                     CurrentFilePath = null;
                     FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
                 }
