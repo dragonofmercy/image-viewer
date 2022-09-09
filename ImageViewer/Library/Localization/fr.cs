@@ -26,11 +26,11 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_MENU_ABOUT", "A propos" },
                 { "FOOTER_TOOLBAR_MENU_QUIT", "Quitter" },
 
-                { "FOOTER_TOOLBAR_IMAGE_ADJUST", "Ajuster l'image" },
-                { "FOOTER_TOOLBAR_IMAGE_ZOOM_100", "Zoomer à 100%" },
+                { "FOOTER_TOOLBAR_IMAGE_ADJUST", "Faire un zoom pour ajuster" },
+                { "FOOTER_TOOLBAR_IMAGE_ZOOM_100", "Zoom en taille réelle" },
                 { "FOOTER_TOOLBAR_IMAGE_PREVIOUS", "Image précédente" },
-                { "FOOTER_TOOLBAR_IMAGE_ZOOM_IN", "Zoomer" },
-                { "FOOTER_TOOLBAR_IMAGE_ZOOM_OUT", "Dézoomer" },
+                { "FOOTER_TOOLBAR_IMAGE_ZOOM_IN", "Zoom avant" },
+                { "FOOTER_TOOLBAR_IMAGE_ZOOM_OUT", "Zoom arrière" },
                 { "FOOTER_TOOLBAR_IMAGE_NEXT", "Image suivante" },
 
                 { "FOOTER_TOOLBAR_TRANSFORM_MENU", "Transformation de l'image" },

@@ -26,8 +26,8 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_MENU_ABOUT", "About" },
                 { "FOOTER_TOOLBAR_MENU_QUIT", "Quit" },
 
-                { "FOOTER_TOOLBAR_IMAGE_ADJUST", "Fit image" },
-                { "FOOTER_TOOLBAR_IMAGE_ZOOM_100", "Zoom to 100%" },
+                { "FOOTER_TOOLBAR_IMAGE_ADJUST", "Zoom to fit" },
+                { "FOOTER_TOOLBAR_IMAGE_ZOOM_100", "Zoom to actual size" },
                 { "FOOTER_TOOLBAR_IMAGE_PREVIOUS", "Previous image" },
                 { "FOOTER_TOOLBAR_IMAGE_ZOOM_IN", "Zoom in" },
                 { "FOOTER_TOOLBAR_IMAGE_ZOOM_OUT", "Zoom out" },
