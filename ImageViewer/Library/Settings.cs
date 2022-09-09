@@ -12,8 +12,15 @@ namespace ImageViewer
         {
             get
             {
-                int theme = (int)Registry.GetValue(HkeyAppPath, HValueAppTheme, ElementTheme.Default);
-                return (ElementTheme)theme;
+                if(Registry.GetValue(HkeyAppPath, HValueAppTheme, ElementTheme.Default) != null)
+                {
+                    int theme = (int)Registry.GetValue(HkeyAppPath, HValueAppTheme, ElementTheme.Default);
+                    return (ElementTheme)theme;
+                }
+                else
+                {
+                    return ElementTheme.Default;
+                }
             }
 
             set
