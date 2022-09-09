@@ -8,6 +8,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Windowing;
 
 using Windows.UI.Core;
@@ -27,7 +28,6 @@ namespace ImageViewer
         public const int KEYEVENTF_KEYUP = 0x0002;          // Key up flag
         public const int VK_LCONTROL = 0xA2;                // Left Control key code
 
-        private readonly AppWindow m_AppWindow;
         private Point LastMousePoint;
         private bool ZoomKeyDownState = false;
         private bool ScrollViewMouseDrag = false;
@@ -38,11 +38,47 @@ namespace ImageViewer
         public MainWindow(ElementTheme theme)
         {
             InitializeComponent();
+            CustomizeAppBar();
             UpdateTheme(theme);
+            UpdateTitle();
+        }
 
-            m_AppWindow = GetAppWindowForCurrentWindow();
+        private void CustomizeAppBar()
+        {
+            AppWindow m_AppWindow = GetAppWindowForCurrentWindow();
             m_AppWindow.SetIcon("ImageViewer.ico");
-            m_AppWindow.Title = Context.GetProductName();
+
+            if(AppWindowTitleBar.IsCustomizationSupported())
+            {
+                AppWindowTitleBar title_bar = m_AppWindow.TitleBar;
+                title_bar.ExtendsContentIntoTitleBar = true;
+                title_bar.PreferredHeightOption = TitleBarHeightOption.Tall;
+
+                RedrawTitleBar();
+            }
+            else
+            {
+                AppTitleBar.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        public void RedrawTitleBar()
+        {
+            if(AppWindowTitleBar.IsCustomizationSupported())
+            {
+                string theme_name = MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
+                ResourceDictionary resource_theme = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[theme_name];
+                AppWindowTitleBar title_bar = GetAppWindowForCurrentWindow().TitleBar;
+
+                title_bar.ButtonBackgroundColor = title_bar.ButtonInactiveBackgroundColor = (resource_theme["TitleBarButtonBackground"] as SolidColorBrush).Color;
+                title_bar.ButtonForegroundColor = title_bar.ButtonInactiveForegroundColor = (resource_theme["TitleBarButtonForeground"] as SolidColorBrush).Color;
+
+                title_bar.ButtonHoverBackgroundColor = (resource_theme["TitleBarButtonHoverBackground"] as SolidColorBrush).Color;
+                title_bar.ButtonHoverForegroundColor = (resource_theme["TitleBarButtonHoverForeground"] as SolidColorBrush).Color;
+
+                title_bar.ButtonPressedBackgroundColor = (resource_theme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
+                title_bar.ButtonPressedForegroundColor = (resource_theme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
+            }
         }
 
         public void UpdateTheme(ElementTheme theme)
@@ -68,18 +104,22 @@ namespace ImageViewer
                 ButtonSwitchThemeLight.IsEnabled = false;
                 ButtonSwitchThemeLight.Visibility = Visibility.Collapsed;
             }
+
+            RedrawTitleBar();
         }
 
         public void UpdateTitle(string prefix = null)
         {
             if(string.IsNullOrEmpty(prefix))
             {
-                m_AppWindow.Title = Context.GetProductName();
+                Title = Context.GetProductName();
             }
             else
             {
-                m_AppWindow.Title = string.Concat(prefix, " - ", Context.GetProductName());
+                Title = string.Concat(prefix, " - ", Context.GetProductName());
             }
+
+            AppTitleBarText.Text = Title;
         }
 
         private AppWindow GetAppWindowForCurrentWindow()

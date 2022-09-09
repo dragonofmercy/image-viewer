@@ -13,13 +13,23 @@
                 <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="Window_Paste" />
             </Grid.KeyboardAccelerators>
             <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
                 <RowDefinition Height="48" />
             </Grid.RowDefinitions>
-            <SplitView Grid.Row="1" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="CompactInline" CompactPaneLength="0" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
+            <Grid x:Name="AppTitleBar" x:FieldModifier="public" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AppBarBackgroundBrush}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="144" />
+                </Grid.ColumnDefinitions>
+                <Image Grid.Column="0" Source="ImageViewer.ico" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16" Margin="16,0" />
+                <TextBlock Grid.Column="1" x:Name="AppTitleBarText" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+            </Grid>
+            <SplitView Grid.Row="2" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="CompactInline" CompactPaneLength="0" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
                 <SplitView.Pane>
-                    <StackPanel Orientation="Vertical" Padding="16" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                    <StackPanel Orientation="Vertical" Padding="16" BorderThickness="1,0,0,0" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -59,7 +69,7 @@
                         </StackPanel>
                     </StackPanel>
                 </SplitView.Pane>
-                <Controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource SolidBackgroundFillColorSecondary }">
+                <Controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
                     <ScrollViewer 
                             PointerMoved="ScrollView_PointerMoved"
                             PointerExited="ScrollView_PointerExited" 
@@ -83,7 +93,7 @@
                     <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
                 </Controls:CursorGrid>
             </SplitView>
-            <Grid Grid.Row="2" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+            <Grid Grid.Row="3" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -207,7 +217,7 @@
                             </AppBarButton>
                             <AppBarButton x:Name="ButtonImageTransform" x:FieldModifier="public" Label="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_MENU')}" Width="45" IsCompact="false" LabelPosition="Collapsed" IsEnabled="false">
                                 <AppBarButton.Icon>
-                                    <FontIcon Glyph="&#xE115;"></FontIcon>
+                                    <FontIcon Glyph="&#xE115;" />
                                 </AppBarButton.Icon>
                                 <AppBarButton.Flyout>
                                     <MenuFlyout>

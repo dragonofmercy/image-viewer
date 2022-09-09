@@ -14,6 +14,28 @@
                         <Setter Property="MirroredWhenRightToLeft" Value="True" />
                     </Style>
                 </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#1a202f" />
+                    <SolidColorBrush x:Key="AppBarBorderBrush" Color="#1d1d1d" />
+                    <SolidColorBrush x:Key="TitleBarButtonBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TitleBarButtonForeground" Color="White" />
+                    <SolidColorBrush x:Key="TitleBarButtonHoverBackground" Color="#32363f" />
+                    <SolidColorBrush x:Key="TitleBarButtonHoverForeground" Color="White" />
+                    <SolidColorBrush x:Key="TitleBarButtonPressedBackground" Color="#494d55" />
+                    <SolidColorBrush x:Key="TitleBarButtonPressedForeground" Color="White" />
+                    <SolidColorBrush x:Key="ImageViewContainerBackground" Color="#2b2c31" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#f0f3f9" />
+                    <SolidColorBrush x:Key="AppBarBorderBrush" Color="#dde0e5" />
+                    <SolidColorBrush x:Key="TitleBarButtonBackground" Color="{ThemeResource ButtonBackgroundThemeBrush}" />
+                    <SolidColorBrush x:Key="TitleBarButtonForeground" Color="{ThemeResource ButtonForegroundThemeBrush}" />
+                    <SolidColorBrush x:Key="TitleBarButtonHoverBackground" Color="#dbdbdb" />
+                    <SolidColorBrush x:Key="TitleBarButtonHoverForeground" Color="{ThemeResource ButtonForegroundThemeBrush}" />
+                    <SolidColorBrush x:Key="TitleBarButtonPressedBackground" Color="#c0c2c7" />
+                    <SolidColorBrush x:Key="TitleBarButtonPressedForeground" Color="{ThemeResource ButtonForegroundThemeBrush}" />
+                    <SolidColorBrush x:Key="ImageViewContainerBackground" Color="#ffffff" />
+                </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>
