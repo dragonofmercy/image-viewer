@@ -174,6 +174,7 @@ namespace ImageViewer
             CurrentFilePath = null;
             MemoryOnly = true;
 
+            MainWindow.SplitViewContainer.IsPaneOpen = false;
             LoadBitmap(await clipboard.OpenReadAsync());
             LoadImageView(false);
 
