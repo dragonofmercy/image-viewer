@@ -16,5 +16,12 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 4. Wait for nuget requirements to download
 5. Build the project
 
+## How to run
+
+1. Download and install .NET 6.0 Desktop Runtime (v6.0.8) from Microsoft:   
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.8-windows-x64-installer
+2. Download and install Windows AppRuntime from Microsoft:   
+https://aka.ms/windowsappsdk/1.1/1.1.4/windowsappruntimeinstall-x64.exe
+
 ## Credits
 Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
