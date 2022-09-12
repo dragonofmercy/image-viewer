@@ -172,7 +172,12 @@ namespace ImageViewer
 
         private void ButtonQuit_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Exit();
+            Close();
+        }
+
+        private void Window_Closed(object sender, WindowEventArgs args)
+        {
+            Environment.Exit(0);
         }
 
         private void ButtonFileInfo_Click(object sender, RoutedEventArgs e)
