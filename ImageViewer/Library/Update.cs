@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -10,11 +10,6 @@ namespace ImageViewer
     internal class Update
     {
         const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
-
-        public static string GetCurrentVersion()
-        {
-            return System.Reflection.Assembly.GetExecutingAssembly().ImageRuntimeVersion;
-        }
 
         public static async Task<string> GetRemoteVersion()
         {
