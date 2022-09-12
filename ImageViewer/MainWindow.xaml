@@ -6,9 +6,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:ImageViewer"
     xmlns:Controls="using:ImageViewer.UI"
-    mc:Ignorable="d">
+    mc:Ignorable="d" Closed="Window_Closed">
     <Page x:Name="MainPage">
-        <Grid SizeChanged="Grid_SizeChanged" KeyboardAcceleratorPlacementMode="Hidden">
+        <Grid SizeChanged="Grid_SizeChanged" x:Name="MainLayout" KeyboardAcceleratorPlacementMode="Hidden">
             <Grid.KeyboardAccelerators>
                 <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="Window_Paste" />
             </Grid.KeyboardAccelerators>
@@ -37,7 +37,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_INFO')}" />
                             <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="ButtonFileInfoClose_Click">
-                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe894;" />
+                                <FontIcon Glyph="&#xe894;" />
                             </HyperlinkButton>
                         </Grid>
                         <StackPanel Orientation="Horizontal" Margin="0,8">
