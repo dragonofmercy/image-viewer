@@ -59,6 +59,7 @@ namespace ImageViewer
             else
             {
                 AppTitleBar.Visibility = Visibility.Collapsed;
+                MainLayout.RowDefinitions[0].Height = GridLength.Auto;
             }
         }
 
