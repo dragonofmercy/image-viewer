@@ -12,11 +12,11 @@ namespace ImageViewer
         public Culture()
         {
             Language = Windows.System.UserProfile.GlobalizationPreferences.Languages[0].Split('-')[0];
-            string tmp_classname = string.Concat("ImageViewer.Localization.", char.ToUpper(Language[0]) + Language[1..]);
+            string classname = string.Concat("ImageViewer.Localization.", char.ToUpper(Language[0]) + Language[1..]);
 
-            if(Type.GetType(tmp_classname) != null)
+            if(Type.GetType(classname) != null)
             {
-                Class = Type.GetType(tmp_classname);
+                Class = Type.GetType(classname);
             }
             else
             {

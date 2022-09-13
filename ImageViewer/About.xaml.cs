@@ -24,10 +24,10 @@ namespace ImageViewer
 
         private async void CheckRemoteVersion()
         {
-            string remote_version = await Update.GetRemoteVersion();
-            TextRemoteVersion.Text = remote_version;
+            string remoteVersion = await Update.GetRemoteVersion();
+            TextRemoteVersion.Text = remoteVersion;
 
-            if(string.Compare(remote_version, Update.GetCurrentVersion(), StringComparison.InvariantCulture) > 0)
+            if(string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
             {
                 ButtonUpdate.IsEnabled = true;
             }
@@ -36,6 +36,11 @@ namespace ImageViewer
         private void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
             Dialog.Hide();
+        }
+
+        private void ButtonUpdate_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

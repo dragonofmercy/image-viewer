@@ -27,7 +27,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Button Content="{ x:Bind local:Culture.GetString('ABOUT_BTN_UPDATE') }" x:Name="ButtonUpdate" HorizontalAlignment="Stretch" Grid.Column="0" Margin="0,0,10,0" Style="{ ThemeResource AccentButtonStyle }" IsEnabled="False" />
+            <Button Content="{ x:Bind local:Culture.GetString('ABOUT_BTN_UPDATE') }" Click="ButtonUpdate_Click" x:Name="ButtonUpdate" HorizontalAlignment="Stretch" Grid.Column="0" Margin="0,0,10,0" Style="{ ThemeResource AccentButtonStyle }" IsEnabled="False" />
             <Button Content="{ x:Bind local:Culture.GetString('ABOUT_BTN_CLOSE') }" Click="ButtonClose_Click" HorizontalAlignment="Stretch" Grid.Column="1" Margin="10,0,0,0" />
         </Grid>
     </StackPanel>

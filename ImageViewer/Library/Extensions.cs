@@ -30,9 +30,9 @@ namespace ImageViewer
         public static void SaveJpeg(this Bitmap original, string filepath, byte quality)
         {
             ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().Where(s => s.FormatID == ImageFormat.Jpeg.Guid).First();
-            EncoderParameters encoder_parameters = new(1);
-            encoder_parameters.Param[0] = new EncoderParameter(Encoder.Quality, Convert.ToInt64(quality));
-            original.Save(filepath, encoder, encoder_parameters);
+            EncoderParameters encoderParameters = new(1);
+            encoderParameters.Param[0] = new EncoderParameter(Encoder.Quality, Convert.ToInt64(quality));
+            original.Save(filepath, encoder, encoderParameters);
         }
     }
 

@@ -156,11 +156,11 @@ namespace ImageViewer
             }
 
             InitializeWithWindow.Initialize(OpenFilePicker, WindowNative.GetWindowHandle(MainWindow));
-            StorageFile selected_file = await OpenFilePicker.PickSingleFileAsync();
+            StorageFile selectedFile = await OpenFilePicker.PickSingleFileAsync();
 
-            if(selected_file != null && CheckFileExtension(selected_file.Path))
+            if(selectedFile != null && CheckFileExtension(selectedFile.Path))
             {
-                CurrentFilePath = selected_file.Path;
+                CurrentFilePath = selectedFile.Path;
                 MemoryOnly = false;
 
                 LoadBitmap();
@@ -313,10 +313,10 @@ namespace ImageViewer
         {
             if(CurrentImage == null) return;
 
-            float zoom_factor = GetAdjustedZoomFactor();
+            float zoomFactor = GetAdjustedZoomFactor();
 
-            MainWindow.ScrollView.ChangeView(0, 0, zoom_factor, true);
-            MainWindow.ScrollView.ZoomToFactor(zoom_factor);
+            MainWindow.ScrollView.ChangeView(0, 0, zoomFactor, true);
+            MainWindow.ScrollView.ZoomToFactor(zoomFactor);
         }
 
         /// <summary>
@@ -324,19 +324,19 @@ namespace ImageViewer
         /// </summary>
         public float GetAdjustedZoomFactor()
         {
-            float zoom_factor = 1;
+            float zoomFactor = 1;
 
-            if(CurrentImage == null) return zoom_factor;
+            if(CurrentImage == null) return zoomFactor;
 
             if(CurrentImage.Height > MainWindow.ImageContainer.ActualHeight || CurrentImage.Width > MainWindow.ImageContainer.ActualWidth)
             {
-                double zoom_factory_h = MainWindow.ImageContainer.ActualHeight / CurrentImage.Height;
-                double zoom_factory_w = MainWindow.ImageContainer.ActualWidth / CurrentImage.Width;
+                double zoomFactorH = MainWindow.ImageContainer.ActualHeight / CurrentImage.Height;
+                double zoomFactorW = MainWindow.ImageContainer.ActualWidth / CurrentImage.Width;
 
-                zoom_factor = (float)((zoom_factory_h < zoom_factory_w) ? zoom_factory_h : zoom_factory_w);
+                zoomFactor = (float)((zoomFactorH < zoomFactorW) ? zoomFactorH : zoomFactorW);
             }
 
-            return zoom_factor;
+            return zoomFactor;
         }
 
         /// <summary>
@@ -422,26 +422,26 @@ namespace ImageViewer
             SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_WEBP"), new List<string>() { ".webp" });
 
             InitializeWithWindow.Initialize(SaveFilePicker, WindowNative.GetWindowHandle(MainWindow));
-            StorageFile output_file = await SaveFilePicker.PickSaveFileAsync();
+            StorageFile outputFile = await SaveFilePicker.PickSaveFileAsync();
 
-            if(output_file != null)
+            if(outputFile != null)
             {
                 if(CurrentImage != null)
                 {
-                    switch(output_file.FileType)
+                    switch(outputFile.FileType)
                     {
                         case ".jpg":
-                            CurrentImage.SaveJpeg(output_file.Path, 100);
+                            CurrentImage.SaveJpeg(outputFile.Path, 100);
                             break;
 
                         case ".png":
-                            CurrentImage.Save(output_file.Path, ImageFormat.Png);
+                            CurrentImage.Save(outputFile.Path, ImageFormat.Png);
                             break;
 
                         case ".webp":
                             using(Wrapper.WebP webp = new())
                             {
-                                webp.Save(CurrentImage, output_file.Path, 100);
+                                webp.Save(CurrentImage, outputFile.Path, 100);
                             }
                             break;
                         default:
@@ -487,26 +487,26 @@ namespace ImageViewer
         /// </summary>
         private void LoadImageView(bool UseUriSource = true)
         {
-            BitmapImage bitmap_image = new()
+            BitmapImage bitmapImage = new()
             {
                 CreateOptions = BitmapCreateOptions.IgnoreImageCache
             };
-            bitmap_image.ImageOpened += CurrentImage_ImageOpened;
-            bitmap_image.ImageFailed += CurrentImage_ImageFailed;
+            bitmapImage.ImageOpened += CurrentImage_ImageOpened;
+            bitmapImage.ImageFailed += CurrentImage_ImageFailed;
 
             if(UseUriSource)
             {
-                bitmap_image.UriSource = new(CurrentFilePath);
+                bitmapImage.UriSource = new(CurrentFilePath);
             }
             else
             {
                 using MemoryStream memory = new();
                 CurrentImage.Save(memory, ImageFormat.Png);
                 memory.Position = 0;
-                bitmap_image.SetSource(memory.AsRandomAccessStream());
+                bitmapImage.SetSource(memory.AsRandomAccessStream());
             }
             
-            MainWindow.ImageView.Source = bitmap_image;
+            MainWindow.ImageView.Source = bitmapImage;
         }
 
         /// <summary>

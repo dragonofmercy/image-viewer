@@ -45,14 +45,14 @@ namespace ImageViewer
 
         private void CustomizeAppBar()
         {
-            AppWindow m_AppWindow = GetAppWindowForCurrentWindow();
-            m_AppWindow.SetIcon("ImageViewer.ico");
+            AppWindow mAppWindow = GetAppWindowForCurrentWindow();
+            mAppWindow.SetIcon("ImageViewer.ico");
 
             if(AppWindowTitleBar.IsCustomizationSupported())
             {
-                AppWindowTitleBar title_bar = m_AppWindow.TitleBar;
-                title_bar.ExtendsContentIntoTitleBar = true;
-                title_bar.PreferredHeightOption = TitleBarHeightOption.Tall;
+                AppWindowTitleBar windowTitleBar = mAppWindow.TitleBar;
+                windowTitleBar.ExtendsContentIntoTitleBar = true;
+                windowTitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
                 RedrawTitleBar();
             }
@@ -67,18 +67,18 @@ namespace ImageViewer
         {
             if(AppWindowTitleBar.IsCustomizationSupported())
             {
-                string theme_name = MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
-                ResourceDictionary resource_theme = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[theme_name];
-                AppWindowTitleBar title_bar = GetAppWindowForCurrentWindow().TitleBar;
+                string themeName = MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
+                ResourceDictionary resourceTheme = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeName];
+                AppWindowTitleBar windowTitleBar = GetAppWindowForCurrentWindow().TitleBar;
 
-                title_bar.ButtonBackgroundColor = title_bar.ButtonInactiveBackgroundColor = (resource_theme["TitleBarButtonBackground"] as SolidColorBrush).Color;
-                title_bar.ButtonForegroundColor = title_bar.ButtonInactiveForegroundColor = (resource_theme["TitleBarButtonForeground"] as SolidColorBrush).Color;
+                windowTitleBar.ButtonBackgroundColor = windowTitleBar.ButtonInactiveBackgroundColor = (resourceTheme["TitleBarButtonBackground"] as SolidColorBrush).Color;
+                windowTitleBar.ButtonForegroundColor = windowTitleBar.ButtonInactiveForegroundColor = (resourceTheme["TitleBarButtonForeground"] as SolidColorBrush).Color;
 
-                title_bar.ButtonHoverBackgroundColor = (resource_theme["TitleBarButtonHoverBackground"] as SolidColorBrush).Color;
-                title_bar.ButtonHoverForegroundColor = (resource_theme["TitleBarButtonHoverForeground"] as SolidColorBrush).Color;
+                windowTitleBar.ButtonHoverBackgroundColor = (resourceTheme["TitleBarButtonHoverBackground"] as SolidColorBrush).Color;
+                windowTitleBar.ButtonHoverForegroundColor = (resourceTheme["TitleBarButtonHoverForeground"] as SolidColorBrush).Color;
 
-                title_bar.ButtonPressedBackgroundColor = (resource_theme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
-                title_bar.ButtonPressedForegroundColor = (resource_theme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
+                windowTitleBar.ButtonPressedBackgroundColor = (resourceTheme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
+                windowTitleBar.ButtonPressedForegroundColor = (resourceTheme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
             }
         }
 
@@ -199,11 +199,11 @@ namespace ImageViewer
                 ImageContainer.SetCursor(new CoreCursor(CoreCursorType.Hand, 0));
                 PointerPoint point = e.GetCurrentPoint(ScrollView);
 
-                double delta_x = point.Position.X - LastMousePoint.X;
-                double delta_y = point.Position.Y - LastMousePoint.Y;
+                double deltaX = point.Position.X - LastMousePoint.X;
+                double deltaY = point.Position.Y - LastMousePoint.Y;
 
-                ScrollView.ScrollToHorizontalOffset(ScrollView.HorizontalOffset - delta_x);
-                ScrollView.ScrollToVerticalOffset(ScrollView.VerticalOffset - delta_y);
+                ScrollView.ScrollToHorizontalOffset(ScrollView.HorizontalOffset - deltaX);
+                ScrollView.ScrollToVerticalOffset(ScrollView.VerticalOffset - deltaY);
 
                 LastMousePoint = point.Position;
             }
@@ -316,13 +316,13 @@ namespace ImageViewer
 
         private async void ButtonAbout_Click(object sender, RoutedEventArgs e)
         {
-            ContentDialog about_dialog = new()
+            ContentDialog dialogAbout = new()
             {
                 XamlRoot = Content.XamlRoot
             };
-            about_dialog.Content = new About(about_dialog);
-            about_dialog.RequestedTheme = MainPage.ActualTheme;
-            await about_dialog.ShowAsync();
+            dialogAbout.Content = new About(dialogAbout);
+            dialogAbout.RequestedTheme = MainPage.ActualTheme;
+            await dialogAbout.ShowAsync();
         }
 
         private void ButtonSwitchThemeDark_Click(object sender, RoutedEventArgs e)

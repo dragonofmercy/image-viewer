@@ -40,14 +40,14 @@ namespace ImageViewer
         {
             get
             {
-                ElementTheme theme_settings = Settings.Theme;
+                ElementTheme themeSettings = Settings.Theme;
 
-                if(theme_settings == ElementTheme.Default)
+                if(themeSettings == ElementTheme.Default)
                 {
-                    theme_settings = ThemeHelpers.GetAppTheme();
+                    themeSettings = ThemeHelpers.GetAppTheme();
                 }
 
-                return theme_settings;
+                return themeSettings;
             }
         }
 

@@ -14,7 +14,7 @@ namespace ImageViewer
         public static async Task<string> GetRemoteVersion()
         {
             HttpClient client = new();
-            JsonDocument response_json;
+            JsonDocument responseJson;
             HttpResponseMessage response;
 
             try
@@ -35,13 +35,14 @@ namespace ImageViewer
 
             try
             {
-                response_json = await response.Content.ReadFromJsonAsync<JsonDocument>();
-                JsonElement response_root = response_json.RootElement;
+                responseJson = await response.Content.ReadFromJsonAsync<JsonDocument>();
+                JsonElement response_root = responseJson.RootElement;
 
                 return response_root.GetProperty("tag_name").GetString();
             }
-            catch(Exception)
+            catch(Exception e)
             {
+                Debug.WriteLine(e.Message);
                 return "0.0.0";
             }
         }
