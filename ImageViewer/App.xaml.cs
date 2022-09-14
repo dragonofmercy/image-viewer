@@ -1,4 +1,7 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System;
+using System.Diagnostics;
+
+using Microsoft.UI.Xaml;
 using WinUIEx;
 
 namespace ImageViewer
@@ -51,20 +54,80 @@ namespace ImageViewer
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            MainWindow m_window = new(CurrentTheme);
-            WindowManager manager = WindowManager.Get(m_window);
-
-            _ = new Culture();
+            MainWindow mWindow = new(CurrentTheme);
+            WindowManager manager = WindowManager.Get(mWindow);
 
             Context.Instance().Manager = manager;
-            Context.Instance().Manager.MinWidth = 680;
-            Context.Instance().Manager.MinHeight = 400;
-            Context.Instance().MainWindow = m_window;
-            Context.Instance().LoadDefaultImage();
+            Context.Instance().MainWindow = mWindow;
+            
+            manager.MinWidth = 680;
+            manager.MinHeight = 400;
+            manager.PositionChanged += Window_PositionChanged;
+            manager.WindowMessageReceived += Manager_WindowMessageReceived;
+            mWindow.SizeChanged += Window_SizeChanged;
+            
+            if(Settings.AppPositionX == null && Settings.AppPositionY == null)
+            {
+                mWindow.SetWindowSize(Settings.AppSizeW, Settings.AppSizeH);
+                mWindow.CenterOnScreen();
+            }
+            else
+            {
+                mWindow.MoveAndResize((double)Settings.AppPositionX, (double)Settings.AppPositionY, Settings.AppSizeW, Settings.AppSizeH);
+            }
 
-            m_window.SetWindowSize(1280, 768);
-            m_window.CenterOnScreen();
-            m_window.Activate();
+            switch(Settings.WindowState)
+            {
+                case WindowState.Maximized:
+                    mWindow.Maximize();
+                    break;
+
+                default:
+                    Settings.WindowState = WindowState.Normal;
+                    mWindow.Activate();
+                    break;
+            }
+
+            Context.Instance().LoadDefaultImage();
+        }
+
+        private void Manager_WindowMessageReceived(object sender, WinUIEx.Messaging.WindowMessageEventArgs e)
+        {
+            if(e.Message.MessageId == 0x0112) // WM_SYSCOMMAND
+            {
+                switch(e.Message.WParam)
+                {
+                    case 0xF120: // Restore event - SC_RESTORE from Winuser.h
+                        Settings.WindowState = WindowState.Normal;
+                        break;
+
+                    case 0xF030: // Maximize event - SC_MAXIMIZE from Winuser.h
+                        Settings.WindowState = WindowState.Maximized;
+                        break;
+
+                    case 0XF020: // Minimize event - SC_MINIMIZE from Winuser.h
+                        Settings.WindowState = WindowState.Minimized;
+                        break;
+                }
+            }
+        }
+
+        private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
+        {
+            if(Settings.WindowState == WindowState.Normal)
+            {
+                Settings.AppSizeH = (uint)args.Size.Height;
+                Settings.AppSizeW = (uint)args.Size.Width;
+            }
+        }
+
+        private void Window_PositionChanged(object sender, Windows.Graphics.PointInt32 e)
+        {
+            if(Settings.WindowState == WindowState.Normal)
+            {
+                Settings.AppPositionX = e.X;
+                Settings.AppPositionY = e.Y;
+            }
         }
     }
 }
