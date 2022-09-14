@@ -47,14 +47,6 @@ namespace ImageViewer
         public Bitmap CurrentImage { get; protected set; }
         public string CurrentFilePath { get; protected set; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public Context()
-        {
-            _Instance = this;
-        }
-
         public void ChangeTheme(ElementTheme theme)
         {
             MainWindow.UpdateTheme(theme);
@@ -591,6 +583,8 @@ namespace ImageViewer
         /// </summary>
         public static Context Instance()
         {
+            _Instance ??= new Context();
+
             return _Instance;
         }
     }

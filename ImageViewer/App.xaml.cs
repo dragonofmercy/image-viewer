@@ -15,10 +15,7 @@ namespace ImageViewer
         {
             XamlCheckProcessRequirements();
 
-            _ = new Context()
-            {
-                LaunchArgs = args
-            };
+            Context.Instance().LaunchArgs = args;
 
             global::WinRT.ComWrappersSupport.InitializeComWrappers();
             global::Microsoft.UI.Xaml.Application.Start((p) => {
@@ -34,6 +31,7 @@ namespace ImageViewer
         public App()
         {
             InitializeComponent();
+            Culture.Init();
         }
 
         public static ElementTheme CurrentTheme
