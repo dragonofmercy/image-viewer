@@ -16,7 +16,7 @@
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#1a202f" />
-                    <SolidColorBrush x:Key="AppBarBorderBrush" Color="#1d1d1d" />
+                    <SolidColorBrush x:Key="AppBarBorderBrush" Color="#32363f" />
                     <SolidColorBrush x:Key="TitleBarButtonBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="TitleBarButtonForeground" Color="White" />
                     <SolidColorBrush x:Key="TitleBarButtonHoverBackground" Color="#32363f" />
