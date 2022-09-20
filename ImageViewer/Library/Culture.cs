@@ -12,7 +12,7 @@ namespace ImageViewer
         public static void Init()
         {
             Language = Windows.System.UserProfile.GlobalizationPreferences.Languages[0].Split('-')[0];
-            string classname = string.Concat("ImageViewer.Localization.", char.ToUpper(Language[0]) + Language[1..]);
+            string classname = string.Concat("ImageViewer.Localization.", Language.UcFirst());
 
             if(Type.GetType(classname) != null)
             {

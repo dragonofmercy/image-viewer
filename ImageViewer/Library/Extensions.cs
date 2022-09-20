@@ -27,6 +27,11 @@ namespace ImageViewer
             return tmp.ToArray();
         }
 
+        public static string UcFirst(this string original)
+        {
+            return char.ToUpper(original[0]) + original[1..];
+        }
+
         public static void SaveJpeg(this Bitmap original, string filepath, byte quality)
         {
             ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().Where(s => s.FormatID == ImageFormat.Jpeg.Guid).First();
