@@ -18,8 +18,8 @@
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries 2022</Copyright>
-		<FileVersion>1.22.9.12</FileVersion>
-		<Version>0.0.2-beta</Version>
+		<FileVersion>1.22.9.26</FileVersion>
+		<Version>0.0.3-beta</Version>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
