@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 
 using Microsoft.UI;
@@ -23,17 +22,8 @@ namespace ImageViewer
 {
     public sealed partial class MainWindow : Window
     {
-        public const int KEYEVENTF_KEYDOWN = 0x0000;        // New definition
-        public const int KEYEVENTF_EXTENDEDKEY = 0x0001;    // Key down flag
-        public const int KEYEVENTF_KEYUP = 0x0002;          // Key up flag
-        public const int VK_LCONTROL = 0xA2;                // Left Control key code
-
         private Point LastMousePoint;
-        private bool ZoomKeyDownState = false;
         private bool ScrollViewMouseDrag = false;
-
-        [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
         public MainWindow(ElementTheme theme)
         {
@@ -177,6 +167,7 @@ namespace ImageViewer
 
         private void Window_Closed(object sender, WindowEventArgs args)
         {
+            VirtualKeyboard.ControlRelease();
             Environment.Exit(0);
         }
 
@@ -217,6 +208,8 @@ namespace ImageViewer
         {
             ImageContainer.SetCursor(new CoreCursor(CoreCursorType.Arrow, 0));
             ScrollViewMouseDrag = false;
+
+            VirtualKeyboard.ControlRelease();
         }
 
         private void ScrollView_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -245,10 +238,9 @@ namespace ImageViewer
 
         private void ScrollView_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
-            if(!ZoomKeyDownState)
+            if(!VirtualKeyboard.ControlPressed())
             {
-                keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN, 0);
-                ZoomKeyDownState = true;
+                VirtualKeyboard.ControlPress();
             }
         }
 
@@ -258,8 +250,7 @@ namespace ImageViewer
             
             if(!e.IsIntermediate)
             {
-                keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-                ZoomKeyDownState = false;
+                VirtualKeyboard.ControlRelease();
 
                 if(ScrollView.ZoomFactor == Context.Instance().GetAdjustedZoomFactor())
                 {
