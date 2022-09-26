@@ -1,4 +1,7 @@
 # Image Viewer for Windows 11
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://ko-fi.com/dragonofmercy)
+
 Simple image viewer for Windows 11
 
 ![](/documentation/assets/screen1.jpg)
@@ -25,3 +28,9 @@ https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe
 
 ## Credits
 Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
+
+## 
+
+If this project help you reduce time to develop, you can give me a cup of coffee :) 
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://ko-fi.com/dragonofmercy)
