@@ -33,4 +33,4 @@ Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
 
 If this project help to increase your productivity, you can give me a cup of coffee :) 
 
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://ko-fi.com/dragonofmercy)
+[![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
