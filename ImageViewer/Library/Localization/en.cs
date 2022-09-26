@@ -39,13 +39,21 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ", "Flip horizontal" },
                 { "FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT", "Flip vertical" },
 
-                { "ABOUT_REMOTE_VERSION_LABEL", "Last version:" },
-                { "ABOUT_REMOTE_VERSION_LOADING", "Loading..." },
-                { "ABOUT_REMOTE_VERSION_ERROR_NO_INTERNET", "No internet access" },
-                { "ABOUT_CURRENT_VERSION_LABEL", "Installed version:" },
-                { "ABOUT_BTN_UPDATE", "Update" },
-                { "ABOUT_BTN_CLOSE", "Close" }
+                { "ABOUT_LINK_GITHUB_REPOSITORY", "GitHub Repository" },
+                { "ABOUT_LINK_LATEST_RELEASE", "Latest releases" },
+                { "ABOUT_LABEL_LAST_UPDATE", "Last checked: " },
+                { "ABOUT_LABEL_LAST_UPDATE_NEVER", "never" },
 
+                { "ABOUT_BTN_CHECK_UPDATE", "Check for update" },
+                { "ABOUT_BTN_DOWNLOAD_UPDATE", "Download update" },
+                { "ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING", "Downloading..." },
+
+                { "ABOUT_UPDATE_CHECKING", "Checking for update..." },
+                { "ABOUT_UPDATE_INFO_UPDATE_LATEST", "Image Viewer is up to date." },
+                { "ABOUT_UPDATE_INFO_UPDATE_AVAILABLE", "An update is available." },
+                { "ABOUT_UPDATE_INFO_ERROR_NO_INTERNET", "No internet access." },
+                { "ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND", "Cannot get last version manifest." },
+                
             };
         }
     }

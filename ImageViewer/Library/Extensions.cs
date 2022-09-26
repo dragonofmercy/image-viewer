@@ -32,6 +32,18 @@ namespace ImageViewer
             return char.ToUpper(original[0]) + original[1..];
         }
 
+        public static string ToUpdateDate(this string original)
+        {
+            if(string.IsNullOrEmpty(original))
+            {
+                return Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER");
+            }
+            else
+            {
+                return DateTime.Parse(original).ToString();
+            }
+        }
+
         public static void SaveJpeg(this Bitmap original, string filepath, byte quality)
         {
             ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().Where(s => s.FormatID == ImageFormat.Jpeg.Guid).First();

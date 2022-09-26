@@ -39,12 +39,20 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ", "Mirroir horizontal" },
                 { "FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT", "Mirroir vertical" },
 
-                { "ABOUT_REMOTE_VERSION_LABEL", "Dernière version :" },
-                { "ABOUT_REMOTE_VERSION_LOADING", "Chargement..." },
-                { "ABOUT_REMOTE_VERSION_ERROR_NO_INTERNET", "Pas d'accès à internet" },
-                { "ABOUT_CURRENT_VERSION_LABEL", "Version installée :" },
-                { "ABOUT_BTN_UPDATE", "Mise à jour" },
-                { "ABOUT_BTN_CLOSE", "Fermer" }
+                { "ABOUT_LINK_GITHUB_REPOSITORY", "Dépôt GitHub" },
+                { "ABOUT_LINK_LATEST_RELEASE", "Dernières versions" },
+                { "ABOUT_LABEL_LAST_UPDATE", "Dernière vérification : " },
+                { "ABOUT_LABEL_LAST_UPDATE_NEVER", "jamais" },
+
+                { "ABOUT_BTN_CHECK_UPDATE", "Vérifier les mises à jour" },
+                { "ABOUT_BTN_DOWNLOAD_UPDATE", "Télecharger la mise à jour" },
+                { "ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING", "Télechargement en cours..." },
+
+                { "ABOUT_UPDATE_CHECKING", "Recherche en cours..." },
+                { "ABOUT_UPDATE_INFO_UPDATE_LATEST", "Image Viewer est à jour." },
+                { "ABOUT_UPDATE_INFO_UPDATE_AVAILABLE", "Une mise à jour est disponible." },
+                { "ABOUT_UPDATE_INFO_ERROR_NO_INTERNET", "Pas d'accès à internet." },
+                { "ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND", "Impossible de récupèrer la dernière version." },
 
             };
         }
