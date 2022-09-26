@@ -37,9 +37,15 @@
     <ItemGroup>
 		<Content Include="ImageViewer.ico" />
     </ItemGroup>
+
+    <ItemGroup>
+        <None Update="installer\update.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
     
     <ItemGroup>
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.4" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.5" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.1" />
         <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
         <PackageReference Include="WinUIEx" Version="1.8.0" />
