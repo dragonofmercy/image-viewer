@@ -21,9 +21,10 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 
 ## How to install
 
-1. Download ImageViewer.Updater.exe of the last release
-2. Run ImageViewer.Updater.exe
-3. Done
+1. Download ImageViewer.Updater.exe from the last release  
+https://github.com/dragonofmercy/image-viewer/releases
+3. Run ImageViewer.Updater.exe
+4. Done
 
 ## How to install manually
 
