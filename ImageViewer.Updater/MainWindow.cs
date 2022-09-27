@@ -167,7 +167,8 @@ namespace ImageViewer.Updater
             }
             else
             {
-                throw new Exception("Cannot download Windows AppRuntime, please try again later...");
+                MessageBox.Show("Cannot download Windows AppRuntime, please try again later...", "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
             }
         }
 
@@ -243,7 +244,8 @@ namespace ImageViewer.Updater
             }
             else
             {
-                throw new Exception("Cannot download .NET 6.0 Desktop Runtime, please try again later...");
+                MessageBox.Show("Cannot download .NET 6.0 Desktop Runtime, please try again later...", "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
             }
         }
 
@@ -254,7 +256,7 @@ namespace ImageViewer.Updater
             HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
 
-            string responseContent;
+            string responseContent = "";
 
             try
             {
@@ -265,7 +267,9 @@ namespace ImageViewer.Updater
             catch(Exception)
             {
                 httpClient.Dispose();
-                throw new Exception("No internet access");
+
+                MessageBox.Show("No internet access", "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
             }
 
             Regex reg = new Regex("\"browser_download_url\":\"((\\\\\"|[^\"])*release.zip)\"", RegexOptions.IgnoreCase);
@@ -283,12 +287,14 @@ namespace ImageViewer.Updater
                 }
                 else
                 {
-                    throw new Exception("Cannot download remote version");
+                    MessageBox.Show("Cannot download remote version", "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Environment.Exit(0);
                 }
             }
             else
             {
-                throw new Exception("Cannot get remote package");
+                MessageBox.Show("Cannot get remote package", "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
             }
         }
 
@@ -310,24 +316,32 @@ namespace ImageViewer.Updater
 
         public void Install()
         {
-            if(Directory.Exists(InstallDestinationDirectory))
+            try
             {
-                Directory.Delete(InstallDestinationDirectory, true);
+                if(Directory.Exists(InstallDestinationDirectory))
+                {
+                    Directory.Delete(InstallDestinationDirectory, true);
+                }
+
+                Directory.CreateDirectory(InstallDestinationDirectory);
+                Directory.Move(InstallSourcesDirectory, Path.Combine(InstallDestinationDirectory, "Image Viewer"));
+
+                if(File.Exists(ShortcutFilePath))
+                {
+                    File.Delete(ShortcutFilePath);
+                }
+
+                IShellLink link = (IShellLink)new ShellLink();
+                link.SetPath(Path.Combine(InstallDestinationDirectory, "Image Viewer", "ImageViewer.exe"));
+
+                IPersistFile file = (IPersistFile)link;
+                file.Save(ShortcutFilePath, false);
             }
-
-            Directory.CreateDirectory(InstallDestinationDirectory);
-            Directory.Move(InstallSourcesDirectory, Path.Combine(InstallDestinationDirectory, "Image Viewer"));
-
-            if(File.Exists(ShortcutFilePath))
+            catch(Exception ex)
             {
-                File.Delete(ShortcutFilePath);
+                MessageBox.Show(ex.Message, "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
             }
-
-            IShellLink link = (IShellLink)new ShellLink();
-            link.SetPath(Path.Combine(InstallDestinationDirectory, "Image Viewer", "ImageViewer.exe"));
-
-            IPersistFile file = (IPersistFile)link;
-            file.Save(ShortcutFilePath, false);
 
             TextInstallStatus.Text = "Cleaning up...";
 
