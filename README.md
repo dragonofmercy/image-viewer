@@ -21,8 +21,8 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 
 ## How to run
 
-1. Download and install .NET 6.0 Desktop Runtime (v6.0.8) from Microsoft:   
-https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.8-windows-x64-installer
+1. Download and install .NET 6.0 Desktop Runtime (v6.0.9) from Microsoft:   
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.9-windows-x64-installer
 2. Download and install Windows AppRuntime from Microsoft:   
 https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe
 
