@@ -12,7 +12,8 @@ Simple image viewer for Windows 11
 https://visualstudio.microsoft.com/vs/
 
 2. Install Tools for Windows App SDK  
-https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment  
+https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment
+
 ![](/documentation/assets/vs2022_install_req.jpg)
 
 3. Open the solution
