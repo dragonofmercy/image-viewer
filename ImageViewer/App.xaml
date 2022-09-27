@@ -4,16 +4,19 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
+            
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            
             <ResourceDictionary.ThemeDictionaries>
+                
                 <ResourceDictionary x:Key="Default">
                     <Style TargetType="FontIcon">
                         <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
-                        <Setter Property="MirroredWhenRightToLeft" Value="True" />
                     </Style>
                 </ResourceDictionary>
+                
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#1a202f" />
                     <SolidColorBrush x:Key="AppBarBorderBrush" Color="#32363f" />
@@ -27,6 +30,7 @@
                     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#202020" />
                     <SolidColorBrush x:Key="PanelBorderBrush" Color="#32363f" />
                 </ResourceDictionary>
+                
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#f0f3f9" />
                     <SolidColorBrush x:Key="AppBarBorderBrush" Color="#dde0e5" />
@@ -40,7 +44,9 @@
                     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#f0f3f9" />
                     <SolidColorBrush x:Key="PanelBorderBrush" Color="#dde0e5" />
                 </ResourceDictionary>
+                
             </ResourceDictionary.ThemeDictionaries>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>
