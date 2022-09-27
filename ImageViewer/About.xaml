@@ -47,7 +47,7 @@
 
         <InfoBar x:Name="UpdateStatusInfo" Margin="0,4,0,0" IsClosable="False">
             <InfoBar.ActionButton>
-                <HyperlinkButton x:Name="ButtonDownloadUpdate" Content="{x:Bind local:Culture.GetString('ABOUT_BTN_DOWNLOAD_UPDATE')}" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,-10,0" />
+                <HyperlinkButton x:Name="ButtonDownloadUpdate" Click="ButtonDownloadUpdate_Click" Content="{x:Bind local:Culture.GetString('ABOUT_BTN_DOWNLOAD_UPDATE')}" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,-10,0" />
             </InfoBar.ActionButton>
         </InfoBar>
 

@@ -50,7 +50,6 @@ namespace ImageViewer
                     UpdateStatusInfo.IsOpen = true;
 
                     ButtonDownloadUpdate.Visibility = Visibility.Visible;
-                    ButtonDownloadUpdate.Click += ButtonDownloadUpdate_Click;
                 }
                 else
                 {
@@ -82,10 +81,18 @@ namespace ImageViewer
             ButtonDownloadUpdate.IsEnabled = false;
             ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
-            await Update.ApplyUpdate();
+            try
+            {
+                await Update.ApplyUpdate();
+            }
+            catch(Exception ex)
+            {
+                ButtonDownloadUpdate.Visibility = Visibility.Collapsed;
 
-            ButtonDownloadUpdate.IsEnabled = true;
-            ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE");
+                UpdateStatusInfo.Severity = InfoBarSeverity.Error;
+                UpdateStatusInfo.Title = ex.Message;
+                UpdateStatusInfo.IsOpen = true;
+            }
         }
     }
 }

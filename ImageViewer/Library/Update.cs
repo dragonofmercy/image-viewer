@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
-using System.IO.Compression;
-using Microsoft.UI.Xaml.Controls;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace ImageViewer
 {
@@ -42,42 +41,48 @@ namespace ImageViewer
             throw new KeyNotFoundException("Json cache date not loaded");
         }
 
-        public static string GetRemoteFileUrl()
-        {
-            try
-            {
-                return JsonCache.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
-            }
-            catch(Exception e)
-            {
-                Debug.Write(e.Message);
-                throw new KeyNotFoundException("Download file not found");
-            }
-        }
-
         public static async Task ApplyUpdate()
         {
-            string tempDirectory = Path.Combine(Path.GetTempPath(), "imageviewer_installer");
-
-            if(Directory.Exists(tempDirectory))
-            {
-                Directory.Delete(tempDirectory, true);
-            }
-
-            Directory.CreateDirectory(tempDirectory);
+            string tempDirectory = Path.GetTempPath();
 
             HttpClient httpClient = new();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Image View Update Downloader");
-            
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
+
+            string downloadUri = "";
+
+            try
+            {
+                for(int i = 0; i < JsonCache.GetProperty("assets").GetArrayLength(); i++)
+                {
+                    string tmp = JsonCache.GetProperty("assets")[i].GetProperty("browser_download_url").GetString();
+                    Regex reg = new("ImageViewer.Updater.exe$", RegexOptions.IgnoreCase);
+
+                    if(reg.IsMatch(tmp))
+                    {
+                        downloadUri = tmp;
+                        break;
+                    }
+                }
+
+                if(string.IsNullOrEmpty(downloadUri))
+                {
+                    throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
+                }
+            }
+            catch(Exception)
+            {
+                throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
+            }
+
             bool downloadSuccess = true;
 
             for(uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
             {
                 try
                 {
-                    Stream s = await httpClient.GetStreamAsync(GetRemoteFileUrl());
-                    FileStream fs = new(Path.Combine(tempDirectory, "install.zip"), FileMode.CreateNew);
-                    
+                    Stream s = await httpClient.GetStreamAsync(downloadUri);
+                    FileStream fs = new(Path.Combine(tempDirectory, "imageviewer.update.exe"), FileMode.CreateNew);
+
                     await s.CopyToAsync(fs);
 
                     fs.Dispose();
@@ -89,42 +94,31 @@ namespace ImageViewer
                 }
                 catch(Exception)
                 {
-
                 }
             }
 
-            httpClient.Dispose();
-
             if(downloadSuccess)
             {
-                string installSourcesDirectory = Path.Combine(tempDirectory, "install");
-                string installScriptPath = Path.Combine(installSourcesDirectory, "installer", "update.ps1");
-
-                if(Directory.Exists(installSourcesDirectory))
+                ProcessStartInfo pStartInfo = new()
                 {
-                    Directory.Delete(installSourcesDirectory, true);
-                }
+                    FileName = Path.Combine(tempDirectory, "imageviewer.update.exe"),
+                    UseShellExecute = true,
+                };
 
-                ZipFile.ExtractToDirectory(Path.Combine(tempDirectory, "install.zip"), installSourcesDirectory);
-
-                if(File.Exists(installScriptPath))
+                Process process = new()
                 {
-                    ProcessStartInfo pStartInfo = new()
-                    {
-                        FileName = @"powershell.exe",
-                        Arguments = string.Concat("& '", installScriptPath, "' '", installSourcesDirectory, "' '", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Dragon Industries", "Image Viewer"), "'"),
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                    };
+                    StartInfo = pStartInfo
+                };
 
-                    Process process = new()
-                    {
-                        StartInfo = pStartInfo
-                    };
+                process.Start();
+                Environment.Exit(0);
+            }
+            else
+            {
+                throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
+            }
 
-                    process.Start();
-                    Environment.Exit(0);
-                }
-            }   
+            httpClient.Dispose();
         }
     }
 }

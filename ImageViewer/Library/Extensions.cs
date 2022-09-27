@@ -14,7 +14,7 @@ namespace ImageViewer
         {
             int numIdx = System.Array.IndexOf(original, itemToRemove);
             if(numIdx == -1) return original;
-            List<T> tmp = new List<T>(original);
+            List<T> tmp = new(original);
             tmp.RemoveAt(numIdx);
             return tmp.ToArray();
         }
@@ -22,7 +22,7 @@ namespace ImageViewer
         public static T[] RemoveAtIndex<T>(this T[] original, int index)
         {
             if(index >= original.Length) return original;
-            List<T> tmp = new List<T>(original);
+            List<T> tmp = new(original);
             tmp.RemoveAt(index);
             return tmp.ToArray();
         }
