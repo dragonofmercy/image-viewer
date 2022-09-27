@@ -18,7 +18,7 @@
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries 2022</Copyright>
-		<FileVersion>1.22.9.26</FileVersion>
+		<FileVersion>1.22.9.27</FileVersion>
 		<Version>0.0.3-beta</Version>
     </PropertyGroup>
     
@@ -36,12 +36,6 @@
 	
     <ItemGroup>
 		<Content Include="ImageViewer.ico" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="installer\update.ps1">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
     
     <ItemGroup>
