@@ -32,7 +32,9 @@ https://github.com/dragonofmercy/image-viewer/releases
 https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.9-windows-x64-installer
 2. Download and install Windows AppRuntime from Microsoft:   
 https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe
-3. Run ImageViewer.Updater.exe
+3. Download ImageViewer.Updater.exe from the last release  
+https://github.com/dragonofmercy/image-viewer/releases
+4. Run ImageViewer.Updater.exe
 
 ## Credits
 Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
