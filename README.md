@@ -19,12 +19,19 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 4. Wait for nuget requirements to download
 5. Build the project
 
-## How to run
+## How to install
+
+1. Download ImageViewer.Updater.exe of the last release
+2. Run ImageViewer.Updater.exe
+3. Done
+
+## How to install manually
 
 1. Download and install .NET 6.0 Desktop Runtime (v6.0.9) from Microsoft:   
 https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.9-windows-x64-installer
 2. Download and install Windows AppRuntime from Microsoft:   
 https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe
+3. Run ImageViewer.Updater.exe
 
 ## Credits
 Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
