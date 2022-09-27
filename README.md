@@ -1,4 +1,7 @@
 # Image Viewer for Windows 11
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://ko-fi.com/dragonofmercy)
+
 Simple image viewer for Windows 11
 
 ![](/documentation/assets/screen1.jpg)
@@ -18,10 +21,16 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 
 ## How to run
 
-1. Download and install .NET 6.0 Desktop Runtime (v6.0.8) from Microsoft:   
-https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.8-windows-x64-installer
+1. Download and install .NET 6.0 Desktop Runtime (v6.0.9) from Microsoft:   
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.9-windows-x64-installer
 2. Download and install Windows AppRuntime from Microsoft:   
 https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe
 
 ## Credits
 Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
+
+## 
+
+If this project help to increase your productivity, you can give me a cup of coffee :) 
+
+[![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
