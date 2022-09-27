@@ -13,17 +13,9 @@ namespace ImageViewer.Updater
         [STAThread]
         static void Main()
         {
-            try
-            {
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new MainWindow());
-            }
-            catch(Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Install error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(0);
-            }
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new MainWindow());
         }
     }
 
