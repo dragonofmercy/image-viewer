@@ -4,7 +4,7 @@
         <OutputType>WinExe</OutputType>
         <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
         <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-        <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
         <RootNamespace>ImageViewer</RootNamespace>
         <Platforms>x64</Platforms>
         <RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
@@ -13,25 +13,39 @@
         <StartupObject>ImageViewer.Startup</StartupObject>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
         <Description>Image Viewer</Description>
 		<Company>Dragon Industries</Company>
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries 2022</Copyright>
-		<FileVersion>1.22.9.27</FileVersion>
+		<FileVersion>1.22.9.28</FileVersion>
 		<Version>0.0.3-beta</Version>
     </PropertyGroup>
     
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      <AssemblyName>ImageViewer.Debug</AssemblyName>
-      <AssemblyTitle>Image Viewer (debug)</AssemblyTitle>
-      <Product>Image Viewer (debug)</Product>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <defineconstants>DISABLE_XAML_GENERATED_MAIN</defineconstants>
+        <AssemblyName>ImageViewer.Debug</AssemblyName>
+        <AssemblyTitle>Image Viewer (debug)</AssemblyTitle>
+        <Product>Image Viewer (debug)</Product>
+        <NoWarn></NoWarn>
+        <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
+        <Optimize>False</Optimize>
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
     </PropertyGroup>
     
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      <AssemblyName>ImageViewer</AssemblyName>
-      <AssemblyTitle>Image Viewer</AssemblyTitle>
-      <Product>Image Viewer</Product>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <defineconstants>DISABLE_XAML_GENERATED_MAIN</defineconstants>
+        <AssemblyName>ImageViewer</AssemblyName>
+        <AssemblyTitle>Image Viewer</AssemblyTitle>
+        <Product>Image Viewer</Product>
+        <NoWarn></NoWarn>
+        <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
+        <Optimize>true</Optimize>
     </PropertyGroup>
 	
     <ItemGroup>
