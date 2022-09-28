@@ -95,7 +95,7 @@
             this.ProgressStatus.Location = new System.Drawing.Point(25, 180);
             this.ProgressStatus.Name = "ProgressStatus";
             this.ProgressStatus.Size = new System.Drawing.Size(593, 23);
-            this.ProgressStatus.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
+            this.ProgressStatus.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.ProgressStatus.TabIndex = 5;
             // 
             // MainWindow
