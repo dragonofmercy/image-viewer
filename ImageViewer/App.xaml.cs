@@ -1,23 +1,15 @@
-﻿using System;
-using System.Diagnostics;
-
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using WinUIEx;
 
 namespace ImageViewer
 {
     public static class Startup
     {
-        [global::System.Runtime.InteropServices.DllImport("Microsoft.ui.xaml.dll")]
-        private static extern void XamlCheckProcessRequirements();
-
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.UI.Xaml.Markup.Compiler", " 1.0.0.0")]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.STAThreadAttribute]
         static void Main(string[] args)
         {
-            XamlCheckProcessRequirements();
-
             Context.Instance().LaunchArgs = args;
 
             global::WinRT.ComWrappersSupport.InitializeComWrappers();
