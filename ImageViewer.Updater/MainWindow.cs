@@ -15,7 +15,11 @@ namespace ImageViewer.Updater
     {
         const uint MAX_DOWNLOAD_ATTEMPTS = 3;
         const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
-        const string RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe";
+
+        const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.1_1005";
+        const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe";
+
+        const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.9";
         const string NET6_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/fe8415d4-8a35-4af9-80a5-51306a96282d/05f9b2a1b4884238e69468e49b3a5453/windowsdesktop-runtime-6.0.9-win-x64.exe";
 
         private string TempDirectory;
@@ -96,14 +100,29 @@ namespace ImageViewer.Updater
             return false;
         }
 
+        public void CopyDirectory(DirectoryInfo source, DirectoryInfo target)
+        {
+            foreach(DirectoryInfo dir in source.GetDirectories())
+            {
+                CopyDirectory(dir, target.CreateSubdirectory(dir.Name));
+            }
+            
+            foreach(FileInfo file in source.GetFiles())
+            {
+                Application.DoEvents();
+                file.CopyTo(Path.Combine(target.FullName, file.Name));
+            }
+        }
+
         public void CheckAppRuntime()
         {
             TextInstallStatus.Text = "Checking Windows AppRuntime...";
+            ProgressStatus.Value = 10;
 
             ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "powershell",
-                Arguments = "get-appxpackage *appruntime* | Select-String 'WindowsAppRuntime.1.1_1005'",
+                Arguments = "get-appxpackage *appruntime* | Select-String '" + APP_RUNTIME_SEARCH + "'",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
@@ -115,20 +134,21 @@ namespace ImageViewer.Updater
             };
 
             process.Start();
+            Application.DoEvents();
             string output = process.StandardOutput.ReadToEnd();
             process.Dispose();
 
-            if(string.IsNullOrEmpty(output))
+            ProgressStatus.Value = 20;
+
+            if(!output.Contains(APP_RUNTIME_SEARCH))
             {
-                Callable = "InstallRuntime";
-                TimerWait.Interval = 1000;
-                TimerWait.Start();
+                Application.DoEvents();
+                InstallRuntime();
             }
             else
             {
-                Callable = "CheckNet6";
-                TimerWait.Interval = 1000;
-                TimerWait.Start();
+                Application.DoEvents();
+                CheckNet6();
             }
         }
 
@@ -136,7 +156,7 @@ namespace ImageViewer.Updater
         {
             TextInstallStatus.Text = "Download Windows AppRuntime...";
 
-            if(await DownloadFile(RUNTIME_DOWNLOAD, Path.Combine(TempDirectory, "windowsappruntime.exe")))
+            if(await DownloadFile(APP_RUNTIME_DOWNLOAD, Path.Combine(TempDirectory, "windowsappruntime.exe")))
             {
                 TextInstallStatus.Text = "Installing Windows AppRuntime...";
 
@@ -161,9 +181,9 @@ namespace ImageViewer.Updater
 
                 process.Dispose();
 
-                Callable = "CheckNet6";
-                TimerWait.Interval = 1000;
-                TimerWait.Start();
+                ProgressStatus.Value = 30;
+                Application.DoEvents();
+                CheckNet6();
             }
             else
             {
@@ -179,7 +199,7 @@ namespace ImageViewer.Updater
             ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "powershell",
-                Arguments = "dotnet --list-runtimes | Select-String 'WindowsDesktop.App 6.0.9'",
+                Arguments = "dotnet --list-runtimes | Select-String '" + NET6_RUNTIME_SEARCH + "'",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
@@ -191,20 +211,21 @@ namespace ImageViewer.Updater
             };
 
             process.Start();
+            Application.DoEvents();
             string output = process.StandardOutput.ReadToEnd();
             process.Dispose();
 
-            if(string.IsNullOrEmpty(output) || output.StartsWith("dotnet : "))
+            ProgressStatus.Value = 40;
+
+            if(!output.Contains(NET6_RUNTIME_SEARCH))
             {
-                Callable = "InstallNet6";
-                TimerWait.Interval = 1000;
-                TimerWait.Start();
+                Application.DoEvents();
+                InstallNet6();
             }
             else
             {
-                Callable = "Download";
-                TimerWait.Interval = 1000;
-                TimerWait.Start();
+                Application.DoEvents();
+                Download();
             }
         }
 
@@ -238,9 +259,8 @@ namespace ImageViewer.Updater
 
                 process.Dispose();
 
-                Callable = "Download";
-                TimerWait.Interval = 1000;
-                TimerWait.Start();
+                ProgressStatus.Value = 50;
+                Download();
             }
             else
             {
@@ -252,6 +272,7 @@ namespace ImageViewer.Updater
         public async void Download()
         {
             TextInstallStatus.Text = "Downloading Image Viewer...";
+            Application.DoEvents();
 
             HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
@@ -280,10 +301,9 @@ namespace ImageViewer.Updater
                 if(await DownloadFile(matches[0].Groups[1].Value, Path.Combine(TempDirectory, "release.zip")))
                 {
                     TextInstallStatus.Text = "Extracting files...";
-
-                    Callable = "Extract";
-                    TimerWait.Interval = 1000;
-                    TimerWait.Start();
+                    ProgressStatus.Value = 60;
+                    Application.DoEvents();
+                    Extract();
                 }
                 else
                 {
@@ -308,10 +328,9 @@ namespace ImageViewer.Updater
             ZipFile.ExtractToDirectory(Path.Combine(TempDirectory, "release.zip"), InstallSourcesDirectory);
 
             TextInstallStatus.Text = "Installing files...";
-
-            Callable = "Install";
-            TimerWait.Interval = 1000;
-            TimerWait.Start();
+            ProgressStatus.Value = 70;
+            Application.DoEvents();
+            Install();
         }
 
         public void Install()
@@ -324,7 +343,8 @@ namespace ImageViewer.Updater
                 }
 
                 Directory.CreateDirectory(InstallDestinationDirectory);
-                Directory.Move(InstallSourcesDirectory, Path.Combine(InstallDestinationDirectory, "Image Viewer"));
+
+                CopyDirectory(new DirectoryInfo(InstallSourcesDirectory), new DirectoryInfo(Path.Combine(InstallDestinationDirectory, "Image Viewer")));
 
                 if(File.Exists(ShortcutFilePath))
                 {
@@ -336,6 +356,8 @@ namespace ImageViewer.Updater
 
                 IPersistFile file = (IPersistFile)link;
                 file.Save(ShortcutFilePath, false);
+
+                
             }
             catch(Exception ex)
             {
@@ -344,14 +366,14 @@ namespace ImageViewer.Updater
             }
 
             TextInstallStatus.Text = "Cleaning up...";
-
-            Callable = "Cleanup";
-            TimerWait.Interval = 1000;
-            TimerWait.Start();
+            ProgressStatus.Value = 80;
+            Application.DoEvents();
+            Cleanup();
         }
 
         public void Cleanup()
         {
+            ProgressStatus.Value = 100;
             Directory.Delete(TempDirectory, true);
 
             ProcessStartInfo psi = new ProcessStartInfo
