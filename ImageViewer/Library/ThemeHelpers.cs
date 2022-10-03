@@ -11,15 +11,14 @@ namespace ImageViewer
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
-        internal const string   HKeyRoot = "HKEY_CURRENT_USER";
-        internal const string   HkeyWindowsTheme = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Themes";
-        internal const string   HkeyWindowsPersonalizeTheme = $@"{HkeyWindowsTheme}\Personalize";
+        internal const string   HKey = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
         internal const string   HValueAppTheme = "AppsUseLightTheme";
         internal const int      DWMWAImmersiveDarkMode = 20;
 
         public static ElementTheme GetAppTheme()
         {
-            int value = (int)Registry.GetValue($"{HKeyRoot}\\{HkeyWindowsPersonalizeTheme}", HValueAppTheme, 1);
+            object registryValue = Registry.GetValue(HKey, HValueAppTheme, 1);
+            int value = registryValue == null ? 1 : (int)registryValue;
             return value == 1 ? ElementTheme.Light : ElementTheme.Dark;
         }
 
