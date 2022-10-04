@@ -1,8 +1,8 @@
-# Image Viewer for Windows 11
+# Image Viewer for Windows
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://ko-fi.com/dragonofmercy)
 
-Simple image viewer for Windows 11
+Simple image viewer for Windows
 
 ![](/documentation/assets/screen1.jpg)
 
