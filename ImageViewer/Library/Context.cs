@@ -84,7 +84,11 @@ namespace ImageViewer
         {
             if(!string.IsNullOrEmpty(CurrentFilePath))
             {
-                FolderFiles = Directory.EnumerateFiles(Path.GetDirectoryName(CurrentFilePath), "*.*", SearchOption.TopDirectoryOnly).Where(s => FileTypes.Any(x => s.EndsWith(x, true, null))).OrderBy(s => s, new NaturalStringComparer()).ToArray();
+                FolderFiles = Directory.EnumerateFiles(Path.GetDirectoryName(CurrentFilePath), "*.*", SearchOption.TopDirectoryOnly)
+                    .Where(s => FileTypes.Any(x => s.EndsWith(x, true, null)))
+                    .OrderBy(s => s, new NaturalStringComparer())
+                    .ToArray();
+
                 CurrentIndex = Array.IndexOf(FolderFiles, CurrentFilePath);
             }
 
@@ -283,14 +287,6 @@ namespace ImageViewer
         }
 
         /// <summary>
-        /// Check if current file is webp.
-        /// </summary>
-        public bool IsWebp()
-        {
-            return CurrentFilePath != null && Path.GetExtension(CurrentFilePath).ToLower() == ".webp";
-        }
-
-        /// <summary>
         /// Check if an image is open.
         /// </summary>
         public bool HasImageLoaded()
@@ -434,6 +430,7 @@ namespace ImageViewer
                             using(Wrapper.WebP webp = new())
                             {
                                 webp.Save(CurrentImage, outputFile.Path, 100);
+                                webp.Dispose();
                             }
                             break;
                         default:
@@ -459,17 +456,21 @@ namespace ImageViewer
             }
             else
             {
-                if(IsWebp())
+                switch(Path.GetExtension(CurrentFilePath).ToLower())
                 {
-                    using Wrapper.WebP webp = new();
-                    CurrentImage = webp.Load(CurrentFilePath);
-                    webp.Dispose();
-                }
-                else
-                {
-                    byte[] bytes = File.ReadAllBytes(CurrentFilePath);
-                    MemoryStream ms = new(bytes);
-                    CurrentImage = (Bitmap)Image.FromStream(ms);
+                    case ".webp":
+                        using(Wrapper.WebP webp = new())
+                        {
+                            CurrentImage = webp.Load(CurrentFilePath);
+                            webp.Dispose();
+                        };
+                        break;
+
+                    default:
+                        byte[] bytes = File.ReadAllBytes(CurrentFilePath);
+                        MemoryStream ms = new(bytes);
+                        CurrentImage = (Bitmap)Image.FromStream(ms);
+                        break;
                 }
             }
         }
@@ -477,7 +478,7 @@ namespace ImageViewer
         /// <summary>
         /// Load bitmap (CurrentImage) inside image view
         /// </summary>
-        private void LoadImageView(bool UseUriSource = true)
+        private void LoadImageView(bool useUriSource = true)
         {
             BitmapImage bitmapImage = new()
             {
@@ -486,7 +487,7 @@ namespace ImageViewer
             bitmapImage.ImageOpened += CurrentImage_ImageOpened;
             bitmapImage.ImageFailed += CurrentImage_ImageFailed;
 
-            if(UseUriSource)
+            if(useUriSource)
             {
                 bitmapImage.UriSource = new(CurrentFilePath);
             }
