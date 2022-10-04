@@ -15,6 +15,7 @@ using Windows.Storage.Streams;
 
 using WinUIEx;
 using WinRT.Interop;
+using Svg;
 
 namespace ImageViewer
 {
@@ -33,8 +34,8 @@ namespace ImageViewer
     {
         private static Context _Instance;
 
-        private readonly string[] FileTypes = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".ico", ".webp" };
-        private readonly string[] ReadOnlyTypes = { ".gif", ".ico" };
+        private readonly string[] FileTypes = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".ico", ".webp", ".svg" };
+        private readonly string[] ReadOnlyTypes = { ".gif", ".ico", ".svg" };
 
         private string[] FolderFiles;
         private int CurrentIndex;
@@ -466,6 +467,11 @@ namespace ImageViewer
                         };
                         break;
 
+                    case ".svg":
+                        SvgDocument svgDocument = SvgDocument.Open(CurrentFilePath);
+                        CurrentImage = svgDocument.Draw();
+                        break;
+
                     default:
                         byte[] bytes = File.ReadAllBytes(CurrentFilePath);
                         MemoryStream ms = new(bytes);
@@ -487,18 +493,18 @@ namespace ImageViewer
             bitmapImage.ImageOpened += CurrentImage_ImageOpened;
             bitmapImage.ImageFailed += CurrentImage_ImageFailed;
 
-            if(useUriSource)
-            {
-                bitmapImage.UriSource = new(CurrentFilePath);
-            }
-            else
+            if(!useUriSource || Path.GetExtension(CurrentFilePath).ToLower() == ".svg")
             {
                 using MemoryStream memory = new();
                 CurrentImage.Save(memory, ImageFormat.Png);
                 memory.Position = 0;
                 bitmapImage.SetSource(memory.AsRandomAccessStream());
             }
-            
+            else
+            {
+                bitmapImage.UriSource = new(CurrentFilePath);
+            }
+
             MainWindow.ImageView.Source = bitmapImage;
         }
 
