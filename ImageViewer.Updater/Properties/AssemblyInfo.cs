@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Dragon Industries")]
 [assembly: AssemblyProduct("ImageViewer.Updater")]
-[assembly: AssemblyCopyright("")]
+[assembly: AssemblyCopyright("Dragon Industries 2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.22.9.28")]
+[assembly: AssemblyFileVersion("1.22.10.4")]
