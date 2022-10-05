@@ -70,6 +70,7 @@
                     </StackPanel>
                 </SplitView.Pane>
                 <Controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
+                    <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
                     <ScrollViewer 
                             PointerMoved="ScrollView_PointerMoved"
                             PointerExited="ScrollView_PointerExited" 
@@ -90,7 +91,6 @@
                             VerticalContentAlignment="Center">
                         <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
                     </ScrollViewer>
-                    <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
                 </Controls:CursorGrid>
             </SplitView>
             <Grid Grid.Row="3" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
