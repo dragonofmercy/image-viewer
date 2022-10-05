@@ -13,13 +13,14 @@
         <StartupObject>ImageViewer.Startup</StartupObject>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+        <EnableDefaultItems>true</EnableDefaultItems>
         <Description>Image Viewer</Description>
 		<Company>Dragon Industries</Company>
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
-		<Copyright>Dragon Industries 2022</Copyright>
-		<FileVersion>1.22.10.4</FileVersion>
+		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
+		<FileVersion>1.22.10.5</FileVersion>
 		<Version>0.0.3-beta</Version>
     </PropertyGroup>
     
