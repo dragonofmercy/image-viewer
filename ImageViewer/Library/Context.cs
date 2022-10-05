@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -64,12 +65,15 @@ namespace ImageViewer
         /// <summary>
         /// Load image if program is opened with open with command.
         /// </summary>
-        public void LoadDefaultImage()
+        public async void LoadDefaultImage()
         {
             if(LaunchArgs.Length > 0)
             {
                 if(CheckFileExtension(LaunchArgs[0]))
                 {
+                    MainWindow.ImageLoadingIndicator.IsActive = true;
+                    await Task.Delay(200);
+
                     if(LoadImageFromString(LaunchArgs[0]))
                     {
                         LoadDirectoryFiles();
