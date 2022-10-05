@@ -162,6 +162,7 @@ namespace ImageViewer
             if(selectedFile != null && CheckFileExtension(selectedFile.Path))
             {
                 CurrentFilePath = selectedFile.Path;
+
                 MemoryOnly = false;
 
                 LoadBitmap();
