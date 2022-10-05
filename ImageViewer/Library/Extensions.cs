@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
+using Svg;
 
 namespace ImageViewer
 {
@@ -25,6 +26,30 @@ namespace ImageViewer
             List<T> tmp = new(original);
             tmp.RemoveAt(index);
             return tmp.ToArray();
+        }
+
+        public static SvgDocument AdjustSize(this SvgDocument original, uint max_width, uint max_height)
+        {
+            SizeF size = original.GetDimensions();
+
+            if(size.Width > max_width)
+            {
+                float ratio = size.Width / max_width;
+                size.Height /= ratio;
+                size.Width = max_width;
+            }
+
+            if(size.Height > max_height)
+            {
+                float ratio = size.Height / max_height;
+                size.Width /= ratio;
+                size.Height = max_height;
+            }
+
+            original.Width = size.Width;
+            original.Height = size.Height;
+
+            return original;
         }
 
         public static string UcFirst(this string original)
