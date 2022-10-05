@@ -474,13 +474,15 @@ namespace ImageViewer
 
                     case ".svg":
                         SvgDocument svgDocument = SvgDocument.Open(CurrentFilePath);
-                        CurrentImage = svgDocument.Draw();
+                        svgDocument.ShapeRendering = SvgShapeRendering.Auto;
+                        CurrentImage = svgDocument.AdjustSize(1024, 1024).Draw();
                         break;
 
                     default:
                         byte[] bytes = File.ReadAllBytes(CurrentFilePath);
                         MemoryStream ms = new(bytes);
                         CurrentImage = (Bitmap)Image.FromStream(ms);
+                        ms.Dispose();
                         break;
                 }
             }
@@ -491,12 +493,17 @@ namespace ImageViewer
         /// </summary>
         private void LoadImageView(bool useUriSource = true)
         {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             BitmapImage bitmapImage = new()
             {
-                CreateOptions = BitmapCreateOptions.IgnoreImageCache
+                CreateOptions = BitmapCreateOptions.IgnoreImageCache,
             };
             bitmapImage.ImageOpened += CurrentImage_ImageOpened;
             bitmapImage.ImageFailed += CurrentImage_ImageFailed;
+
+            MainWindow.ImageView.Source = bitmapImage;
 
             if(!useUriSource || Path.GetExtension(CurrentFilePath).ToLower() == ".svg")
             {
@@ -509,8 +516,6 @@ namespace ImageViewer
             {
                 bitmapImage.UriSource = new(CurrentFilePath);
             }
-
-            MainWindow.ImageView.Source = bitmapImage;
         }
 
         /// <summary>
@@ -523,11 +528,10 @@ namespace ImageViewer
                 MainWindow.UpdateTitle(Path.GetFileName(CurrentFilePath));
             }
 
-            MainWindow.ImageLoadingIndicator.IsActive = false;
-
             UpdateButtonsAccessiblity();
             AdjustImage();
 
+            MainWindow.ImageLoadingIndicator.IsActive = false;
             MainWindow.ImageView.Opacity = 1;
 
             if(MainWindow.SplitViewContainer.IsPaneOpen)
