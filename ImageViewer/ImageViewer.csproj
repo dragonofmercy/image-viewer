@@ -48,18 +48,28 @@
         <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
         <Optimize>true</Optimize>
     </PropertyGroup>
+    
+    <ItemGroup>
+      <None Remove="DialogSettings.xaml" />
+    </ItemGroup>
 	
     <ItemGroup>
 		<Content Include="ImageViewer.ico" />
     </ItemGroup>
     
     <ItemGroup>
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.221209.1" />
-        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.755" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.230313.1" />
+        <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
         <PackageReference Include="Svg" Version="3.4.4" />
         <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
         <PackageReference Include="WinUIEx" Version="2.1.0" />
         <Manifest Include="$(ApplicationManifest)" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Page Update="DialogSettings.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
     </ItemGroup>
 	
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
