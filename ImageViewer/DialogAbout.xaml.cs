@@ -7,11 +7,11 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace ImageViewer
 {
-    public sealed partial class About : Page
+    public sealed partial class DialogAbout : Page
     {
         private readonly ContentDialog Dialog;
 
-        public About(ContentDialog e)
+        public DialogAbout(ContentDialog e)
         {
             InitializeComponent();
             Dialog = e;
