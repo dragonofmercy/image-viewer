@@ -147,6 +147,14 @@
                                                 <KeyboardAccelerator Key="F1" Modifiers="Control" />
                                             </MenuFlyoutItem.KeyboardAccelerators>
                                         </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_OPTIONS')}" Click="ButtonSettings_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE713;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="O" Modifiers="Control,Menu" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
                                         <MenuFlyoutItem Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_QUIT')}" Click="ButtonQuit_Click">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xF3B1;" />

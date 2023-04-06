@@ -311,9 +311,20 @@ namespace ImageViewer
             {
                 XamlRoot = Content.XamlRoot
             };
-            dialogAbout.Content = new About(dialogAbout);
+            dialogAbout.Content = new DialogAbout(dialogAbout);
             dialogAbout.RequestedTheme = MainPage.ActualTheme;
             await dialogAbout.ShowAsync();
+        }
+
+        private async void ButtonSettings_Click(object sender, RoutedEventArgs e)
+        {
+            ContentDialog dialogSettings = new()
+            {
+                XamlRoot = Content.XamlRoot
+            };
+            dialogSettings.Content = new DialogSettings(dialogSettings);
+            dialogSettings.RequestedTheme = MainPage.ActualTheme;
+            await dialogSettings.ShowAsync();
         }
 
         private void ButtonSwitchThemeDark_Click(object sender, RoutedEventArgs e)

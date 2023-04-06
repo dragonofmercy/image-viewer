@@ -8,7 +8,10 @@ namespace ImageViewer.Localization
         {
             return new Dictionary<string, string>(){
 
+                { "DEFAULT_SYSTEM_LANGUAGE", "Langue du système" },
                 { "SYSTEM_PASTED_CONTENT", "Contenu collé" },
+
+                { "SETTINGS_FIELD_LANGUAGE", "Langue" },
 
                 { "FILE_TYPE_IMAGE_JPG", "Image JPEG" },
                 { "FILE_TYPE_IMAGE_PNG", "Image PNG" },
@@ -24,6 +27,7 @@ namespace ImageViewer.Localization
                 { "FOOTER_TOOLBAR_MENU_FILE_SAVE", "Enregistrer sous..." },
                 { "FOOTER_TOOLBAR_MENU_FILE_DELETE", "Supprimer l'image" },
                 { "FOOTER_TOOLBAR_MENU_ABOUT", "A propos" },
+                { "FOOTER_TOOLBAR_MENU_OPTIONS", "Options" },
                 { "FOOTER_TOOLBAR_MENU_QUIT", "Quitter" },
 
                 { "FOOTER_TOOLBAR_IMAGE_ADJUST", "Faire un zoom pour ajuster" },

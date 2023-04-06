@@ -20,7 +20,8 @@ namespace ImageViewer
         internal const string HValueAppSizeH = "Height";
         internal const string HValueAppState = "State";
         internal const string HValueLastUpdateCheck = "LastUpdateCheck";
-        
+        internal const string HValueLanguage = "Lang";
+
         public static ElementTheme Theme 
         {
             get
@@ -114,6 +115,19 @@ namespace ImageViewer
             set
             {
                 Registry.SetValue(HkeyAppPath, HValueLastUpdateCheck, value);
+            }
+        }
+
+        public static string Language
+        {
+            get
+            {
+                return (string)Registry.GetValue(HkeyAppPath, HValueLanguage, "");
+            }
+
+            set
+            {
+                Registry.SetValue(HkeyAppPath, HValueLanguage, value);
             }
         }
     }

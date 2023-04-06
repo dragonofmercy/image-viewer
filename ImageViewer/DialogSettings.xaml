@@ -1,0 +1,34 @@
+<Page
+    x:Class="ImageViewer.DialogSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ImageViewer"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" Loaded="Page_Loaded">
+    <StackPanel Orientation="Vertical" Margin="-5">
+
+        <Grid Width="500">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="44" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_OPTIONS')}" />
+            <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="CloseButton_Click">
+                <SymbolIcon Symbol="Clear" />
+            </HyperlinkButton>
+        </Grid>
+
+        <Grid Margin="0,10,0,0" CornerRadius="4" Padding="15" BorderThickness="1" Background="{ ThemeResource PanelBackgroundBrush }" BorderBrush="{ ThemeResource PanelBorderBrush }">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <SymbolIcon Grid.Column="0" Symbol="Keyboard" Margin="0,0,15,0" />
+            <TextBlock Grid.Column="1" Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="2" Name="CboOptionsLanguage" Width="200" ItemsSource="{x:Bind AvailableLanguages}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsLanguage_SelectionChanged"></ComboBox>
+        </Grid>
+
+    </StackPanel>
+</Page>
