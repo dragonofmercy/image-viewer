@@ -16,7 +16,7 @@ namespace ImageViewer.Updater
         const uint MAX_DOWNLOAD_ATTEMPTS = 3;
         const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
 
-        const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.2_2000";
+        const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.2_2000.802.31.0";
         const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.2/1.2.230313.1/windowsappruntimeinstall-x64.exe";
 
         const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.9";
