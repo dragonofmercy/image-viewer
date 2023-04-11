@@ -17,6 +17,7 @@ using Windows.Storage;
 using Windows.Storage.Streams;
 
 using WinRT.Interop;
+using Microsoft.Windows.AppNotifications;
 
 namespace ImageViewer
 {
@@ -168,6 +169,8 @@ namespace ImageViewer
         private void Window_Closed(object sender, WindowEventArgs args)
         {
             VirtualKeyboard.ControlRelease();
+            Context.Instance().NotificationsManger.Clear();
+
             Environment.Exit(0);
         }
 

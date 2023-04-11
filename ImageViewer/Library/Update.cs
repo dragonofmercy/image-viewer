@@ -15,6 +15,7 @@ namespace ImageViewer
         const uint MAX_DOWNLOAD_ATTEMPTS = 3;
         const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
         public static JsonElement JsonCache;
+        public static bool HasUpdate = false;
 
         public static async Task GetRemoteData()
         {
@@ -29,6 +30,25 @@ namespace ImageViewer
             responseMessage.Dispose();
 
             httpClient.Dispose();
+        }
+
+        public static async Task<bool> CheckNewVersionAsync()
+        {
+            await GetRemoteData();
+
+            string remoteVersion = GetRemoteVersion();
+
+            DateTime dateTimeNow = DateTime.Now;
+            Settings.LastUpdateCheck = dateTimeNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+            if(string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
+            {
+                HasUpdate = true;
+                return true;
+            }
+
+            HasUpdate = false;
+            return false;
         }
 
         public static string GetRemoteVersion()

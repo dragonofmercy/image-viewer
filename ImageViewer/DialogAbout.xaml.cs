@@ -5,6 +5,8 @@ using System.Net.Http;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
+using Windows.Media;
+
 namespace ImageViewer
 {
     public sealed partial class DialogAbout : Page
@@ -18,6 +20,11 @@ namespace ImageViewer
 
             CurrentVersionText.Text = string.Concat("v", Context.GetProductVersion());
             LastCheckedText.Text = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
+
+            if(Update.HasUpdate)
+            {
+                DisplayUpdateMessage();
+            }
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -35,21 +42,9 @@ namespace ImageViewer
 
             try
             {
-                await Update.GetRemoteData();
-
-                string remoteVersion = Update.GetRemoteVersion();
-
-                DateTime dateTimeNow = DateTime.Now;
-                LastCheckedText.Text = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), dateTimeNow.ToString());
-                Settings.LastUpdateCheck = dateTimeNow.ToString();
-
-                if(string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
+                if(await Update.CheckNewVersionAsync())
                 {
-                    UpdateStatusInfo.Severity = InfoBarSeverity.Warning;
-                    UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE");
-                    UpdateStatusInfo.IsOpen = true;
-
-                    ButtonDownloadUpdate.Visibility = Visibility.Visible;
+                    DisplayUpdateMessage();
                 }
                 else
                 {
@@ -57,6 +52,8 @@ namespace ImageViewer
                     UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST");
                     UpdateStatusInfo.IsOpen = true;
                 }
+
+                LastCheckedText.Text = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
             }
             catch(KeyNotFoundException)
             {
@@ -74,6 +71,15 @@ namespace ImageViewer
             UpdateCheckingProgress.IsActive = false;
             ButtonCheckUpdate.Visibility = Visibility.Visible;
             UpdateCheckingText.Visibility = Visibility.Collapsed;
+        }
+
+        private void DisplayUpdateMessage()
+        {
+            UpdateStatusInfo.Severity = InfoBarSeverity.Warning;
+            UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE");
+            UpdateStatusInfo.IsOpen = true;
+
+            ButtonDownloadUpdate.Visibility = Visibility.Visible;
         }
 
         private async void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)

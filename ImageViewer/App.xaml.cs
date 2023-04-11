@@ -51,6 +51,7 @@ namespace ImageViewer
 
             Context.Instance().Manager = manager;
             Context.Instance().MainWindow = mWindow;
+            Context.Instance().NotificationsManger = new NotificationsManger();
             
             manager.MinWidth = 768;
             manager.MinHeight = 400;
@@ -80,6 +81,7 @@ namespace ImageViewer
                     break;
             }
 
+            Context.CheckUpdate();
             Context.Instance().LoadDefaultImage();
         }
 

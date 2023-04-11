@@ -48,10 +48,6 @@
         <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
         <Optimize>true</Optimize>
     </PropertyGroup>
-    
-    <ItemGroup>
-      <None Remove="DialogSettings.xaml" />
-    </ItemGroup>
 	
     <ItemGroup>
 		<Content Include="ImageViewer.ico" />
@@ -64,12 +60,6 @@
         <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
         <PackageReference Include="WinUIEx" Version="2.1.0" />
         <Manifest Include="$(ApplicationManifest)" />
-    </ItemGroup>
-    
-    <ItemGroup>
-      <Page Update="DialogSettings.xaml">
-        <Generator>MSBuild:Compile</Generator>
-      </Page>
     </ItemGroup>
 	
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

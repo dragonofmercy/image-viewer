@@ -21,6 +21,7 @@ namespace ImageViewer
         internal const string HValueAppState = "State";
         internal const string HValueLastUpdateCheck = "LastUpdateCheck";
         internal const string HValueLanguage = "Lang";
+        internal const string HValueCheckUpdateInterval = "UpdateInterval";
 
         public static ElementTheme Theme 
         {
@@ -115,6 +116,19 @@ namespace ImageViewer
             set
             {
                 Registry.SetValue(HkeyAppPath, HValueLastUpdateCheck, value);
+            }
+        }
+
+        public static string UpdateInterval
+        {
+            get
+            {
+                return (string)Registry.GetValue(HkeyAppPath, HValueCheckUpdateInterval, "");
+            }
+
+            set
+            {
+                Registry.SetValue(HkeyAppPath, HValueCheckUpdateInterval, value);
             }
         }
 

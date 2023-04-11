@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
+
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
@@ -45,6 +48,7 @@ namespace ImageViewer
         public string[] LaunchArgs;
         public MainWindow MainWindow;
         public WindowManager Manager;
+        public NotificationsManger NotificationsManger;
 
         public Bitmap CurrentImage { get; protected set; }
         public string CurrentFilePath { get; protected set; }
@@ -400,6 +404,47 @@ namespace ImageViewer
             MainWindow.ButtonImageTransformFlipVertical.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
             MainWindow.ButtonImageTransformRotateLeft.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
             MainWindow.ButtonImageTransformRotateRight.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
+        }
+
+        public static async void CheckUpdate()
+        {
+            if(string.IsNullOrEmpty(Settings.UpdateInterval))
+            {
+                return;
+            }
+
+            if(!string.IsNullOrEmpty(Settings.LastUpdateCheck))
+            {
+                DateTime now = DateTime.Now;
+                DateTime last_check = DateTime.Parse(Settings.LastUpdateCheck);
+
+                switch(Settings.UpdateInterval)
+                {
+                    case "day":
+                        last_check = last_check.AddDays(1);
+                        break;
+                    case "week":
+                        last_check = last_check.AddDays(7);
+                        break;
+                    default:
+                        last_check = last_check.AddMonths(1);
+                        break;
+                }
+
+                if(last_check > now)
+                {
+                    return;
+                }
+            }
+            
+            if(await Update.CheckNewVersionAsync())
+            {
+                var builder = new AppNotificationBuilder()
+                    .AddText(Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"))
+                    .AddButton(new AppNotificationButton(Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE")).AddArgument("action", "doUpdate"));
+
+                NotificationsManger.Runtime.Show(builder.BuildNotification());
+            }
         }
 
         /// <summary>

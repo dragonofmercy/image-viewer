@@ -13,6 +13,11 @@ namespace ImageViewer.Localization
 
                 { "SETTINGS_FIELD_LANGUAGE", "Langue" },
                 { "SETTINGS_FIELD_LANGUAGE_HELP", "Vous devez redémarrer l'application pour appliquer ce paramètre." },
+                { "SETTINGS_FIELD_UPDATE_INTERVAL", "Recherche des mises à jour" },
+                { "SETTINGS_FIELD_UPDATE_INTERVAL_DAY", "Tous les jours" },
+                { "SETTINGS_FIELD_UPDATE_INTERVAL_WEEK", "Toutes les semaines" },
+                { "SETTINGS_FIELD_UPDATE_INTERVAL_MONTH", "Tous les mois" },
+                { "SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL", "Manuellement" },
 
                 { "FILE_TYPE_IMAGE_JPG", "Image JPEG" },
                 { "FILE_TYPE_IMAGE_PNG", "Image PNG" },
