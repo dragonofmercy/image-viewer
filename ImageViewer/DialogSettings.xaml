@@ -5,10 +5,11 @@
     xmlns:local="using:ImageViewer"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Loaded="Page_Loaded">
-    <StackPanel Orientation="Vertical" Margin="-5">
-
-        <Grid Width="500">
+    mc:Ignorable="d" 
+    Loaded="Page_Loaded"
+    Background="{ ThemeResource WindowBackgroundBrush }">
+    <StackPanel Orientation="Vertical" Padding="24">
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="44" />
@@ -25,9 +26,12 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <SymbolIcon Grid.Column="0" Symbol="Keyboard" Margin="0,0,15,0" />
-            <TextBlock Grid.Column="1" Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" VerticalAlignment="Center" />
-            <ComboBox Grid.Column="2" Name="CboOptionsLanguage" Width="200" ItemsSource="{x:Bind AvailableLanguages}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsLanguage_SelectionChanged"></ComboBox>
+            <FontIcon Grid.Column="0" FontSize="24" Glyph="&#xe775;" Margin="0,0,15,0" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
+                <TextBlock Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" />
+                <TextBlock Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}" Foreground="{ ThemeResource TextFillColorSecondary }" FontSize="12" TextWrapping="Wrap" Visibility="Visible" />
+            </StackPanel>
+            <ComboBox Grid.Column="2" VerticalAlignment="Center" Name="CboOptionsLanguage" Width="200" ItemsSource="{x:Bind AvailableLanguages}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsLanguage_SelectionChanged"></ComboBox>
         </Grid>
 
     </StackPanel>

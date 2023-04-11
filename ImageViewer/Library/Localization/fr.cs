@@ -12,6 +12,7 @@ namespace ImageViewer.Localization
                 { "SYSTEM_PASTED_CONTENT", "Contenu collé" },
 
                 { "SETTINGS_FIELD_LANGUAGE", "Langue" },
+                { "SETTINGS_FIELD_LANGUAGE_HELP", "Vous devez redémarrer l'application pour appliquer ce paramètre." },
 
                 { "FILE_TYPE_IMAGE_JPG", "Image JPEG" },
                 { "FILE_TYPE_IMAGE_PNG", "Image PNG" },
