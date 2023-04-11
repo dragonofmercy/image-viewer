@@ -52,7 +52,7 @@ namespace ImageViewer
             Context.Instance().Manager = manager;
             Context.Instance().MainWindow = mWindow;
             
-            manager.MinWidth = 680;
+            manager.MinWidth = 768;
             manager.MinHeight = 400;
             manager.PositionChanged += Window_PositionChanged;
             manager.WindowMessageReceived += Manager_WindowMessageReceived;
