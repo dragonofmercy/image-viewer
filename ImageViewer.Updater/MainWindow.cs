@@ -19,8 +19,8 @@ namespace ImageViewer.Updater
         const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.2_2000.802.31.0";
         const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.2/1.2.230313.1/windowsappruntimeinstall-x64.exe";
 
-        const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.9";
-        const string NET6_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/fe8415d4-8a35-4af9-80a5-51306a96282d/05f9b2a1b4884238e69468e49b3a5453/windowsdesktop-runtime-6.0.9-win-x64.exe";
+        const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.16";
+        const string NET6_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/456fdf02-f100-4664-916d-fd46c192efea/619bbd8426537632b7598b4c7c467cf1/dotnet-runtime-6.0.16-win-x64.exe";
         
         private string TempDirectory;
         private string InstallSourcesDirectory;
