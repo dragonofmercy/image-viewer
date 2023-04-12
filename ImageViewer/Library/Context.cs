@@ -431,7 +431,7 @@ namespace ImageViewer
                         break;
                 }
 
-                if(last_check > now)
+                if(last_check.Date > now.Date)
                 {
                     return;
                 }
