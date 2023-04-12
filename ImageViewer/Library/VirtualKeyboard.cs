@@ -9,26 +9,26 @@ namespace ImageViewer
         private const int KEYEVENTF_KEYUP = 0x0002;          // Key up flag
         private const int VK_LCONTROL = 0xA2;                // Left Control key code
 
-        private static bool LeftControlKeyPressed = false;
+        private static bool _LeftControlKeyPressed;
 
         [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+        private static extern void keybd_event(byte b_vk, byte b_scan, uint dw_flags, int dw_extra_info);
 
         public static bool ControlPressed()
         {
-            return LeftControlKeyPressed;
+            return _LeftControlKeyPressed;
         }
 
         public static void ControlPress()
         {
             keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN, 0);
-            LeftControlKeyPressed = true;
+            _LeftControlKeyPressed = true;
         }
 
         public static void ControlRelease()
         {
             keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-            LeftControlKeyPressed = false;
+            _LeftControlKeyPressed = false;
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Globalization;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -17,7 +17,6 @@ using Windows.Storage;
 using Windows.Storage.Streams;
 
 using WinRT.Interop;
-using Microsoft.Windows.AppNotifications;
 
 namespace ImageViewer
 {
@@ -249,26 +248,25 @@ namespace ImageViewer
 
         private void ScrollView_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
-            TextBlockZoomFactor.Text = string.Concat(Math.Round(ScrollView.ZoomFactor * 100).ToString(), "%");
-            
-            if(!e.IsIntermediate)
-            {
-                VirtualKeyboard.ControlRelease();
+            TextBlockZoomFactor.Text = string.Concat(Math.Round(ScrollView.ZoomFactor * 100).ToString(CultureInfo.InvariantCulture), "%");
 
-                if(ScrollView.ZoomFactor == Context.Instance().GetAdjustedZoomFactor())
-                {
-                    ButtonImageAdjust.Visibility = Visibility.Collapsed;
-                    ButtonImageAdjust.IsEnabled = false;
-                    ButtonImageZoomFull.Visibility = Visibility.Visible;
-                    ButtonImageZoomFull.IsEnabled = true;
-                }
-                else
-                {
-                    ButtonImageAdjust.Visibility = Visibility.Visible;
-                    ButtonImageAdjust.IsEnabled = true;
-                    ButtonImageZoomFull.Visibility = Visibility.Collapsed;
-                    ButtonImageZoomFull.IsEnabled = false;
-                }
+            if(e.IsIntermediate) return;
+
+            VirtualKeyboard.ControlRelease();
+
+            if(ScrollView.ZoomFactor == Context.Instance().GetAdjustedZoomFactor())
+            {
+                ButtonImageAdjust.Visibility = Visibility.Collapsed;
+                ButtonImageAdjust.IsEnabled = false;
+                ButtonImageZoomFull.Visibility = Visibility.Visible;
+                ButtonImageZoomFull.IsEnabled = true;
+            }
+            else
+            {
+                ButtonImageAdjust.Visibility = Visibility.Visible;
+                ButtonImageAdjust.IsEnabled = true;
+                ButtonImageZoomFull.Visibility = Visibility.Collapsed;
+                ButtonImageZoomFull.IsEnabled = false;
             }
         }
 
@@ -376,8 +374,8 @@ namespace ImageViewer
                 ImageView.Opacity = 0;
                 ImageLoadingIndicator.IsActive = true;
 
-                RandomAccessStreamReference clipboard_image = await clipboard.GetBitmapAsync();
-                Context.Instance().LoadImageFromBuffer(clipboard_image);
+                RandomAccessStreamReference clipboardImage = await clipboard.GetBitmapAsync();
+                Context.Instance().LoadImageFromBuffer(clipboardImage);
             }
         }
     }

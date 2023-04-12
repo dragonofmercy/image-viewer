@@ -3,6 +3,7 @@ using System.Linq;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
 using Svg;
@@ -11,9 +12,9 @@ namespace ImageViewer
 {
     public static class Extensions
     {
-        public static T[] RemoveFromArray<T>(this T[] original, T itemToRemove)
+        public static T[] RemoveFromArray<T>(this T[] original, T item_to_remove)
         {
-            int numIdx = System.Array.IndexOf(original, itemToRemove);
+            int numIdx = System.Array.IndexOf(original, item_to_remove);
             if(numIdx == -1) return original;
             List<T> tmp = new(original);
             tmp.RemoveAt(numIdx);
@@ -59,19 +60,12 @@ namespace ImageViewer
 
         public static string ToUpdateDate(this string original)
         {
-            if(string.IsNullOrEmpty(original))
-            {
-                return Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER");
-            }
-            else
-            {
-                return DateTime.Parse(original).ToString();
-            }
+            return string.IsNullOrEmpty(original) ? Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER") : DateTime.Parse(original).ToString(CultureInfo.CurrentCulture);
         }
 
         public static void SaveJpeg(this Bitmap original, string filepath, byte quality)
         {
-            ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().Where(s => s.FormatID == ImageFormat.Jpeg.Guid).First();
+            ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().First(s => s.FormatID == ImageFormat.Jpeg.Guid);
             EncoderParameters encoderParameters = new(1);
             encoderParameters.Param[0] = new EncoderParameter(Encoder.Quality, Convert.ToInt64(quality));
             original.Save(filepath, encoder, encoderParameters);

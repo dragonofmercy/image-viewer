@@ -8,7 +8,7 @@ namespace ImageViewer
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.UI.Xaml.Markup.Compiler", " 1.0.0.0")]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.STAThreadAttribute]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Context.Instance().LaunchArgs = args;
 
@@ -16,7 +16,7 @@ namespace ImageViewer
             global::Microsoft.UI.Xaml.Application.Start((p) => {
                 var context = new global::Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(global::Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
                 global::System.Threading.SynchronizationContext.SetSynchronizationContext(context);
-                new App();
+                _ = new App();
             });
         }
     }
@@ -81,47 +81,40 @@ namespace ImageViewer
                     break;
             }
 
-            Context.CheckUpdate();
+            Context.Instance().CheckUpdate();
             Context.Instance().LoadDefaultImage();
         }
 
         private void Manager_WindowMessageReceived(object sender, WinUIEx.Messaging.WindowMessageEventArgs e)
         {
-            if(e.Message.MessageId == 0x0112) // WM_SYSCOMMAND
+            if(e.Message.MessageId != 0x0112) return; // WM_SYSCOMMAND
+
+            Settings.WindowState = e.Message.WParam switch
             {
-                switch(e.Message.WParam)
-                {
-                    case 0xF120: // Restore event - SC_RESTORE from Winuser.h
-                        Settings.WindowState = WindowState.Normal;
-                        break;
-
-                    case 0xF030: // Maximize event - SC_MAXIMIZE from Winuser.h
-                        Settings.WindowState = WindowState.Maximized;
-                        break;
-
-                    case 0XF020: // Minimize event - SC_MINIMIZE from Winuser.h
-                        Settings.WindowState = WindowState.Minimized;
-                        break;
-                }
-            }
+                0xF120 => // Restore event - SC_RESTORE from Winuser.h
+                    WindowState.Normal,
+                0xF030 => // Maximize event - SC_MAXIMIZE from Winuser.h
+                    WindowState.Maximized,
+                0XF020 => // Minimize event - SC_MINIMIZE from Winuser.h
+                    WindowState.Minimized,
+                _ => Settings.WindowState
+            };
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
         {
-            if(Settings.WindowState == WindowState.Normal)
-            {
-                Settings.AppSizeH = (uint)args.Size.Height;
-                Settings.AppSizeW = (uint)args.Size.Width;
-            }
+            if(Settings.WindowState != WindowState.Normal) return;
+
+            Settings.AppSizeH = (uint)args.Size.Height;
+            Settings.AppSizeW = (uint)args.Size.Width;
         }
 
         private void Window_PositionChanged(object sender, Windows.Graphics.PointInt32 e)
         {
-            if(Settings.WindowState == WindowState.Normal)
-            {
-                Settings.AppPositionX = e.X;
-                Settings.AppPositionY = e.Y;
-            }
+            if(Settings.WindowState != WindowState.Normal) return;
+
+            Settings.AppPositionX = e.X;
+            Settings.AppPositionY = e.Y;
         }
     }
 }

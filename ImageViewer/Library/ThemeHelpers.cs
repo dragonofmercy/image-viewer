@@ -9,11 +9,11 @@ namespace ImageViewer
     public static class ThemeHelpers
     {
         [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attr_value, int attr_size);
 
         internal const string   HKey = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
         internal const string   HValueAppTheme = "AppsUseLightTheme";
-        internal const int      DWMWAImmersiveDarkMode = 20;
+        internal const int      DwmwaImmersiveDarkMode = 20;
 
         public static ElementTheme GetAppTheme()
         {
@@ -25,7 +25,7 @@ namespace ImageViewer
         public static void SetImmersiveDarkMode(IntPtr window, bool enabled)
         {
             int useImmersiveDarkMode = enabled ? 1 : 0;
-            _ = DwmSetWindowAttribute(window, DWMWAImmersiveDarkMode, ref useImmersiveDarkMode, sizeof(int));
+            _ = DwmSetWindowAttribute(window, DwmwaImmersiveDarkMode, ref useImmersiveDarkMode, sizeof(int));
         }
     }
 }

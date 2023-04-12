@@ -7,7 +7,7 @@ namespace ImageViewer
 {
     internal class NotificationsManger
     {
-        public static AppNotificationManager Runtime;
+        public AppNotificationManager Runtime;
 
         public NotificationsManger() 
         {

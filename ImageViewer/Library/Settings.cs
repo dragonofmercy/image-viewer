@@ -3,7 +3,7 @@ using Microsoft.Win32;
 
 namespace ImageViewer
 {
-    enum WindowState
+    internal enum WindowState
     {
         Normal,
         Maximized,

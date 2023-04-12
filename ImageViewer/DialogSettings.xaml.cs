@@ -8,8 +8,8 @@ namespace ImageViewer
 {
     public sealed partial class DialogSettings : Page
     {
-        private readonly Dictionary<string, string>AvailableLanguages = new Dictionary<string, string>();
-        private readonly Dictionary<string, string>UpdatesIntervals = new Dictionary<string, string>();
+        private readonly Dictionary<string, string>AvailableLanguages = new();
+        private readonly Dictionary<string, string>UpdatesIntervals = new();
         private readonly ContentDialog Dialog;
 
         public DialogSettings(ContentDialog e)
@@ -19,9 +19,9 @@ namespace ImageViewer
 
             AvailableLanguages.Add(Culture.GetString("DEFAULT_SYSTEM_LANGUAGE"), "");
 
-            foreach(string languages_iso in Culture.GetAvailableLanguages()) 
+            foreach(string languagesIso in Culture.GetAvailableLanguages()) 
             {
-                AvailableLanguages.Add(new CultureInfo(languages_iso).NativeName.UcFirst(), languages_iso.ToLower());
+                AvailableLanguages.Add(new CultureInfo(languagesIso).NativeName.UcFirst(), languagesIso.ToLower());
             }
 
             UpdatesIntervals.Add(Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_DAY"), "day");

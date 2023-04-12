@@ -12,8 +12,8 @@ namespace ImageViewer
 {
     internal class Update
     {
-        const uint MAX_DOWNLOAD_ATTEMPTS = 3;
-        const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
+        private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
+        private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
         public static JsonElement JsonCache;
         public static bool HasUpdate = false;
 
@@ -77,11 +77,9 @@ namespace ImageViewer
                     string tmp = JsonCache.GetProperty("assets")[i].GetProperty("browser_download_url").GetString();
                     Regex reg = new("ImageViewer.Updater.exe$", RegexOptions.IgnoreCase);
 
-                    if(reg.IsMatch(tmp))
-                    {
-                        downloadUri = tmp;
-                        break;
-                    }
+                    if(!reg.IsMatch(tmp)) continue;
+                    downloadUri = tmp;
+                    break;
                 }
 
                 if(string.IsNullOrEmpty(downloadUri))
@@ -94,7 +92,7 @@ namespace ImageViewer
                 throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
             }
 
-            bool downloadSuccess = true;
+            bool downloadSuccess = false;
 
             for(uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
             {
@@ -104,9 +102,8 @@ namespace ImageViewer
                     FileStream fs = new(Path.Combine(tempDirectory, "imageviewer.update.exe"), FileMode.CreateNew);
 
                     await s.CopyToAsync(fs);
-
-                    fs.Dispose();
-                    s.Dispose();
+                    await fs.DisposeAsync();
+                    await s.DisposeAsync();
 
                     downloadSuccess = true;
 
@@ -114,8 +111,11 @@ namespace ImageViewer
                 }
                 catch(Exception)
                 {
+                    // ignored
                 }
             }
+
+            httpClient.Dispose();
 
             if(downloadSuccess)
             {
@@ -137,8 +137,6 @@ namespace ImageViewer
             {
                 throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
             }
-
-            httpClient.Dispose();
         }
     }
 }

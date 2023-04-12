@@ -5,8 +5,6 @@ using System.Net.Http;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-using Windows.Media;
-
 namespace ImageViewer
 {
     public sealed partial class DialogAbout : Page

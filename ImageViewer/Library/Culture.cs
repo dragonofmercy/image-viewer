@@ -7,8 +7,8 @@ namespace ImageViewer
 {
     internal class Culture
     {
-        private static string Language;
-        private static Type Class;
+        private static string _Language;
+        private static Type _Class;
 
         public static void Init()
         {
@@ -20,23 +20,16 @@ namespace ImageViewer
             }
             else
             {
-                Language = Windows.System.UserProfile.GlobalizationPreferences.Languages[0].Split('-')[0];
-                classname = string.Concat("ImageViewer.Localization.", Language.UcFirst());
+                _Language = Windows.System.UserProfile.GlobalizationPreferences.Languages[0].Split('-')[0];
+                classname = string.Concat("ImageViewer.Localization.", _Language.UcFirst());
             }
-            
-            if(Type.GetType(classname) != null)
-            {
-                Class = Type.GetType(classname);
-            }
-            else
-            {
-                Class = Type.GetType("ImageViewer.Localization.En");
-            }
+
+            _Class = Type.GetType(Type.GetType(classname) != null ? classname : "ImageViewer.Localization.En");
         }
 
         public static string GetLanguage()
         {
-            return Language;
+            return _Language;
         }
 
         public static List<string> GetAvailableLanguages() 
@@ -49,14 +42,9 @@ namespace ImageViewer
 
         public static string GetString(string key)
         {
-            Dictionary<string, string> strings = (Dictionary<string, string>)Class.GetMethod("GetStrings", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
+            Dictionary<string, string> strings = (Dictionary<string, string>)_Class.GetMethod("GetStrings", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
 
-            if(strings.ContainsKey(key))
-            {
-                return strings[key];
-            }
-
-            return string.Format("[{0}]", key);
+            return strings.TryGetValue(key, out var s) ? s : $"[{key}]";
         }
     }
 }

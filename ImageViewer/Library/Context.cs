@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading.Tasks;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 
-using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 
 using Windows.Storage;
@@ -23,7 +23,7 @@ using Svg;
 
 namespace ImageViewer
 {
-    enum ImageInfos
+    internal enum ImageInfos
     {
         FileName,
         FileDate,
@@ -43,7 +43,7 @@ namespace ImageViewer
 
         private string[] FolderFiles;
         private int CurrentIndex;
-        private bool MemoryOnly = false;
+        private bool MemoryOnly;
 
         public string[] LaunchArgs;
         public MainWindow MainWindow;
@@ -71,18 +71,15 @@ namespace ImageViewer
         /// </summary>
         public async void LoadDefaultImage()
         {
-            if(LaunchArgs.Length > 0)
-            {
-                if(CheckFileExtension(LaunchArgs[0]))
-                {
-                    MainWindow.ImageLoadingIndicator.IsActive = true;
-                    await Task.Delay(200);
+            if(LaunchArgs.Length <= 0) return;
+            if(!CheckFileExtension(LaunchArgs[0])) return;
 
-                    if(LoadImageFromString(LaunchArgs[0]))
-                    {
-                        LoadDirectoryFiles();
-                    }
-                }
+            MainWindow.ImageLoadingIndicator.IsActive = true;
+            await Task.Delay(200);
+
+            if(LoadImageFromString(LaunchArgs[0]))
+            {
+                LoadDirectoryFiles();
             }
         }
 
@@ -109,20 +106,25 @@ namespace ImageViewer
         /// </summary>
         public void LoadNextImage()
         {
-            if(FolderFiles != null && FolderFiles.Length > 0)
+            while(true)
             {
-                CurrentIndex += 1;
-
-                if(CurrentIndex >= FolderFiles.Length)
+                if(FolderFiles is { Length: > 0 })
                 {
-                    CurrentIndex = 0;
+                    CurrentIndex += 1;
+
+                    if(CurrentIndex >= FolderFiles.Length)
+                    {
+                        CurrentIndex = 0;
+                    }
+
+                    if(!LoadImageFromString(FolderFiles[CurrentIndex]))
+                    {
+                        FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
+                        continue;
+                    }
                 }
 
-                if(!LoadImageFromString(FolderFiles[CurrentIndex]))
-                {
-                    FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
-                    LoadNextImage();
-                }
+                break;
             }
         }
 
@@ -131,20 +133,25 @@ namespace ImageViewer
         /// </summary>
         public void LoadPrevImage()
         {
-            if(FolderFiles != null && FolderFiles.Length > 0)
+            while(true)
             {
-                CurrentIndex -= 1;
-
-                if(CurrentIndex < 0)
+                if(FolderFiles is { Length: > 0 })
                 {
-                    CurrentIndex = FolderFiles.Length - 1;
+                    CurrentIndex -= 1;
+
+                    if(CurrentIndex < 0)
+                    {
+                        CurrentIndex = FolderFiles.Length - 1;
+                    }
+
+                    if(!LoadImageFromString(FolderFiles[CurrentIndex]))
+                    {
+                        FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
+                        continue;
+                    }
                 }
 
-                if(!LoadImageFromString(FolderFiles[CurrentIndex]))
-                {
-                    FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
-                    LoadPrevImage();
-                }
+                break;
             }
         }
 
@@ -153,26 +160,25 @@ namespace ImageViewer
         /// </summary>
         public async void LoadImageFromPicker()
         {
-            FileOpenPicker OpenFilePicker = new();
+            FileOpenPicker openFilePicker = new();
 
-            foreach(string file_type in FileTypes)
+            foreach(string fileType in FileTypes)
             {
-                OpenFilePicker.FileTypeFilter.Add(file_type);
+                openFilePicker.FileTypeFilter.Add(fileType);
             }
 
-            InitializeWithWindow.Initialize(OpenFilePicker, WindowNative.GetWindowHandle(MainWindow));
-            StorageFile selectedFile = await OpenFilePicker.PickSingleFileAsync();
+            InitializeWithWindow.Initialize(openFilePicker, WindowNative.GetWindowHandle(MainWindow));
+            StorageFile selectedFile = await openFilePicker.PickSingleFileAsync();
 
-            if(selectedFile != null && CheckFileExtension(selectedFile.Path))
-            {
-                CurrentFilePath = selectedFile.Path;
+            if(selectedFile == null || !CheckFileExtension(selectedFile.Path)) return;
 
-                MemoryOnly = false;
+            CurrentFilePath = selectedFile.Path;
 
-                LoadBitmap();
-                LoadImageView();
-                LoadDirectoryFiles();
-            }
+            MemoryOnly = false;
+
+            LoadBitmap();
+            LoadImageView();
+            LoadDirectoryFiles();
         }
 
         public async void LoadImageFromBuffer(RandomAccessStreamReference clipboard)
@@ -192,23 +198,20 @@ namespace ImageViewer
         /// </summary>
         public bool LoadImageFromString(string image_path, bool reload_directories = false)
         {
-            if(File.Exists(image_path) && CheckFileExtension(image_path))
+            if(!File.Exists(image_path) || !CheckFileExtension(image_path)) return false;
+
+            CurrentFilePath = image_path;
+            MemoryOnly = false;
+
+            LoadBitmap();
+            LoadImageView();
+
+            if(reload_directories)
             {
-                CurrentFilePath = image_path;
-                MemoryOnly = false;
-
-                LoadBitmap();
-                LoadImageView();
-
-                if(reload_directories)
-                {
-                    LoadDirectoryFiles();
-                }
-
-                return true;
+                LoadDirectoryFiles();
             }
 
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -246,11 +249,11 @@ namespace ImageViewer
             FileInfo fileinfo = new(CurrentFilePath);
 
             dict[ImageInfos.FileName] = Path.GetFileName(CurrentFilePath);
-            dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString();
+            dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString(CultureInfo.CurrentCulture);
             dict[ImageInfos.ImageDimensions] = string.Concat(CurrentImage.Width, " x ", CurrentImage.Height);
             dict[ImageInfos.ImageSize] = HumanizeBytes(fileinfo.Length);
             dict[ImageInfos.FolderPath] = Path.GetDirectoryName(CurrentFilePath);
-            dict[ImageInfos.ImageDpi] = string.Concat(Math.Round(CurrentImage.HorizontalResolution, 2).ToString(), " dpi");
+            dict[ImageInfos.ImageDpi] = string.Concat(Math.Round(CurrentImage.HorizontalResolution, 2).ToString(CultureInfo.CurrentCulture), " dpi");
             dict[ImageInfos.ImageDepth] = string.Concat(Image.GetPixelFormatSize(CurrentImage.PixelFormat).ToString(), " bit");
 
             return dict;
@@ -275,7 +278,7 @@ namespace ImageViewer
                     FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
                 }
 
-                if(FolderFiles != null && FolderFiles.Length > 0)
+                if(FolderFiles is { Length: > 0 })
                 {
                     LoadNextImage();
                 }
@@ -293,6 +296,7 @@ namespace ImageViewer
             }
             catch(Exception)
             {
+                // ignored
             }
         }
 
@@ -387,7 +391,7 @@ namespace ImageViewer
                 MainWindow.ButtonFileSave.IsEnabled = false;
             }
 
-            if(FolderFiles != null && FolderFiles.Length > 1)
+            if(FolderFiles is { Length: > 1 })
             {
                 MainWindow.ButtonImagePrevious.IsEnabled = true;
                 MainWindow.ButtonImageNext.IsEnabled = true;
@@ -406,7 +410,10 @@ namespace ImageViewer
             MainWindow.ButtonImageTransformRotateRight.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
         }
 
-        public static async void CheckUpdate()
+        /// <summary>
+        /// Check update using UpdateInterval setting
+        /// </summary>
+        public async void CheckUpdate()
         {
             if(string.IsNullOrEmpty(Settings.UpdateInterval))
             {
@@ -416,35 +423,28 @@ namespace ImageViewer
             if(!string.IsNullOrEmpty(Settings.LastUpdateCheck))
             {
                 DateTime now = DateTime.Now;
-                DateTime last_check = DateTime.Parse(Settings.LastUpdateCheck);
+                DateTime lastCheck = DateTime.Parse(Settings.LastUpdateCheck);
 
-                switch(Settings.UpdateInterval)
+                lastCheck = Settings.UpdateInterval switch
                 {
-                    case "day":
-                        last_check = last_check.AddDays(1);
-                        break;
-                    case "week":
-                        last_check = last_check.AddDays(7);
-                        break;
-                    default:
-                        last_check = last_check.AddMonths(1);
-                        break;
-                }
+                    "day" => lastCheck.AddDays(1),
+                    "week" => lastCheck.AddDays(7),
+                    _ => lastCheck.AddMonths(1)
+                };
 
-                if(last_check.Date > now.Date)
+                if(lastCheck.Date > now.Date)
                 {
                     return;
                 }
             }
-            
-            if(await Update.CheckNewVersionAsync())
-            {
-                var builder = new AppNotificationBuilder()
-                    .AddText(Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"))
-                    .AddButton(new AppNotificationButton(Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE")).AddArgument("action", "doUpdate"));
 
-                NotificationsManger.Runtime.Show(builder.BuildNotification());
-            }
+            if(!await Update.CheckNewVersionAsync()) return;
+
+            var builder = new AppNotificationBuilder()
+                .AddText(Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"))
+                .AddButton(new AppNotificationButton(Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE")).AddArgument("action", "doUpdate"));
+
+            NotificationsManger.Runtime.Show(builder.BuildNotification());
         }
 
         /// <summary>
@@ -452,51 +452,48 @@ namespace ImageViewer
         /// </summary>
         public async void SaveAs()
         {
-            FileSavePicker SaveFilePicker = new()
+            FileSavePicker saveFilePicker = new()
             {
                 SuggestedFileName = Path.GetFileNameWithoutExtension(CurrentFilePath)
             };
-            SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_JPG"), new List<string>() { ".jpg" });
-            SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_PNG"), new List<string>() { ".png" });
-            SaveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_WEBP"), new List<string>() { ".webp" });
+            saveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_JPG"), new List<string>() { ".jpg" });
+            saveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_PNG"), new List<string>() { ".png" });
+            saveFilePicker.FileTypeChoices.Add(Culture.GetString("FILE_TYPE_IMAGE_WEBP"), new List<string>() { ".webp" });
 
-            InitializeWithWindow.Initialize(SaveFilePicker, WindowNative.GetWindowHandle(MainWindow));
-            StorageFile outputFile = await SaveFilePicker.PickSaveFileAsync();
+            InitializeWithWindow.Initialize(saveFilePicker, WindowNative.GetWindowHandle(MainWindow));
+            StorageFile outputFile = await saveFilePicker.PickSaveFileAsync();
 
-            if(outputFile != null)
+            if(outputFile == null) return;
+            if(CurrentImage == null) return;
+
+            switch(outputFile.FileType)
             {
-                if(CurrentImage != null)
-                {
-                    switch(outputFile.FileType)
+                case ".jpg":
+                    CurrentImage.SaveJpeg(outputFile.Path, 100);
+                    break;
+
+                case ".png":
+                    CurrentImage.Save(outputFile.Path, ImageFormat.Png);
+                    break;
+
+                case ".webp":
+                    using(Wrapper.WebP webp = new())
                     {
-                        case ".jpg":
-                            CurrentImage.SaveJpeg(outputFile.Path, 100);
-                            break;
-
-                        case ".png":
-                            CurrentImage.Save(outputFile.Path, ImageFormat.Png);
-                            break;
-
-                        case ".webp":
-                            using(Wrapper.WebP webp = new())
-                            {
-                                webp.Save(CurrentImage, outputFile.Path, 100);
-                                webp.Dispose();
-                            }
-                            break;
-                        default:
-                            return;
+                        webp.Save(CurrentImage, outputFile.Path, 100);
+                        webp.Dispose();
                     }
-
-                    LoadDirectoryFiles();
-                }
+                    break;
+                default:
+                    return;
             }
+
+            LoadDirectoryFiles();
         }
 
         /// <summary>
         /// Load current bitmap
         /// </summary>
-        private void LoadBitmap(IRandomAccessStreamWithContentType stream = null)
+        private void LoadBitmap(IInputStream stream = null)
         {
             MainWindow.ImageView.Opacity = 0;
             MainWindow.ImageLoadingIndicator.IsActive = true;
@@ -536,7 +533,7 @@ namespace ImageViewer
         /// <summary>
         /// Load bitmap (CurrentImage) inside image view
         /// </summary>
-        private void LoadImageView(bool useUriSource = true)
+        private void LoadImageView(bool use_uri_source = true)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -550,7 +547,7 @@ namespace ImageViewer
 
             MainWindow.ImageView.Source = bitmapImage;
 
-            if(!useUriSource || Path.GetExtension(CurrentFilePath).ToLower() == ".svg")
+            if(!use_uri_source || Path.GetExtension(CurrentFilePath).ToLower() == ".svg")
             {
                 using MemoryStream memory = new();
                 CurrentImage.Save(memory, ImageFormat.Png);
@@ -559,7 +556,7 @@ namespace ImageViewer
             }
             else
             {
-                bitmapImage.UriSource = new(CurrentFilePath);
+                bitmapImage.UriSource = new Uri(CurrentFilePath);
             }
         }
 
@@ -636,7 +633,7 @@ namespace ImageViewer
                 bytes /= 1024;
             }
 
-            return string.Format("{0:0.#} {1}", bytes, sizes[order]);
+            return $"{bytes:0.#} {sizes[order]}";
         }
 
         /// <summary>
