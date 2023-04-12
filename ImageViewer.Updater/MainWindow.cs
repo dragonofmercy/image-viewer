@@ -13,14 +13,14 @@ namespace ImageViewer.Updater
 {
     public partial class MainWindow : Form
     {
-        const uint MAX_DOWNLOAD_ATTEMPTS = 3;
-        const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
+        private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
+        private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
 
-        const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.2_2000.802.31.0";
-        const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.2/1.2.230313.1/windowsappruntimeinstall-x64.exe";
+        private const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.2_2000.802.31.0";
+        private const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.2/1.2.230313.1/windowsappruntimeinstall-x64.exe";
 
-        const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.16";
-        const string NET6_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/456fdf02-f100-4664-916d-fd46c192efea/619bbd8426537632b7598b4c7c467cf1/dotnet-runtime-6.0.16-win-x64.exe";
+        private const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.16";
+        private const string NET6_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/85473c45-8d91-48cb-ab41-86ec7abc1000/83cd0c82f0cde9a566bae4245ea5a65b/windowsdesktop-runtime-6.0.16-win-x64.exe";
         
         private string TempDirectory;
         private string InstallSourcesDirectory;
@@ -69,7 +69,7 @@ namespace ImageViewer.Updater
             mi.Invoke(this, null);
         }
 
-        private async Task<bool> DownloadFile(string Url, string SavePath)
+        private async Task<bool> DownloadFile(string url, string save_path)
         {
             HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
@@ -80,8 +80,8 @@ namespace ImageViewer.Updater
                 {
                     Application.DoEvents();
 
-                    Stream s = await httpClient.GetStreamAsync(new Uri(Url));
-                    FileStream fs = new FileStream(SavePath, FileMode.CreateNew);
+                    Stream s = await httpClient.GetStreamAsync(new Uri(url));
+                    FileStream fs = new FileStream(save_path, FileMode.CreateNew);
 
                     await s.CopyToAsync(fs);
 
@@ -93,6 +93,7 @@ namespace ImageViewer.Updater
                 }
                 catch(Exception)
                 {
+                    // ignored
                 }
             }
 
