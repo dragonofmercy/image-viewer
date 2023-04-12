@@ -19,8 +19,8 @@
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
-		<FileVersion>1.23.4.11</FileVersion>
-		<Version>0.0.5-beta</Version>
+		<FileVersion>1.23.4.12</FileVersion>
+		<Version>0.0.6-beta</Version>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
