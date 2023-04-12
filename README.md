@@ -29,10 +29,10 @@ https://github.com/dragonofmercy/image-viewer/releases
 
 ## How to install manually
 
-1. Download and install .NET 6.0 Desktop Runtime (v6.0.9) from Microsoft:   
-https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.9-windows-x64-installer
+1. Download and install .NET 6.0 Desktop Runtime (v6.0.16) from Microsoft:   
+https://download.visualstudio.microsoft.com/download/pr/456fdf02-f100-4664-916d-fd46c192efea/619bbd8426537632b7598b4c7c467cf1/dotnet-runtime-6.0.16-win-x64.exe
 2. Download and install Windows AppRuntime from Microsoft:   
-https://aka.ms/windowsappsdk/1.1/1.1.5/windowsappruntimeinstall-x64.exe
+https://aka.ms/windowsappsdk/1.2/1.2.230313.1/windowsappruntimeinstall-x64.exe
 3. Download ImageViewer.Updater.exe from the last release  
 https://github.com/dragonofmercy/image-viewer/releases
 4. Run ImageViewer.Updater.exe
