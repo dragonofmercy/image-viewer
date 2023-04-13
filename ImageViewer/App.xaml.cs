@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using WinUIEx;
 
 namespace ImageViewer
@@ -14,7 +15,7 @@ namespace ImageViewer
 
             global::WinRT.ComWrappersSupport.InitializeComWrappers();
             global::Microsoft.UI.Xaml.Application.Start((p) => {
-                var context = new global::Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(global::Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
+                DispatcherQueueSynchronizationContext context = new global::Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(global::Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
                 global::System.Threading.SynchronizationContext.SetSynchronizationContext(context);
                 _ = new App();
             });
@@ -58,7 +59,7 @@ namespace ImageViewer
             manager.PositionChanged += Window_PositionChanged;
             manager.WindowMessageReceived += Manager_WindowMessageReceived;
             mWindow.SizeChanged += Window_SizeChanged;
-            
+
             if(Settings.AppPositionX == null && Settings.AppPositionY == null)
             {
                 mWindow.SetWindowSize(Settings.AppSizeW, Settings.AppSizeH);
@@ -69,16 +70,14 @@ namespace ImageViewer
                 mWindow.MoveAndResize((double)Settings.AppPositionX, (double)Settings.AppPositionY, Settings.AppSizeW, Settings.AppSizeH);
             }
 
-            switch(Settings.WindowState)
+            if(Settings.WindowState == WindowState.Maximized)
             {
-                case WindowState.Maximized:
-                    mWindow.Maximize();
-                    break;
-
-                default:
-                    Settings.WindowState = WindowState.Normal;
-                    mWindow.Activate();
-                    break;
+                mWindow.Maximize();
+            }
+            else
+            {
+                Settings.WindowState = WindowState.Normal;
+                mWindow.Activate();
             }
 
             Context.Instance().CheckUpdate();
