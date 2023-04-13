@@ -28,7 +28,6 @@
         <AssemblyName>ImageViewer.Debug</AssemblyName>
         <AssemblyTitle>Image Viewer (debug)</AssemblyTitle>
         <Product>Image Viewer (debug)</Product>
-        <NoWarn></NoWarn>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
         <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
         <Optimize>False</Optimize>
@@ -43,7 +42,6 @@
         <AssemblyTitle>Image Viewer</AssemblyTitle>
         <Product>Image Viewer</Product>
         <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-        <NoWarn></NoWarn>
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
         <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
         <Optimize>true</Optimize>
