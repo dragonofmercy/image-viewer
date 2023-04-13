@@ -89,16 +89,22 @@ namespace ImageViewer
         {
             if(e.Message.MessageId != 0x0112) return; // WM_SYSCOMMAND
 
-            Settings.WindowState = e.Message.WParam switch
+            switch(e.Message.WParam)
             {
-                0xF120 => // Restore event - SC_RESTORE from Winuser.h
-                    WindowState.Normal,
-                0xF030 => // Maximize event - SC_MAXIMIZE from Winuser.h
-                    WindowState.Maximized,
-                0XF020 => // Minimize event - SC_MINIMIZE from Winuser.h
-                    WindowState.Minimized,
-                _ => Settings.WindowState
-            };
+                case 0xF000: // SC_SIZE
+                case 0xF010: // SC_MOVE
+                case 0xF120: // SC_RESTORE
+                case 0xF122: // SC_RESTORE (dbl click)
+                    Settings.WindowState = WindowState.Normal;
+                    break;
+                case 0xF030: // SC_MAXIMIZE
+                case 0xF032: // SC_MAXIMIZE (dbl click)
+                    Settings.WindowState = WindowState.Maximized;
+                    break;
+                case 0xF020: // SC_MINIMIZE
+                    Settings.WindowState = WindowState.Minimized;
+                    break;
+            }
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
