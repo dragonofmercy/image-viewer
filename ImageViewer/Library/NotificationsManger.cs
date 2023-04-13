@@ -39,7 +39,7 @@ namespace ImageViewer
                     }
                     catch(Exception ex)
                     {
-                        var builder = new AppNotificationBuilder()
+                        AppNotificationBuilder builder = new AppNotificationBuilder()
                             .AddText(ex.Message);
 
                         Runtime.Show(builder.BuildNotification());

@@ -55,21 +55,20 @@ namespace ImageViewer
 
         public void RedrawTitleBar()
         {
-            if(AppWindowTitleBar.IsCustomizationSupported())
-            {
-                string themeName = MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
-                ResourceDictionary resourceTheme = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeName];
-                AppWindowTitleBar windowTitleBar = GetAppWindowForCurrentWindow().TitleBar;
+            if(!AppWindowTitleBar.IsCustomizationSupported()) return;
 
-                windowTitleBar.ButtonBackgroundColor = windowTitleBar.ButtonInactiveBackgroundColor = (resourceTheme["TitleBarButtonBackground"] as SolidColorBrush).Color;
-                windowTitleBar.ButtonForegroundColor = windowTitleBar.ButtonInactiveForegroundColor = (resourceTheme["TitleBarButtonForeground"] as SolidColorBrush).Color;
+            string themeName = MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
+            ResourceDictionary resourceTheme = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeName];
+            AppWindowTitleBar windowTitleBar = GetAppWindowForCurrentWindow().TitleBar;
 
-                windowTitleBar.ButtonHoverBackgroundColor = (resourceTheme["TitleBarButtonHoverBackground"] as SolidColorBrush).Color;
-                windowTitleBar.ButtonHoverForegroundColor = (resourceTheme["TitleBarButtonHoverForeground"] as SolidColorBrush).Color;
+            windowTitleBar.ButtonBackgroundColor = windowTitleBar.ButtonInactiveBackgroundColor = (resourceTheme["TitleBarButtonBackground"] as SolidColorBrush).Color;
+            windowTitleBar.ButtonForegroundColor = windowTitleBar.ButtonInactiveForegroundColor = (resourceTheme["TitleBarButtonForeground"] as SolidColorBrush).Color;
 
-                windowTitleBar.ButtonPressedBackgroundColor = (resourceTheme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
-                windowTitleBar.ButtonPressedForegroundColor = (resourceTheme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
-            }
+            windowTitleBar.ButtonHoverBackgroundColor = (resourceTheme["TitleBarButtonHoverBackground"] as SolidColorBrush).Color;
+            windowTitleBar.ButtonHoverForegroundColor = (resourceTheme["TitleBarButtonHoverForeground"] as SolidColorBrush).Color;
+
+            windowTitleBar.ButtonPressedBackgroundColor = (resourceTheme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
+            windowTitleBar.ButtonPressedForegroundColor = (resourceTheme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
         }
 
         public void UpdateTheme(ElementTheme theme)
@@ -101,15 +100,7 @@ namespace ImageViewer
 
         public void UpdateTitle(string prefix = null)
         {
-            if(string.IsNullOrEmpty(prefix))
-            {
-                Title = Context.GetProductName();
-            }
-            else
-            {
-                Title = string.Concat(prefix, " - ", Context.GetProductName());
-            }
-
+            Title = string.IsNullOrEmpty(prefix) ? Context.GetProductName() : string.Concat(prefix, " - ", Context.GetProductName());
             AppTitleBarText.Text = Title;
         }
 
@@ -342,14 +333,13 @@ namespace ImageViewer
         {
             try
             {
-                if(e.DataView.Contains(StandardDataFormats.StorageItems))
-                {
-                    IReadOnlyList<IStorageItem> items = await e.DataView.GetStorageItemsAsync();
+                if(!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
 
-                    if(items.Count > 0)
-                    {
-                        Context.Instance().LoadImageFromString(items[0].Path, true);
-                    }
+                IReadOnlyList<IStorageItem> items = await e.DataView.GetStorageItemsAsync();
+
+                if(items.Count > 0)
+                {
+                    Context.Instance().LoadImageFromString(items[0].Path, true);
                 }
             }
             catch(Exception ex)
@@ -369,14 +359,13 @@ namespace ImageViewer
         {
             DataPackageView clipboard = Clipboard.GetContent();
 
-            if(clipboard.Contains(StandardDataFormats.Bitmap))
-            {
-                ImageView.Opacity = 0;
-                ImageLoadingIndicator.IsActive = true;
+            if(!clipboard.Contains(StandardDataFormats.Bitmap)) return;
 
-                RandomAccessStreamReference clipboardImage = await clipboard.GetBitmapAsync();
-                Context.Instance().LoadImageFromBuffer(clipboardImage);
-            }
+            ImageView.Opacity = 0;
+            ImageLoadingIndicator.IsActive = true;
+
+            RandomAccessStreamReference clipboardImage = await clipboard.GetBitmapAsync();
+            Context.Instance().LoadImageFromBuffer(clipboardImage);
         }
     }
 }
