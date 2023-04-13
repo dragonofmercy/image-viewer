@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:ImageViewer"
-    xmlns:Controls="using:ImageViewer.UI"
+    xmlns:controls="using:ImageViewer.UI"
     mc:Ignorable="d" Closed="Window_Closed">
     <Page x:Name="MainPage">
         <Grid SizeChanged="Grid_SizeChanged" x:Name="MainLayout" KeyboardAcceleratorPlacementMode="Hidden">
@@ -69,7 +69,7 @@
                         </StackPanel>
                     </StackPanel>
                 </SplitView.Pane>
-                <Controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
+                <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
                     <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
                     <ScrollViewer 
                             PointerMoved="ScrollView_PointerMoved"
@@ -91,7 +91,7 @@
                             VerticalContentAlignment="Center">
                         <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
                     </ScrollViewer>
-                </Controls:CursorGrid>
+                </controls:CursorGrid>
             </SplitView>
             <Grid Grid.Row="3" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">

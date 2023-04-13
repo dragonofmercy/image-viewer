@@ -9,7 +9,7 @@ namespace ImageViewer
     public static class ThemeHelpers
     {
         [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attr_value, int attr_size);
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
         internal const string   HKey = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
         internal const string   HValueAppTheme = "AppsUseLightTheme";

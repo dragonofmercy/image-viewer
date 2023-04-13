@@ -196,17 +196,17 @@ namespace ImageViewer
         /// <summary>
         /// Load an image from path.
         /// </summary>
-        public bool LoadImageFromString(string image_path, bool reload_directories = false)
+        public bool LoadImageFromString(string imagePath, bool reloadDirectories = false)
         {
-            if(!File.Exists(image_path) || !CheckFileExtension(image_path)) return false;
+            if(!File.Exists(imagePath) || !CheckFileExtension(imagePath)) return false;
 
-            CurrentFilePath = image_path;
+            CurrentFilePath = imagePath;
             MemoryOnly = false;
 
             LoadBitmap();
             LoadImageView();
 
-            if(reload_directories)
+            if(reloadDirectories)
             {
                 LoadDirectoryFiles();
             }
@@ -246,12 +246,12 @@ namespace ImageViewer
                 { ImageInfos.FolderPath, "" }
             };
 
-            FileInfo fileinfo = new(CurrentFilePath);
+            FileInfo oFileInfo = new(CurrentFilePath);
 
             dict[ImageInfos.FileName] = Path.GetFileName(CurrentFilePath);
             dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString(CultureInfo.CurrentCulture);
             dict[ImageInfos.ImageDimensions] = string.Concat(CurrentImage.Width, " x ", CurrentImage.Height);
-            dict[ImageInfos.ImageSize] = HumanizeBytes(fileinfo.Length);
+            dict[ImageInfos.ImageSize] = HumanizeBytes(oFileInfo.Length);
             dict[ImageInfos.FolderPath] = Path.GetDirectoryName(CurrentFilePath);
             dict[ImageInfos.ImageDpi] = string.Concat(Math.Round(CurrentImage.HorizontalResolution, 2).ToString(CultureInfo.CurrentCulture), " dpi");
             dict[ImageInfos.ImageDepth] = string.Concat(Image.GetPixelFormatSize(CurrentImage.PixelFormat).ToString(), " bit");
@@ -425,12 +425,18 @@ namespace ImageViewer
                 DateTime now = DateTime.Now;
                 DateTime lastCheck = DateTime.Parse(Settings.LastUpdateCheck);
 
-                lastCheck = Settings.UpdateInterval switch
+                switch(Settings.UpdateInterval)
                 {
-                    "day" => lastCheck.AddDays(1),
-                    "week" => lastCheck.AddDays(7),
-                    _ => lastCheck.AddMonths(1)
-                };
+                    case "day":
+                        lastCheck = lastCheck.AddDays(1);
+                        break;
+                    case "week":
+                        lastCheck = lastCheck.AddDays(7);
+                        break;
+                    default:
+                        lastCheck = lastCheck.AddMonths(1);
+                        break;
+                }
 
                 if(lastCheck.Date > now.Date)
                 {
@@ -533,7 +539,7 @@ namespace ImageViewer
         /// <summary>
         /// Load bitmap (CurrentImage) inside image view
         /// </summary>
-        private void LoadImageView(bool use_uri_source = true)
+        private void LoadImageView(bool useUriSource = true)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -547,7 +553,7 @@ namespace ImageViewer
 
             MainWindow.ImageView.Source = bitmapImage;
 
-            if(!use_uri_source || Path.GetExtension(CurrentFilePath).ToLower() == ".svg")
+            if(!useUriSource || Path.GetExtension(CurrentFilePath).ToLower() == ".svg")
             {
                 using MemoryStream memory = new();
                 CurrentImage.Save(memory, ImageFormat.Png);

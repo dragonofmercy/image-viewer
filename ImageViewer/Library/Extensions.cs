@@ -12,9 +12,9 @@ namespace ImageViewer
 {
     public static class Extensions
     {
-        public static T[] RemoveFromArray<T>(this T[] original, T item_to_remove)
+        public static T[] RemoveFromArray<T>(this T[] original, T itemToRemove)
         {
-            int numIdx = System.Array.IndexOf(original, item_to_remove);
+            int numIdx = System.Array.IndexOf(original, itemToRemove);
             if(numIdx == -1) return original;
             List<T> tmp = new(original);
             tmp.RemoveAt(numIdx);
@@ -29,22 +29,22 @@ namespace ImageViewer
             return tmp.ToArray();
         }
 
-        public static SvgDocument AdjustSize(this SvgDocument original, uint max_width, uint max_height)
+        public static SvgDocument AdjustSize(this SvgDocument original, uint maxWidth, uint maxHeight)
         {
             SizeF size = original.GetDimensions();
 
-            if(size.Width > max_width)
+            if(size.Width > maxWidth)
             {
-                float ratio = size.Width / max_width;
+                float ratio = size.Width / maxWidth;
                 size.Height /= ratio;
-                size.Width = max_width;
+                size.Width = maxWidth;
             }
 
-            if(size.Height > max_height)
+            if(size.Height > maxHeight)
             {
-                float ratio = size.Height / max_height;
+                float ratio = size.Height / maxHeight;
                 size.Width /= ratio;
-                size.Height = max_height;
+                size.Height = maxHeight;
             }
 
             original.Width = size.Width;

@@ -12,7 +12,7 @@ namespace ImageViewer
         private static bool _LeftControlKeyPressed;
 
         [DllImport("user32.dll")]
-        private static extern void keybd_event(byte b_vk, byte b_scan, uint dw_flags, int dw_extra_info);
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
         public static bool ControlPressed()
         {
