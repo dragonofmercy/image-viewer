@@ -19,10 +19,6 @@ namespace ImageViewer.Localization
                 { "SETTINGS_FIELD_UPDATE_INTERVAL_MONTH", "Every months" },
                 { "SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL", "Manually" },
 
-                { "FILE_TYPE_IMAGE_JPG", "Image JPEG" },
-                { "FILE_TYPE_IMAGE_PNG", "Image PNG" },
-                { "FILE_TYPE_IMAGE_WEBP", "Image WEBP" },
-
                 { "FILE_INFORMATION_TITLE", "File informations" },
                 { "FILE_INFORMATION_DIMENSIONS", "File dimensions" },
                 { "FILE_INFORMATION_FOLDER_PATH", "Folder path" },

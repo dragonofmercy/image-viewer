@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -61,14 +59,6 @@ namespace ImageViewer
         public static string ToUpdateDate(this string original)
         {
             return string.IsNullOrEmpty(original) ? Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER") : DateTime.Parse(original).ToString(CultureInfo.CurrentCulture);
-        }
-
-        public static void SaveJpeg(this Bitmap original, string filepath, byte quality)
-        {
-            ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().First(s => s.FormatID == ImageFormat.Jpeg.Guid);
-            EncoderParameters encoderParameters = new(1);
-            encoderParameters.Param[0] = new EncoderParameter(Encoder.Quality, Convert.ToInt64(quality));
-            original.Save(filepath, encoder, encoderParameters);
         }
     }
 

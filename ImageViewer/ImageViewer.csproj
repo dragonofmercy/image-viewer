@@ -19,7 +19,7 @@
 		<Authors>DragonOfMercy</Authors>
 		<ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
-		<FileVersion>1.23.4.17</FileVersion>
+		<FileVersion>1.23.4.18</FileVersion>
 		<Version>0.0.7-beta</Version>
     </PropertyGroup>
     
@@ -54,6 +54,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.230313.1" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
         <PackageReference Include="Svg" Version="3.4.4" />
         <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
         <PackageReference Include="WinUIEx" Version="2.1.0" />
@@ -61,7 +62,6 @@
     </ItemGroup>
 	
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="xcopy /y /d  &quot;$(ProjectDir)Vendor\*.dll&quot; &quot;$(ProjectDir)$(OutDir)&quot;" />
         <Exec Condition="'$(Configuration)'=='Release'" Command="del &quot;$(ProjectDir)$(OutDir)\*.xbf&quot;" />
         <Exec Condition="'$(Configuration)'=='Release'" Command="del &quot;$(ProjectDir)$(OutDir)\*.pdb&quot;" />
     </Target>

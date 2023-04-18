@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -17,6 +18,7 @@ using Windows.Storage;
 using Windows.Storage.Streams;
 
 using WinRT.Interop;
+using SixLabors.ImageSharp.Processing;
 
 namespace ImageViewer
 {
@@ -274,22 +276,22 @@ namespace ImageViewer
 
         private void ButtonImageRotateLeft_Click(object sender, RoutedEventArgs e)
         {
-            Context.Instance().RotateFlip(System.Drawing.RotateFlipType.Rotate270FlipNone);
+            Context.Instance().RotateFlip(RotateMode.Rotate270, FlipMode.None);
         }
 
         private void ButtonImageRotateRight_Click(object sender, RoutedEventArgs e)
         {
-            Context.Instance().RotateFlip(System.Drawing.RotateFlipType.Rotate90FlipNone);
+            Context.Instance().RotateFlip(RotateMode.Rotate90, FlipMode.None);
         }
 
         private void ButtonImageFlipHorizontal_Click(object sender, RoutedEventArgs e)
         {
-            Context.Instance().RotateFlip(System.Drawing.RotateFlipType.RotateNoneFlipY);
+            Context.Instance().RotateFlip(RotateMode.None, FlipMode.Vertical);
         }
 
         private void ButtonImageFlipVertical_Click(object sender, RoutedEventArgs e)
         {
-            Context.Instance().RotateFlip(System.Drawing.RotateFlipType.RotateNoneFlipX);
+            Context.Instance().RotateFlip(RotateMode.None, FlipMode.Horizontal);
         }
 
         private void ButtonFileSave_Click(object sender, RoutedEventArgs e)

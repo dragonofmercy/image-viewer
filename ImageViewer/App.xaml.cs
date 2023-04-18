@@ -1,5 +1,9 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
+
 using WinUIEx;
 
 namespace ImageViewer
@@ -26,6 +30,9 @@ namespace ImageViewer
     {
         public App()
         {
+            Configuration.Default.MemoryAllocator = MemoryAllocator.Create(new MemoryAllocatorOptions(){ MaximumPoolSizeMegabytes = 32 });
+            Configuration.Default.PreferContiguousImageBuffers = true;
+
             InitializeComponent();
             Culture.Init();
         }
