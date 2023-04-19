@@ -35,10 +35,6 @@ namespace ImageViewer
     internal class Context
     {
         private static Context _Instance;
-
-        private readonly string[] FileTypes = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".ico", ".webp", ".svg" };
-        private readonly string[] SaveTypes = { ".jpg", ".png", ".webp" };
-
         private string[] FolderFiles;
         private int CurrentIndex;
         private bool MemoryOnly;
@@ -61,7 +57,7 @@ namespace ImageViewer
         /// </summary>
         public bool CheckFileExtension(string path)
         {
-            return FileTypes.Any(x => path.EndsWith(x, true, null));
+            return Image.SupportedFileTypes.Any(x => path.EndsWith(x, true, null));
         }
 
         /// <summary>
@@ -89,7 +85,7 @@ namespace ImageViewer
             if(!string.IsNullOrEmpty(CurrentFilePath))
             {
                 FolderFiles = Directory.EnumerateFiles(Path.GetDirectoryName(CurrentFilePath), "*.*", SearchOption.TopDirectoryOnly)
-                    .Where(s => FileTypes.Any(x => s.EndsWith(x, true, null)))
+                    .Where(s => Image.SupportedFileTypes.Any(x => s.EndsWith(x, true, null)))
                     .OrderBy(s => s, new NaturalStringComparer())
                     .ToArray();
 
@@ -160,7 +156,7 @@ namespace ImageViewer
         {
             FileOpenPicker openFilePicker = new();
 
-            foreach(string fileType in FileTypes)
+            foreach(string fileType in Image.SupportedFileTypes)
             {
                 openFilePicker.FileTypeFilter.Add(fileType);
             }
@@ -174,7 +170,7 @@ namespace ImageViewer
 
             MemoryOnly = false;
 
-            LoadImage();
+            OpenImage();
             LoadDirectoryFiles();
         }
 
@@ -187,7 +183,7 @@ namespace ImageViewer
             MemoryOnly = true;
 
             MainWindow.SplitViewContainer.IsPaneOpen = false;
-            LoadImage(await clipboard.OpenReadAsync());
+            OpenImage(await clipboard.OpenReadAsync());
 
             MainWindow.UpdateTitle(Culture.GetString("SYSTEM_PASTED_CONTENT"));
         }
@@ -202,7 +198,7 @@ namespace ImageViewer
             CurrentFilePath = imagePath;
             MemoryOnly = false;
 
-            LoadImage();
+            OpenImage();
 
             if(reloadDirectories)
             {
@@ -223,7 +219,6 @@ namespace ImageViewer
             MainWindow.TextBlockInfoDate.Text = data[ImageInfos.FileDate];
             MainWindow.TextBlockInfoDimensions.Text = data[ImageInfos.ImageDimensions];
             MainWindow.TextBlockInfoSize.Text = data[ImageInfos.ImageSize];
-            MainWindow.TextBlockInfoDpi.Text = data[ImageInfos.ImageDpi];
             MainWindow.TextBlockInfoDepth.Text = data[ImageInfos.ImageDepth];
             MainWindow.TextBlockInfoFolder.Text = data[ImageInfos.FolderPath];
         }
@@ -239,7 +234,6 @@ namespace ImageViewer
                 { ImageInfos.FileDate, "" },
                 { ImageInfos.ImageDimensions, "" },
                 { ImageInfos.ImageSize, "" },
-                { ImageInfos.ImageDpi, "" },
                 { ImageInfos.ImageDepth, "" },
                 { ImageInfos.FolderPath, "" }
             };
@@ -253,7 +247,6 @@ namespace ImageViewer
             dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString(CultureInfo.CurrentCulture);
             dict[ImageInfos.ImageSize] = HumanizeBytes(oFileInfo.Length);
             dict[ImageInfos.ImageDimensions] = CurrentImage.GetImageDimensionsAsString();
-            dict[ImageInfos.ImageDpi] = CurrentImage.GetDpiAsString();
             dict[ImageInfos.ImageDepth] = CurrentImage.GetDepthAsString();
 
             return dict;
@@ -305,6 +298,12 @@ namespace ImageViewer
         /// </summary>
         public void LoadingDisplay(bool status)
         {
+            if(status)
+            {
+                MainWindow.GlobalErrorMessage.Visibility = Visibility.Collapsed;
+                MainWindow.GlobalErrorMessageFileName.Text = "";
+            }
+            
             MainWindow.ImageLoadingIndicator.IsActive = status;
             MainWindow.ImageView.Opacity = status ? 0 : 1;
 
@@ -389,6 +388,8 @@ namespace ImageViewer
 
                 MainWindow.ButtonImageDelete.IsEnabled = true;
                 MainWindow.ButtonFileSave.IsEnabled = true;
+
+                MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
             }
             else
             {
@@ -401,6 +402,8 @@ namespace ImageViewer
 
                 MainWindow.ButtonImageDelete.IsEnabled = false;
                 MainWindow.ButtonFileSave.IsEnabled = false;
+
+                MainWindow.ButtonFileInfo.IsEnabled = false;
             }
 
             if(FolderFiles is { Length: > 1 })
@@ -413,8 +416,6 @@ namespace ImageViewer
                 MainWindow.ButtonImagePrevious.IsEnabled = false;
                 MainWindow.ButtonImageNext.IsEnabled = false;
             }
-
-            MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
 
             MainWindow.ButtonImageTransformFlipHorizontal.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
             MainWindow.ButtonImageTransformFlipVertical.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
@@ -472,21 +473,27 @@ namespace ImageViewer
         {
             if(!HasImageLoaded()) return;
 
-            FileSavePicker saveFilePicker = new()
-            {
-                SuggestedFileName = Path.GetFileNameWithoutExtension(CurrentFilePath)
-            };
+            FileSavePicker saveFilePicker = new();
 
-            foreach(string fileType in SaveTypes)
+            if(CurrentFilePath != null)
             {
-                saveFilePicker.FileTypeChoices.Add(fileType, new List<string>(){ fileType });
+                saveFilePicker.SuggestedFileName = Path.GetFileNameWithoutExtension(CurrentFilePath);
+            }
+            else
+            {
+                saveFilePicker.SuggestedFileName = DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss");
+            }
+
+            foreach(string fileType in Image.SaveFileTypes)
+            {
+                saveFilePicker.FileTypeChoices.Add(Culture.GetString("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT").Replace("{0}", fileType.Remove(0, 1).ToUpper()), new List<string>(){ fileType });
             }
 
             InitializeWithWindow.Initialize(saveFilePicker, WindowNative.GetWindowHandle(MainWindow));
             StorageFile outputFile = await saveFilePicker.PickSaveFileAsync();
 
             if(outputFile == null) return;
-            if(!SaveTypes.Contains(outputFile.FileType)) return;
+            if(!Image.SaveFileTypes.Contains(outputFile.FileType)) return;
 
             CurrentImage.Save(outputFile.Path, outputFile.FileType);
 
@@ -505,8 +512,8 @@ namespace ImageViewer
                 CreateOptions = BitmapCreateOptions.IgnoreImageCache,
             };
 
-            bitmapImage.ImageOpened += CurrentImage_ImageOpened;
-            bitmapImage.ImageFailed += CurrentImage_ImageFailed;
+            bitmapImage.ImageOpened += ImageView_ImageOpened;
+            bitmapImage.ImageFailed += ImageView_ImageFailed;
 
             MainWindow.ImageView.Source = bitmapImage;
 
@@ -514,39 +521,9 @@ namespace ImageViewer
         }
 
         /// <summary>
-        /// Load current image
+        /// Event: When image view is loaded and ready.
         /// </summary>
-        private void LoadImage(IInputStream stream = null)
-        {
-            CurrentImage?.Dispose();
-
-            LoadingDisplay(true);
-
-            CurrentImage = new();
-            CurrentImage.ImageLoaded += CurrentImage_ImageLoaded;
-
-            if(stream != null)
-            {
-                CurrentImage.Load(stream);
-            }
-            else
-            {
-                CurrentImage.Load(CurrentFilePath);
-            }
-        }
-
-        /// <summary>
-        /// Event: When image is loaded.
-        /// </summary>
-        private void CurrentImage_ImageLoaded(object sender, EventArgs e)
-        {
-            ReloadImageView();
-        }
-
-        /// <summary>
-        /// Event: When image is opened.
-        /// </summary>
-        private void CurrentImage_ImageOpened(object sender, RoutedEventArgs e)
+        private void ImageView_ImageOpened(object sender, RoutedEventArgs e)
         {
             if(!HasImageLoaded()) return;
 
@@ -567,9 +544,9 @@ namespace ImageViewer
         }
 
         /// <summary>
-        /// Event: When image loaded failed.
+        /// Event: When image view loaded failed.
         /// </summary>
-        private void CurrentImage_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        private void ImageView_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
             MainWindow.UpdateTitle();
             MainWindow.ImageLoadingIndicator.IsActive = false;
@@ -577,6 +554,53 @@ namespace ImageViewer
             CurrentImage = null;
 
             UpdateButtonsAccessiblity();
+        }
+
+        /// <summary>
+        /// Load current image
+        /// </summary>
+        private void OpenImage(IInputStream stream = null)
+        {
+            CurrentImage?.Dispose();
+
+            LoadingDisplay(true);
+
+            CurrentImage = new();
+            CurrentImage.ImageLoaded += WorkingImage_ImageLoaded;
+            CurrentImage.ImageFailed += WorkingImage_ImageFailed;
+
+            if(stream != null)
+            {
+                CurrentImage.Load(stream);
+            }
+            else
+            {
+                CurrentImage.Load(CurrentFilePath);
+            }
+        }
+
+        /// <summary>
+        /// Event: When image load failed.
+        /// </summary>
+        private void WorkingImage_ImageFailed(object sender, EventArgs e)
+        {
+            MainWindow.UpdateTitle();
+
+            MainWindow.ImageLoadingIndicator.IsActive = false;
+            MainWindow.GlobalErrorMessage.Visibility = Visibility.Visible;
+
+            MainWindow.GlobalErrorMessageFileName.Text = ((ImageFailedEventArgs)e).Path;
+
+            CurrentImage.Dispose();
+            UpdateButtonsAccessiblity();
+        }
+
+        /// <summary>
+        /// Event: When image is loaded.
+        /// </summary>
+        private void WorkingImage_ImageLoaded(object sender, EventArgs e)
+        {
+            ReloadImageView();
         }
 
         /// <summary>
