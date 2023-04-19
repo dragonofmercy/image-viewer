@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Windowing;
 
 using Windows.UI.Core;
@@ -176,6 +177,12 @@ namespace ImageViewer
         {
             SplitViewContainer.IsPaneOpen = false;
             ScrollView.Focus(FocusState.Programmatic);
+        }
+
+        private void TextBlockInfoFolder_Click(Hyperlink hyperlinkControl, RoutedEventArgs args)
+        {
+            Run firstItem = (Run)hyperlinkControl.Inlines[0];
+            Process.Start("explorer.exe", firstItem.Text);
         }
 
         private void ScrollView_PointerMoved(object sender, PointerRoutedEventArgs e)
