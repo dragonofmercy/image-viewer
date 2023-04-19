@@ -12,20 +12,24 @@ using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Tga;
 
 using Svg;
 
 using ImageSharpImage = SixLabors.ImageSharp.Image;
-using DrawingImage = System.Drawing.Image;
-
+using DrawingImage = System.Drawing.Bitmap;
 
 namespace ImageViewer
 {
     internal class Image
     {
-        private readonly string[] NativeExtensions = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".webp" };
+        public static readonly string[] SupportedFileTypes = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg" };
+        public static readonly string[] SaveFileTypes = { ".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga" };
+
+        private readonly string[] NativeExtensions = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp" };
 
         public event EventHandler ImageLoaded;
+        public event EventHandler ImageFailed;
 
         protected bool WorkingImageLoaded = false;
         protected ImageSharpImage WorkingImage;
@@ -74,13 +78,7 @@ namespace ImageViewer
         public string GetImageDimensionsAsString()
         {
             if(!WorkingImageLoaded) return "";
-            return WorkingImage.Width + "x" + WorkingImage.Height;
-        }
-
-        public string GetDpiAsString()
-        {
-            if(!WorkingImageLoaded) return "";
-            return string.Concat((WorkingImage.Metadata.HorizontalResolution == 1 ? 96 : WorkingImage.Metadata.HorizontalResolution).ToString(), " dpi");
+            return WorkingImage.Width + " x " + WorkingImage.Height;
         }
 
         public string GetDepthAsString()
@@ -115,54 +113,107 @@ namespace ImageViewer
                 case ".webp":
                     await WorkingImage.SaveAsWebpAsync(path);
                     break;
+
+                case ".bmp":
+                    await WorkingImage.SaveAsBmpAsync(path);
+                    break;
+
+                case ".gif":
+                    await WorkingImage.SaveAsGifAsync(path);
+                    break;
+
+                case ".tga":
+                    await WorkingImage.SaveAsTgaAsync(path);
+                    break;
+
+                case ".tiff":
+                    await WorkingImage.SaveAsTiffAsync(path);
+                    break;
             }
         }
 
         private async void LoadImageFromPath(string path)
         {
-            string extension = Path.GetExtension(path).ToLower();
-
-            if(NativeExtensions.Contains(extension))
+            try
             {
-                WorkingImage = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
-                Encoder = WorkingImage.DetectEncoder(path);
-            }
-            else
-            {
-                DrawingImage tmp;
+                string extension = Path.GetExtension(path).ToLower();
 
-                if(extension == ".svg")
+                if(NativeExtensions.Contains(extension))
                 {
-                    SvgDocument svgDocument = SvgDocument.Open(path);
-                    svgDocument.ShapeRendering = SvgShapeRendering.Auto;
-                    tmp = svgDocument.AdjustSize(1024, 1024).Draw();
+                    WorkingImage = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
+                    Encoder = WorkingImage.DetectEncoder(path);
 
-                    Encoder = new PngEncoder();
+                    if(Encoder.GetType() == typeof(TgaEncoder))
+                    {
+                        // Change TgaEncoder to PngEncoder because Image UI Component don't support TGA format
+                        Encoder = new PngEncoder();
+                    }
                 }
                 else
                 {
-                    byte[] fileBytes = await File.ReadAllBytesAsync(path);
-                    using MemoryStream defaultMemoryStream = new(fileBytes);
-                    tmp = DrawingImage.FromStream(defaultMemoryStream);
-                    defaultMemoryStream.Dispose();
+                    DrawingImage tmp;
+
+                    if(extension == ".svg")
+                    {
+                        SvgDocument svgDocument = SvgDocument.Open(path);
+                        svgDocument.ShapeRendering = SvgShapeRendering.Auto;
+                        tmp = svgDocument.AdjustSize(1024, 1024).Draw();
+
+                        Encoder = new PngEncoder();
+                    }
+                    else
+                    {
+                        byte[] fileBytes = await File.ReadAllBytesAsync(path);
+                        using MemoryStream defaultMemoryStream = new(fileBytes);
+                        tmp = (DrawingImage)System.Drawing.Image.FromStream(defaultMemoryStream);
+                        defaultMemoryStream.Dispose();
+                    }
+
+                    using MemoryStream saveMemoryStream = new();
+                    tmp.Save(saveMemoryStream, ImageFormat.Png);
+                    WorkingImage = ImageSharpImage.Load(saveMemoryStream.ToArray());
+                    saveMemoryStream.Dispose();
                 }
 
-                using MemoryStream saveMemoryStream = new();
-                tmp.Save(saveMemoryStream, ImageFormat.Png);
-                WorkingImage = ImageSharpImage.Load(saveMemoryStream.ToArray());
-                saveMemoryStream.Dispose();
+                WorkingImageLoaded = true;
+                ImageLoaded?.Invoke(this, EventArgs.Empty);
             }
+            catch(Exception e)
+            {
+                ImageFailedEventArgs args = new()
+                {
+                    Message = e.Message,
+                    Path = path
+                };
 
-            WorkingImageLoaded = true;
-            ImageLoaded?.Invoke(this, EventArgs.Empty);
+                ImageFailed?.Invoke(this, args);
+            }
         }
 
         private async void LoadImageFromMemory(IInputStream stream)
         {
-            WorkingImage = await ImageSharpImage.LoadAsync(stream.AsStreamForRead());
+            try
+            {
+                WorkingImage = await ImageSharpImage.LoadAsync(stream.AsStreamForRead());
 
-            WorkingImageLoaded = true;
-            ImageLoaded?.Invoke(this, EventArgs.Empty);
+                WorkingImageLoaded = true;
+                ImageLoaded?.Invoke(this, EventArgs.Empty);
+            }
+            catch(Exception e)
+            {
+                ImageFailedEventArgs args = new()
+                {
+                    Message = e.Message
+                };
+
+                ImageFailed?.Invoke(this, args);
+            }
         }
+    }
+
+    public class ImageFailedEventArgs : EventArgs
+    {
+        public string Message { get; set; }
+        public string Path { get; set; }
     }
 }
