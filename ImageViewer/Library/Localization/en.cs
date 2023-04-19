@@ -10,6 +10,7 @@ namespace ImageViewer.Localization
 
                 { "DEFAULT_SYSTEM_LANGUAGE", "System language" },
                 { "SYSTEM_PASTED_CONTENT", "Pasted content" },
+                { "SYSTEM_LOADING_ERROR", "Sorry, the application cannot open this file because the format is currently not supported or the file is damaged" },
 
                 { "SETTINGS_FIELD_LANGUAGE", "Language" },
                 { "SETTINGS_FIELD_LANGUAGE_HELP", "You need to restart the application to apply this setting." },
@@ -22,11 +23,13 @@ namespace ImageViewer.Localization
                 { "FILE_INFORMATION_TITLE", "File informations" },
                 { "FILE_INFORMATION_DIMENSIONS", "File dimensions" },
                 { "FILE_INFORMATION_FOLDER_PATH", "Folder path" },
+                { "FILE_INFORMATION_FOLDER_PATH_TIP", "Display directory in Windows Explorer" },
 
                 { "FOOTER_TOOLBAR_MENU", "Menu" },
                 { "FOOTER_TOOLBAR_MENU_FILE_OPEN", "Open image" },
                 { "FOOTER_TOOLBAR_MENU_FILE_INFO", "File info" },
                 { "FOOTER_TOOLBAR_MENU_FILE_SAVE", "Save as..." },
+                { "FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT", "{0} image" },
                 { "FOOTER_TOOLBAR_MENU_FILE_DELETE", "Delete image" },
                 { "FOOTER_TOOLBAR_MENU_ABOUT", "About" },
                 { "FOOTER_TOOLBAR_MENU_OPTIONS", "Settings" },
