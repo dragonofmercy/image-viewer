@@ -91,11 +91,12 @@ namespace ImageViewer
             }
             catch(Exception ex)
             {
-                ButtonDownloadUpdate.Visibility = Visibility.Collapsed;
-
                 UpdateStatusInfo.Severity = InfoBarSeverity.Error;
                 UpdateStatusInfo.Title = ex.Message;
                 UpdateStatusInfo.IsOpen = true;
+
+                ButtonDownloadUpdate.IsEnabled = true;
+                ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_RETRY");
             }
         }
     }

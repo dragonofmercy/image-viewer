@@ -93,13 +93,19 @@ namespace ImageViewer
             }
 
             bool downloadSuccess = false;
+            string filename = Path.Combine(tempDirectory, "ImageViewer.Updater.exe");
 
             for(uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
             {
                 try
                 {
+                    if(File.Exists(filename))
+                    {
+                        File.Delete(filename);
+                    }
+
                     Stream s = await httpClient.GetStreamAsync(downloadUri);
-                    FileStream fs = new(Path.Combine(tempDirectory, "imageviewer.update.exe"), FileMode.CreateNew);
+                    FileStream fs = new(filename, FileMode.CreateNew);
 
                     await s.CopyToAsync(fs);
                     await fs.DisposeAsync();
@@ -121,7 +127,7 @@ namespace ImageViewer
             {
                 ProcessStartInfo pStartInfo = new()
                 {
-                    FileName = Path.Combine(tempDirectory, "imageviewer.update.exe"),
+                    FileName = filename,
                     UseShellExecute = true,
                 };
 

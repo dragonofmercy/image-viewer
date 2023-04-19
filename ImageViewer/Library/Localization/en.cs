@@ -56,6 +56,7 @@ namespace ImageViewer.Localization
                 { "ABOUT_BTN_CHECK_UPDATE", "Check for update" },
                 { "ABOUT_BTN_DOWNLOAD_UPDATE", "Download update" },
                 { "ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING", "Downloading..." },
+                { "ABOUT_BTN_DOWNLOAD_UPDATE_RETRY", "Retry" },
 
                 { "ABOUT_UPDATE_CHECKING", "Checking for update..." },
                 { "ABOUT_UPDATE_INFO_UPDATE_LATEST", "Image Viewer is up to date." },
