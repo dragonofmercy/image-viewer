@@ -55,7 +55,6 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoDimensions" x:FieldModifier="public" />
                                     <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoSize" x:FieldModifier="public" />
-                                    <TextBlock FontSize="12" Margin="0,0,16,0" x:Name="TextBlockInfoDpi" x:FieldModifier="public" />
                                     <TextBlock FontSize="12" x:Name="TextBlockInfoDepth" x:FieldModifier="public" />
                                 </StackPanel>
                             </StackPanel>
@@ -64,13 +63,29 @@
                             <FontIcon FontSize="16" Glyph="&#xe838;" VerticalAlignment="Top" Margin="4,2" />
                             <StackPanel Orientation="Vertical" Margin="12,0">
                                 <TextBlock MaxWidth="248" Margin="0,0,0,8" Text="{x:Bind local:Culture.GetString('FILE_INFORMATION_FOLDER_PATH')}" />
-                                <TextBlock MaxWidth="248" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" FontSize="12" x:Name="TextBlockInfoFolder" x:FieldModifier="public" />
+                                <TextBlock MaxWidth="248" FontSize="12" TextWrapping="Wrap">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip Content="{x:Bind local:Culture.GetString('FILE_INFORMATION_FOLDER_PATH_TIP')}" Placement="Bottom"></ToolTip>
+                                    </ToolTipService.ToolTip>
+                                    <TextBlock.Inlines>
+                                       <Hyperlink UnderlineStyle="None" Click="TextBlockInfoFolder_Click">
+                                            <Hyperlink.Inlines>
+                                                <Run x:Name="TextBlockInfoFolder" x:FieldModifier="public" />
+                                            </Hyperlink.Inlines>
+                                         </Hyperlink>
+                                    </TextBlock.Inlines>
+                                </TextBlock>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </SplitView.Pane>
                 <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
                     <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
+                    <StackPanel Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="40" x:Name="GlobalErrorMessage" x:FieldModifier="public">
+                        <FontIcon Glyph="&#xe91B;" FontSize="128" Foreground="{ ThemeResource TextFillColorDisabled }" Margin="0,0,0,10"></FontIcon>
+                        <TextBlock Foreground="{ ThemeResource TextFillColorSecondary }" TextAlignment="Center" Margin="0,0,0,5" x:Name="GlobalErrorMessageFileName" x:FieldModifier="public"></TextBlock>
+                        <TextBlock Foreground="{ ThemeResource TextFillColorTertiary }" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" Text="{x:Bind local:Culture.GetString('SYSTEM_LOADING_ERROR')}"></TextBlock>
+                    </StackPanel>
                     <ScrollViewer 
                             PointerMoved="ScrollView_PointerMoved"
                             PointerExited="ScrollView_PointerExited" 
