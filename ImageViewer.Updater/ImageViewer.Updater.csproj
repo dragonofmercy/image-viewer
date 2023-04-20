@@ -90,4 +90,7 @@
     <Content Include="Resources\AppIcon64.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Condition="'$(Configuration)'=='Release'" Command="del &quot;$(ProjectDir)$(OutDir)\*.config&quot;" />
+  </Target>
 </Project>
