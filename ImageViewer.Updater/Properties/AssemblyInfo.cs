@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Dragon Industries")]
 [assembly: AssemblyProduct("ImageViewer.Updater")]
-[assembly: AssemblyCopyright("Dragon Industries 2022")]
+[assembly: AssemblyCopyright("Dragon Industries")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
