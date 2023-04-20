@@ -29,7 +29,7 @@
             </Grid>
             <SplitView Grid.Row="2" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Overlay" CompactPaneLength="0" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
                 <SplitView.Pane>
-                    <StackPanel Orientation="Vertical" Padding="16" BorderThickness="1,0,0,0" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                    <StackPanel Orientation="Vertical" Margin="0,0,-1,0" Padding="16" BorderThickness="1,0,0,0" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
