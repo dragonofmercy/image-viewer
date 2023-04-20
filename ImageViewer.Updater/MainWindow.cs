@@ -16,11 +16,11 @@ namespace ImageViewer.Updater
         private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
         private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
 
-        private const string APP_RUNTIME_SEARCH = "WindowsAppRuntime.1.2_2000.802.31.0";
-        private const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.2/1.2.230313.1/windowsappruntimeinstall-x64.exe";
+        private const string APP_RUNTIME_SEARCH = "Microsoft.WindowsAppRuntime.1.3_3000.820.152.0";
+        private const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.3/1.3.230331000/windowsappruntimeinstall-x64.exe";
 
-        private const string NET6_RUNTIME_SEARCH = "WindowsDesktop.App 6.0.16";
-        private const string NET6_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/85473c45-8d91-48cb-ab41-86ec7abc1000/83cd0c82f0cde9a566bae4245ea5a65b/windowsdesktop-runtime-6.0.16-win-x64.exe";
+        private const string NET_RUNTIME_SEARCH = "Microsoft.WindowsDesktop.App 7.0.5";
+        private const string NET_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/dffb1939-cef1-4db3-a579-5475a3061cdd/578b208733c914c7b7357f6baa4ecfd6/windowsdesktop-runtime-7.0.5-win-x64.exe";
         
         private string TempDirectory;
         private string InstallSourcesDirectory;
@@ -69,7 +69,7 @@ namespace ImageViewer.Updater
             mi.Invoke(this, null);
         }
 
-        private async Task<bool> DownloadFile(string url, string save_path)
+        private async Task<bool> DownloadFile(string url, string savePath)
         {
             HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
@@ -81,7 +81,7 @@ namespace ImageViewer.Updater
                     Application.DoEvents();
 
                     Stream s = await httpClient.GetStreamAsync(new Uri(url));
-                    FileStream fs = new FileStream(save_path, FileMode.CreateNew);
+                    FileStream fs = new FileStream(savePath, FileMode.CreateNew);
 
                     await s.CopyToAsync(fs);
 
@@ -195,12 +195,12 @@ namespace ImageViewer.Updater
 
         public void CheckNet6()
         {
-            TextInstallStatus.Text = "Checking .NET 6.0 Desktop Runtime...";
+            TextInstallStatus.Text = "Checking .NET Desktop Runtime...";
 
             ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "powershell",
-                Arguments = "dotnet --list-runtimes | Select-String '" + NET6_RUNTIME_SEARCH + "'",
+                Arguments = "dotnet --list-runtimes | Select-String '" + NET_RUNTIME_SEARCH + "'",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
@@ -218,7 +218,7 @@ namespace ImageViewer.Updater
 
             ProgressStatus.Value = 40;
 
-            if(!output.Contains(NET6_RUNTIME_SEARCH))
+            if(!output.Contains(NET_RUNTIME_SEARCH))
             {
                 Application.DoEvents();
                 InstallNet6();
@@ -232,11 +232,11 @@ namespace ImageViewer.Updater
 
         public async void InstallNet6()
         {
-            TextInstallStatus.Text = "Downloading .NET 6.0 Desktop Runtime...";
+            TextInstallStatus.Text = "Downloading .NET Desktop Runtime...";
 
-            if(await DownloadFile(NET6_RUNTIME_DOWNLOAD, Path.Combine(TempDirectory, "windowsdesktopruntime.exe")))
+            if(await DownloadFile(NET_RUNTIME_DOWNLOAD, Path.Combine(TempDirectory, "windowsdesktopruntime.exe")))
             {
-                TextInstallStatus.Text = "Installing .NET 6.0 Desktop Runtime...";
+                TextInstallStatus.Text = "Installing .NET Desktop Runtime...";
 
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
