@@ -27,7 +27,6 @@ namespace ImageViewer
         FileDate,
         ImageDimensions,
         ImageSize,
-        ImageDpi,
         ImageDepth,
         FolderPath
     }
@@ -315,7 +314,7 @@ namespace ImageViewer
         /// </summary>
         public bool HasImageLoaded()
         {
-            return CurrentImage != null && CurrentImage.Loaded;
+            return CurrentImage is { Loaded: true };
         }
 
         /// <summary>
@@ -473,16 +472,10 @@ namespace ImageViewer
         {
             if(!HasImageLoaded()) return;
 
-            FileSavePicker saveFilePicker = new();
-
-            if(CurrentFilePath != null)
+            FileSavePicker saveFilePicker = new()
             {
-                saveFilePicker.SuggestedFileName = Path.GetFileNameWithoutExtension(CurrentFilePath);
-            }
-            else
-            {
-                saveFilePicker.SuggestedFileName = DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss");
-            }
+                SuggestedFileName = CurrentFilePath != null ? Path.GetFileNameWithoutExtension(CurrentFilePath) : DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss")
+            };
 
             foreach(string fileType in Image.SaveFileTypes)
             {

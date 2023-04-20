@@ -31,7 +31,7 @@ namespace ImageViewer
         public event EventHandler ImageLoaded;
         public event EventHandler ImageFailed;
 
-        protected bool WorkingImageLoaded = false;
+        protected bool WorkingImageLoaded;
         protected ImageSharpImage WorkingImage;
         protected IImageEncoder Encoder = new JpegEncoder();
         
@@ -45,23 +45,9 @@ namespace ImageViewer
             LoadImageFromMemory(stream);
         }
 
-        public bool Loaded
-        {
-            get
-            {
-                return WorkingImageLoaded;
-            }
-        }
-
-        public double Height
-        {
-            get { return WorkingImage.Height; }
-        }
-
-        public double Width
-        {
-            get { return WorkingImage.Width; }
-        }
+        public bool Loaded => WorkingImageLoaded;
+        public double Height => WorkingImage.Height;
+        public double Width => WorkingImage.Width;
 
         public void Dispose()
         {
@@ -143,7 +129,7 @@ namespace ImageViewer
                     WorkingImage = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
                     Encoder = WorkingImage.DetectEncoder(path);
 
-                    if(Encoder.GetType() == typeof(TgaEncoder))
+                    if(Encoder is TgaEncoder)
                     {
                         // Change TgaEncoder to PngEncoder because Image UI Component don't support TGA format
                         Encoder = new PngEncoder();
@@ -166,13 +152,13 @@ namespace ImageViewer
                         byte[] fileBytes = await File.ReadAllBytesAsync(path);
                         using MemoryStream defaultMemoryStream = new(fileBytes);
                         tmp = (DrawingImage)System.Drawing.Image.FromStream(defaultMemoryStream);
-                        defaultMemoryStream.Dispose();
+                        await defaultMemoryStream.DisposeAsync();
                     }
 
                     using MemoryStream saveMemoryStream = new();
                     tmp.Save(saveMemoryStream, ImageFormat.Png);
                     WorkingImage = ImageSharpImage.Load(saveMemoryStream.ToArray());
-                    saveMemoryStream.Dispose();
+                    await saveMemoryStream.DisposeAsync();
                 }
 
                 WorkingImageLoaded = true;
