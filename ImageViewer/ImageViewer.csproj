@@ -21,7 +21,7 @@
         <ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
 		<FileVersion>1.23.4.24</FileVersion>
-		<Version>0.1.1-beta</Version>
+		<Version>0.1.2-beta</Version>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
