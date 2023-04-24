@@ -10,15 +10,6 @@ namespace ImageViewer
 {
     public static class Extensions
     {
-        public static T[] RemoveFromArray<T>(this T[] original, T itemToRemove)
-        {
-            int numIdx = System.Array.IndexOf(original, itemToRemove);
-            if(numIdx == -1) return original;
-            List<T> tmp = new(original);
-            tmp.RemoveAt(numIdx);
-            return tmp.ToArray();
-        }
-
         public static T[] RemoveAtIndex<T>(this T[] original, int index)
         {
             if(index >= original.Length) return original;
