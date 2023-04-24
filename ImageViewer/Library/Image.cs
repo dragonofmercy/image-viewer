@@ -13,7 +13,6 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tga;
-
 using Svg;
 
 using ImageSharpImage = SixLabors.ImageSharp.Image;
@@ -33,7 +32,7 @@ namespace ImageViewer
 
         protected bool WorkingImageLoaded;
         protected ImageSharpImage WorkingImage;
-        protected IImageEncoder Encoder = new JpegEncoder();
+        protected IImageEncoder Encoder = new JpegEncoder{ Quality = 100 };
         
         public void Load(string path)
         {
@@ -129,10 +128,15 @@ namespace ImageViewer
                     WorkingImage = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
                     Encoder = WorkingImage.DetectEncoder(path);
 
-                    if(Encoder is TgaEncoder)
+                    switch(Encoder)
                     {
-                        // Change TgaEncoder to PngEncoder because Image UI Component don't support TGA format
-                        Encoder = new PngEncoder();
+                        case TgaEncoder:
+                            // Change TgaEncoder to PngEncoder because Image UI Component don't support TGA format
+                            Encoder = new PngEncoder();
+                            break;
+                        case JpegEncoder:
+                            Encoder = new JpegEncoder { Quality = 100 };
+                            break;
                     }
                 }
                 else
@@ -181,6 +185,7 @@ namespace ImageViewer
             try
             {
                 WorkingImage = await ImageSharpImage.LoadAsync(stream.AsStreamForRead());
+                Encoder = new PngEncoder();
 
                 WorkingImageLoaded = true;
                 ImageLoaded?.Invoke(this, EventArgs.Empty);
