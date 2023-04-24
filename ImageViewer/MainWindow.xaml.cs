@@ -26,7 +26,7 @@ namespace ImageViewer
     public sealed partial class MainWindow : Window
     {
         private Point LastMousePoint;
-        private bool ScrollViewMouseDrag = false;
+        private bool ScrollViewMouseDrag;
 
         public MainWindow(ElementTheme theme)
         {
