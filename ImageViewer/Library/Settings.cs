@@ -12,28 +12,28 @@ namespace ImageViewer
 
     internal class Settings
     {
-        internal const string HkeyAppPath = @"HKEY_CURRENT_USER\SOFTWARE\Dragon Industries\Image Viewer";
-        internal const string HValueAppTheme = "Theme";
-        internal const string HValueAppPositionX = "PosX";
-        internal const string HValueAppPositionY = "PosY";
-        internal const string HValueAppSizeW = "Width";
-        internal const string HValueAppSizeH = "Height";
-        internal const string HValueAppState = "State";
-        internal const string HValueLastUpdateCheck = "LastUpdateCheck";
-        internal const string HValueLanguage = "Lang";
-        internal const string HValueCheckUpdateInterval = "UpdateInterval";
+        internal const string HKEY_APP_PATH = @"HKEY_CURRENT_USER\SOFTWARE\Dragon Industries\Image Viewer";
+        internal const string H_VALUE_APP_THEME = "Theme";
+        internal const string H_VALUE_APP_POSITION_X = "PosX";
+        internal const string H_VALUE_APP_POSITION_Y = "PosY";
+        internal const string H_VALUE_APP_SIZE_W = "Width";
+        internal const string H_VALUE_APP_SIZE_H = "Height";
+        internal const string H_VALUE_APP_STATE = "State";
+        internal const string H_VALUE_LAST_UPDATE_CHECK = "LastUpdateCheck";
+        internal const string H_VALUE_LANGUAGE = "Lang";
+        internal const string H_VALUE_CHECK_UPDATE_INTERVAL = "UpdateInterval";
 
         public static ElementTheme Theme 
         {
             get
             {
-                object tmp = Registry.GetValue(HkeyAppPath, HValueAppTheme, ElementTheme.Default);
+                object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_THEME, ElementTheme.Default);
                 return tmp != null ? (ElementTheme)tmp : ElementTheme.Default;
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueAppTheme, (int)value);
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_THEME, (int)value);
             }
         }
 
@@ -41,13 +41,13 @@ namespace ImageViewer
         {
             get
             {
-                object tmp = Registry.GetValue(HkeyAppPath, HValueAppPositionX, null);
+                object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_X, null);
                 return tmp != null ? int.Parse(tmp.ToString()) : null;
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueAppPositionX, value.ToString());
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_X, value.ToString());
             }
         }
 
@@ -55,13 +55,13 @@ namespace ImageViewer
         {
             get
             {
-                object tmp = Registry.GetValue(HkeyAppPath, HValueAppPositionY, null);
+                object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_Y, null);
                 return tmp != null ? int.Parse(tmp.ToString()) : null;
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueAppPositionY, value.ToString());
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_Y, value.ToString());
             }
         }
 
@@ -69,13 +69,13 @@ namespace ImageViewer
         {
             get
             {
-                object tmp = Registry.GetValue(HkeyAppPath, HValueAppSizeW, null);
+                object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_W, null);
                 return tmp != null ? uint.Parse(tmp.ToString()) : 1280;
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueAppSizeW, value.ToString());
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_W, value.ToString());
             }
         }
 
@@ -83,13 +83,13 @@ namespace ImageViewer
         {
             get
             {
-                object tmp = Registry.GetValue(HkeyAppPath, HValueAppSizeH, null);
+                object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_H, null);
                 return tmp != null ? uint.Parse(tmp.ToString()) : 768;
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueAppSizeH, value.ToString());
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_H, value.ToString());
             }
         }
 
@@ -97,12 +97,12 @@ namespace ImageViewer
         {
             get
             {
-                return (WindowState)Registry.GetValue(HkeyAppPath, HValueAppState, WindowState.Normal);
+                return (WindowState)Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_STATE, WindowState.Normal);
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueAppState, (int)value);
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_STATE, (int)value);
             }
         }
 
@@ -110,12 +110,12 @@ namespace ImageViewer
         {
             get
             {
-                return (string)Registry.GetValue(HkeyAppPath, HValueLastUpdateCheck, "");
+                return (string)Registry.GetValue(HKEY_APP_PATH, H_VALUE_LAST_UPDATE_CHECK, "");
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueLastUpdateCheck, value);
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_LAST_UPDATE_CHECK, value);
             }
         }
 
@@ -123,12 +123,12 @@ namespace ImageViewer
         {
             get
             {
-                return (string)Registry.GetValue(HkeyAppPath, HValueCheckUpdateInterval, "");
+                return (string)Registry.GetValue(HKEY_APP_PATH, H_VALUE_CHECK_UPDATE_INTERVAL, "");
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueCheckUpdateInterval, value);
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_CHECK_UPDATE_INTERVAL, value);
             }
         }
 
@@ -136,12 +136,12 @@ namespace ImageViewer
         {
             get
             {
-                return (string)Registry.GetValue(HkeyAppPath, HValueLanguage, "");
+                return (string)Registry.GetValue(HKEY_APP_PATH, H_VALUE_LANGUAGE, "");
             }
 
             set
             {
-                Registry.SetValue(HkeyAppPath, HValueLanguage, value);
+                Registry.SetValue(HKEY_APP_PATH, H_VALUE_LANGUAGE, value);
             }
         }
     }
