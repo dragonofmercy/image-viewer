@@ -18,7 +18,9 @@ using Svg;
 using ImageSharpImage = SixLabors.ImageSharp.Image;
 using DrawingImage = System.Drawing.Bitmap;
 
-namespace ImageViewer
+using ImageViewer.Utilities;
+
+namespace ImageViewer.Wrapper
 {
     internal class Image
     {
@@ -32,8 +34,8 @@ namespace ImageViewer
 
         protected bool WorkingImageLoaded;
         protected ImageSharpImage WorkingImage;
-        protected IImageEncoder Encoder = new JpegEncoder{ Quality = 100 };
-        
+        protected IImageEncoder Encoder = new JpegEncoder { Quality = 100 };
+
         public void Load(string path)
         {
             LoadImageFromPath(path);
@@ -56,25 +58,25 @@ namespace ImageViewer
 
         public void RotateFlip(RotateMode rotateMode, FlipMode flipMode)
         {
-            if(!WorkingImageLoaded) return;
+            if (!WorkingImageLoaded) return;
             WorkingImage.Mutate(x => x.RotateFlip(rotateMode, flipMode));
         }
 
         public string GetImageDimensionsAsString()
         {
-            if(!WorkingImageLoaded) return "";
+            if (!WorkingImageLoaded) return "";
             return WorkingImage.Width + " x " + WorkingImage.Height;
         }
 
         public string GetDepthAsString()
         {
-            if(!WorkingImageLoaded) return "";
+            if (!WorkingImageLoaded) return "";
             return WorkingImage.PixelType.BitsPerPixel + " bit";
         }
 
         public IRandomAccessStream GetBitmapImageSource()
         {
-            if(WorkingImage == null) return null;
+            if (WorkingImage == null) return null;
 
             MemoryStream memory = new();
             WorkingImage.Save(memory, Encoder);
@@ -85,10 +87,10 @@ namespace ImageViewer
 
         public async void Save(string path, string type)
         {
-            switch(type)
+            switch (type)
             {
                 case ".jpg":
-                    await WorkingImage.SaveAsJpegAsync(path, new JpegEncoder{ Quality = 100 });
+                    await WorkingImage.SaveAsJpegAsync(path, new JpegEncoder { Quality = 100 });
                     break;
 
                 case ".png":
@@ -123,12 +125,12 @@ namespace ImageViewer
             {
                 string extension = Path.GetExtension(path).ToLower();
 
-                if(NativeExtensions.Contains(extension))
+                if (NativeExtensions.Contains(extension))
                 {
                     WorkingImage = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
                     Encoder = WorkingImage.DetectEncoder(path);
 
-                    switch(Encoder)
+                    switch (Encoder)
                     {
                         case TgaEncoder:
                             // Change TgaEncoder to PngEncoder because Image UI Component don't support TGA format
@@ -143,7 +145,7 @@ namespace ImageViewer
                 {
                     DrawingImage tmp;
 
-                    if(extension == ".svg")
+                    if (extension == ".svg")
                     {
                         SvgDocument svgDocument = SvgDocument.Open(path);
                         svgDocument.ShapeRendering = SvgShapeRendering.Auto;
@@ -168,7 +170,7 @@ namespace ImageViewer
                 WorkingImageLoaded = true;
                 ImageLoaded?.Invoke(this, EventArgs.Empty);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 ImageFailedEventArgs args = new()
                 {
@@ -190,7 +192,7 @@ namespace ImageViewer
                 WorkingImageLoaded = true;
                 ImageLoaded?.Invoke(this, EventArgs.Empty);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 ImageFailedEventArgs args = new()
                 {

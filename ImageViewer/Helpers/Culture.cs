@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace ImageViewer
+using ImageViewer.Utilities;
+
+namespace ImageViewer.Helpers
 {
     internal class Culture
     {
@@ -14,7 +16,7 @@ namespace ImageViewer
         {
             string classname;
 
-            if(Settings.Language != "" && GetAvailableLanguages().Contains(Settings.Language))
+            if (Settings.Language != "" && GetAvailableLanguages().Contains(Settings.Language))
             {
                 classname = string.Concat("ImageViewer.Localization.", Settings.Language.UcFirst());
             }
@@ -32,7 +34,7 @@ namespace ImageViewer
             return _Language;
         }
 
-        public static List<string> GetAvailableLanguages() 
+        public static List<string> GetAvailableLanguages()
         {
             List<string> list = new();
             list.AddRange(from Type type in Assembly.GetExecutingAssembly().GetTypes().Where(t => string.Equals(t.Namespace, "ImageViewer.Localization", StringComparison.Ordinal)).ToArray()

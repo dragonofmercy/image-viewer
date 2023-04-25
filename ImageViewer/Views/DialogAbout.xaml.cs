@@ -1,11 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
+
+using ImageViewer.Helpers;
+using ImageViewer.Utilities;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace ImageViewer
+namespace ImageViewer.Views
 {
     public sealed partial class DialogAbout : Page
     {

@@ -21,6 +21,10 @@ using Windows.Storage.Streams;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
+using ImageViewer.Helpers;
+using ImageViewer.Controls;
+using ImageViewer.Views;
+
 namespace ImageViewer
 {
     public sealed partial class MainWindow : Window
@@ -76,7 +80,7 @@ namespace ImageViewer
 
         public void UpdateTheme(ElementTheme theme)
         {
-            ThemeHelpers.SetImmersiveDarkMode(WindowNative.GetWindowHandle(this), theme == ElementTheme.Dark);
+            Theme.SetImmersiveDarkMode(WindowNative.GetWindowHandle(this), theme == ElementTheme.Dark);
             MainPage.RequestedTheme = theme;
 
             Settings.Theme = MainPage.ActualTheme;

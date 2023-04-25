@@ -1,20 +1,20 @@
 <Page
-    x:Class="ImageViewer.DialogSettings"
+    x:Class="ImageViewer.Views.DialogSettings"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:ImageViewer"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" 
+    xmlns:helpers="using:ImageViewer.Helpers"
+    mc:Ignorable="d"
     Loaded="Page_Loaded"
-    Background="{ ThemeResource WindowBackgroundBrush }">
+    Background="{ThemeResource WindowBackgroundBrush}">
     <StackPanel Orientation="Vertical" Padding="24">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="44" />
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind local:Culture.GetString('FOOTER_TOOLBAR_MENU_OPTIONS')}" />
+            <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_OPTIONS')}" />
             <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="CloseButton_Click">
                 <SymbolIcon Symbol="Clear" />
             </HyperlinkButton>
@@ -27,8 +27,8 @@
             </Grid.ColumnDefinitions>
             <FontIcon Grid.Column="0" FontSize="24" Glyph="&#xe775;" Margin="0,0,15,0" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
-                <TextBlock Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" />
-                <TextBlock Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}" Foreground="{ ThemeResource TextFillColorSecondary }" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Text="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" />
+                <TextBlock Text="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}" Foreground="{ ThemeResource TextFillColorSecondary }" FontSize="12" TextWrapping="Wrap" />
             </StackPanel>
             <ComboBox Grid.Column="2" VerticalAlignment="Center" Name="CboOptionsLanguage" Width="200" ItemsSource="{x:Bind AvailableLanguages }" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsLanguage_SelectionChanged"></ComboBox>
         </Grid>
@@ -40,7 +40,7 @@
             </Grid.ColumnDefinitions>
             <SymbolIcon Grid.Column="0" Symbol="Sync" Margin="0,0,15,0" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
-                <TextBlock Text="{x:Bind local:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}" />
+                <TextBlock Text="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}" />
             </StackPanel>
             <ComboBox Grid.Column="2" VerticalAlignment="Center" Name="CboOptionsUpdateInterval" Width="200" ItemsSource="{x:Bind UpdatesIntervals }" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsUpdateInterval_SelectionChanged"></ComboBox>
         </Grid>

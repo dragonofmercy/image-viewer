@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 
 using Windows.UI.Core;
 
-namespace ImageViewer.UI
+namespace ImageViewer.Controls
 {
     public class CursorGrid : Grid
     {

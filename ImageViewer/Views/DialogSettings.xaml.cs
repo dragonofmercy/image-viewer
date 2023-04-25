@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using System.Globalization;
 
+using ImageViewer.Helpers;
+using ImageViewer.Utilities;
+
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace ImageViewer
+namespace ImageViewer.Views
 {
     public sealed partial class DialogSettings : Page
     {

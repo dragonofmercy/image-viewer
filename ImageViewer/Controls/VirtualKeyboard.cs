@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ImageViewer
+namespace ImageViewer.Controls
 {
     internal class VirtualKeyboard
     {

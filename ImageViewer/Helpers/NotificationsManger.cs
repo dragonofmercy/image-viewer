@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Threading.Tasks;
+
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 
-namespace ImageViewer
+namespace ImageViewer.Helpers
 {
     internal class NotificationsManger
     {
         public AppNotificationManager Runtime;
 
-        public NotificationsManger() 
+        public NotificationsManger()
         {
             AppNotificationManager notificationManager = AppNotificationManager.Default;
             notificationManager.NotificationInvoked += NotificationManager_NotificationInvoked;
@@ -30,14 +31,14 @@ namespace ImageViewer
 
         private async Task HandleNotificationAsync(AppNotificationActivatedEventArgs args)
         {
-            switch(args.Arguments["action"])
+            switch (args.Arguments["action"])
             {
                 case "doUpdate":
                     try
                     {
                         await Update.ApplyUpdate();
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         AppNotificationBuilder builder = new AppNotificationBuilder()
                             .AddText(ex.Message);

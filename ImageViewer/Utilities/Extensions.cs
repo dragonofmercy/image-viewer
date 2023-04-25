@@ -5,14 +5,15 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
 using Svg;
+using ImageViewer.Helpers;
 
-namespace ImageViewer
+namespace ImageViewer.Utilities
 {
     public static class Extensions
     {
         public static T[] RemoveAtIndex<T>(this T[] original, int index)
         {
-            if(index >= original.Length) return original;
+            if (index >= original.Length) return original;
             List<T> tmp = new(original);
             tmp.RemoveAt(index);
             return tmp.ToArray();
@@ -22,14 +23,14 @@ namespace ImageViewer
         {
             SizeF size = original.GetDimensions();
 
-            if(size.Width > maxWidth)
+            if (size.Width > maxWidth)
             {
                 float ratio = size.Width / maxWidth;
                 size.Height /= ratio;
                 size.Width = maxWidth;
             }
 
-            if(size.Height > maxHeight)
+            if (size.Height > maxHeight)
             {
                 float ratio = size.Height / maxHeight;
                 size.Width /= ratio;

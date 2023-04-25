@@ -1,4 +1,6 @@
-﻿using Microsoft.UI.Dispatching;
+﻿using ImageViewer.Helpers;
+
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 
 using SixLabors.ImageSharp;
@@ -45,7 +47,7 @@ namespace ImageViewer
 
                 if(themeSettings == ElementTheme.Default)
                 {
-                    themeSettings = ThemeHelpers.GetAppTheme();
+                    themeSettings = Theme.GetAppTheme();
                 }
 
                 return themeSettings;

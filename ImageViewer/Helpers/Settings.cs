@@ -1,7 +1,8 @@
 ﻿using Microsoft.UI.Xaml;
+
 using Microsoft.Win32;
 
-namespace ImageViewer
+namespace ImageViewer.Helpers
 {
     internal enum WindowState
     {
@@ -23,7 +24,7 @@ namespace ImageViewer
         internal const string H_VALUE_LANGUAGE = "Lang";
         internal const string H_VALUE_CHECK_UPDATE_INTERVAL = "UpdateInterval";
 
-        public static ElementTheme Theme 
+        public static ElementTheme Theme
         {
             get
             {
