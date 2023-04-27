@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "ImageViewer (Unpackaged)": {
+    "ImageViewer": {
       "commandName": "Project"
     }
   }
