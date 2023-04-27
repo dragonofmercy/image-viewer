@@ -5,10 +5,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:ImageViewer.Helpers"
+    xmlns:controls="using:ImageViewer.Controls"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
     Background="{ThemeResource WindowBackgroundBrush}">
     <StackPanel Orientation="Vertical" Padding="24">
+        
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -19,30 +21,34 @@
                 <SymbolIcon Symbol="Clear" />
             </HyperlinkButton>
         </Grid>
-        <Grid Margin="0,16,0,0" CornerRadius="4" Padding="15" BorderThickness="1" Background="{ ThemeResource PanelBackgroundBrush }" BorderBrush="{ ThemeResource PanelBorderBrush }">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <FontIcon Grid.Column="0" FontSize="24" Glyph="&#xe775;" Margin="0,0,15,0" />
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
-                <TextBlock Text="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" />
-                <TextBlock Text="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}" Foreground="{ ThemeResource TextFillColorSecondary }" FontSize="12" TextWrapping="Wrap" />
-            </StackPanel>
-            <ComboBox Grid.Column="2" VerticalAlignment="Center" Name="CboOptionsLanguage" Width="200" ItemsSource="{x:Bind AvailableLanguages }" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsLanguage_SelectionChanged"></ComboBox>
-        </Grid>
-        <Grid Margin="0,5,0,0" CornerRadius="4" Padding="15" BorderThickness="1" Background="{ ThemeResource PanelBackgroundBrush }" BorderBrush="{ ThemeResource PanelBorderBrush }">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <SymbolIcon Grid.Column="0" Symbol="Sync" Margin="0,0,15,0" />
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
-                <TextBlock Text="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}" />
-            </StackPanel>
-            <ComboBox Grid.Column="2" VerticalAlignment="Center" Name="CboOptionsUpdateInterval" Width="200" ItemsSource="{x:Bind UpdatesIntervals }" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="CboOptionsUpdateInterval_SelectionChanged"></ComboBox>
-        </Grid>
+        
+        <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" Description="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}">
+            <controls:SettingsCard.Icon>
+                <FontIcon FontSize="24" Glyph="&#xe775;" />
+            </controls:SettingsCard.Icon>
+            <ComboBox 
+                Name="CboOptionsLanguage"
+                MinWidth="{StaticResource SettingActionControlMinWidth}"
+                ItemsSource="{x:Bind AvailableLanguages }" 
+                DisplayMemberPath="Key" 
+                SelectedValuePath="Value" 
+                SelectionChanged="CboOptionsLanguage_SelectionChanged">
+            </ComboBox>
+        </controls:SettingsCard>
+        
+        <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}">
+            <controls:SettingsCard.Icon>
+                <SymbolIcon Symbol="Sync" />
+            </controls:SettingsCard.Icon>
+            <ComboBox 
+                Name="CboOptionsUpdateInterval" 
+                MinWidth="{StaticResource SettingActionControlMinWidth}"
+                ItemsSource="{x:Bind UpdatesIntervals }" 
+                DisplayMemberPath="Key" 
+                SelectedValuePath="Value" 
+                SelectionChanged="CboOptionsUpdateInterval_SelectionChanged">
+            </ComboBox>
+        </controls:SettingsCard>
+        
     </StackPanel>
 </Page>

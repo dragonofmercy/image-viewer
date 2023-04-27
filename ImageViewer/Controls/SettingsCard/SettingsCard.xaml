@@ -1,0 +1,42 @@
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+    xmlns:local="using:ImageViewer.Controls">
+
+    <Style TargetType="local:SettingsCard">
+        <Setter Property="Margin" Value="0,4,0,0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="15" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="{ ThemeResource CardBackgroundFillColorDefaultBrush }" />
+        <Setter Property="BorderBrush" Value="{ ThemeResource CardStrokeColorDefaultBrush }" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:SettingsCard">
+                    <Grid 
+                        Margin="{TemplateBinding Margin}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Viewbox Grid.Column="0" Margin="0,0,15,0">
+                            <ContentPresenter Content="{TemplateBinding Icon}" />
+                        </Viewbox>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
+                            <TextBlock x:Name="LabelPresenter" Text="{TemplateBinding Label}" />
+                            <TextBlock x:Name="DescriptionPresenter" Text="{TemplateBinding Description}" Foreground="{ ThemeResource TextFillColorSecondary }" FontSize="12" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ContentPresenter Grid.Column="2" VerticalAlignment="Center" HorizontalContentAlignment="Right" Content="{TemplateBinding Content}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

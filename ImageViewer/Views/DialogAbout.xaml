@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:ImageViewer.Helpers"
+    xmlns:controls="using:ImageViewer.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource WindowBackgroundBrush}">
     <StackPanel Orientation="Vertical" Padding="24">
@@ -27,22 +28,16 @@
                 <SymbolIcon Symbol="Clear" />
             </HyperlinkButton>
         </Grid>
-        <Grid Margin="0,10,0,0" CornerRadius="4" Padding="15" BorderThickness="1" Background="{ ThemeResource PanelBackgroundBrush }" BorderBrush="{ ThemeResource PanelBorderBrush }">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="48" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <SymbolIcon Grid.Column="0" Symbol="Sync" Margin="0,0,10,0" />
-            <StackPanel Grid.Column="1" Orientation="Vertical">
-                <TextBlock x:Name="CurrentVersionText" />
-                <TextBlock x:Name="LastCheckedText" FontSize="12" Foreground="{ ThemeResource TextFillColorSecondary }" />
+        <controls:SettingsCard x:Name="UpdateSettingsCard">
+            <controls:SettingsCard.Icon>
+                <SymbolIcon Symbol="Sync" />
+            </controls:SettingsCard.Icon>
+            <StackPanel Orientation="Horizontal">
+                <ProgressRing x:Name="UpdateCheckingProgress" Height="24" Width="24" Margin="0,0,16,0" IsActive="False" />
+                <TextBlock x:Name="UpdateCheckingText" Text="{x:Bind helpers:Culture.GetString('ABOUT_UPDATE_CHECKING')}" VerticalAlignment="Center" Visibility="Collapsed" />
+                <Button x:Name="ButtonCheckUpdate" Content="{x:Bind helpers:Culture.GetString('ABOUT_BTN_CHECK_UPDATE')}" HorizontalAlignment="Right" Click="ButtonCheckUpdate_Click" />
             </StackPanel>
-            <ProgressRing Grid.Column="2" x:Name="UpdateCheckingProgress" Height="24" Width="24" Margin="0,0,10,0" IsActive="False" />
-            <TextBlock Grid.Column="3" x:Name="UpdateCheckingText" Text="{x:Bind helpers:Culture.GetString('ABOUT_UPDATE_CHECKING')}" VerticalAlignment="Center" Visibility="Collapsed" />
-            <Button Grid.Column="3" x:Name="ButtonCheckUpdate" Content="{x:Bind helpers:Culture.GetString('ABOUT_BTN_CHECK_UPDATE')}" HorizontalAlignment="Right" Click="ButtonCheckUpdate_Click" />
-        </Grid>
+        </controls:SettingsCard>
         <InfoBar x:Name="UpdateStatusInfo" Margin="0,4,0,0" IsClosable="False">
             <InfoBar.ActionButton>
                 <HyperlinkButton x:Name="ButtonDownloadUpdate" Click="ButtonDownloadUpdate_Click" Content="{x:Bind helpers:Culture.GetString('ABOUT_BTN_DOWNLOAD_UPDATE')}" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,-10,0" />
