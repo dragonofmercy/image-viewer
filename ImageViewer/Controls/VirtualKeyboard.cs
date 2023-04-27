@@ -1,34 +1,33 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ImageViewer.Controls
+namespace ImageViewer.Controls;
+
+internal class VirtualKeyboard
 {
-    internal class VirtualKeyboard
+    private const int KEYEVENTF_KEYDOWN = 0x0000;        // New definition
+    private const int KEYEVENTF_EXTENDEDKEY = 0x0001;    // Key down flag
+    private const int KEYEVENTF_KEYUP = 0x0002;          // Key up flag
+    private const int VK_LCONTROL = 0xA2;                // Left Control key code
+
+    private static bool _LeftControlKeyPressed;
+
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+    public static bool ControlPressed()
     {
-        private const int KEYEVENTF_KEYDOWN = 0x0000;        // New definition
-        private const int KEYEVENTF_EXTENDEDKEY = 0x0001;    // Key down flag
-        private const int KEYEVENTF_KEYUP = 0x0002;          // Key up flag
-        private const int VK_LCONTROL = 0xA2;                // Left Control key code
+        return _LeftControlKeyPressed;
+    }
 
-        private static bool _LeftControlKeyPressed;
+    public static void ControlPress()
+    {
+        keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN, 0);
+        _LeftControlKeyPressed = true;
+    }
 
-        [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
-
-        public static bool ControlPressed()
-        {
-            return _LeftControlKeyPressed;
-        }
-
-        public static void ControlPress()
-        {
-            keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN, 0);
-            _LeftControlKeyPressed = true;
-        }
-
-        public static void ControlRelease()
-        {
-            keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-            _LeftControlKeyPressed = false;
-        }
+    public static void ControlRelease()
+    {
+        keybd_event(VK_LCONTROL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+        _LeftControlKeyPressed = false;
     }
 }

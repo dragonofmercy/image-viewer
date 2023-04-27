@@ -8,141 +8,140 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
-namespace ImageViewer.Helpers
+namespace ImageViewer.Helpers;
+
+internal class Update
 {
-    internal class Update
+    private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
+    private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
+    public static JsonElement JsonCache;
+    public static bool HasUpdate = false;
+
+    public static async Task GetRemoteData()
     {
-        private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
-        private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
-        public static JsonElement JsonCache;
-        public static bool HasUpdate = false;
+        HttpClient httpClient = new();
 
-        public static async Task GetRemoteData()
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Image View Update Check");
+
+        HttpResponseMessage responseMessage = await httpClient.GetAsync(GITHUB_API_RELEASE_PATH);
+        JsonDocument responseJson = await responseMessage.Content.ReadFromJsonAsync<JsonDocument>();
+
+        JsonCache = responseJson.RootElement;
+        responseMessage.Dispose();
+
+        httpClient.Dispose();
+    }
+
+    public static async Task<bool> CheckNewVersionAsync()
+    {
+        await GetRemoteData();
+
+        string remoteVersion = GetRemoteVersion();
+
+        DateTime dateTimeNow = DateTime.Now;
+        Settings.LastUpdateCheck = dateTimeNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+        if (string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
         {
-            HttpClient httpClient = new();
-
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Image View Update Check");
-
-            HttpResponseMessage responseMessage = await httpClient.GetAsync(GITHUB_API_RELEASE_PATH);
-            JsonDocument responseJson = await responseMessage.Content.ReadFromJsonAsync<JsonDocument>();
-
-            JsonCache = responseJson.RootElement;
-            responseMessage.Dispose();
-
-            httpClient.Dispose();
+            HasUpdate = true;
+            return true;
         }
 
-        public static async Task<bool> CheckNewVersionAsync()
+        HasUpdate = false;
+        return false;
+    }
+
+    public static string GetRemoteVersion()
+    {
+        if (JsonCache.ValueKind == JsonValueKind.Object)
         {
-            await GetRemoteData();
+            return JsonCache.GetProperty("name").GetString();
+        }
 
-            string remoteVersion = GetRemoteVersion();
+        throw new KeyNotFoundException("Json cache date not loaded");
+    }
 
-            DateTime dateTimeNow = DateTime.Now;
-            Settings.LastUpdateCheck = dateTimeNow.ToString("yyyy-MM-dd HH:mm:ss");
+    public static async Task ApplyUpdate()
+    {
+        string tempDirectory = Path.GetTempPath();
 
-            if (string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
+
+        string downloadUri = "";
+
+        try
+        {
+            for (int i = 0; i < JsonCache.GetProperty("assets").GetArrayLength(); i++)
             {
-                HasUpdate = true;
-                return true;
+                string tmp = JsonCache.GetProperty("assets")[i].GetProperty("browser_download_url").GetString();
+                Regex reg = new("ImageViewer.Updater.exe$", RegexOptions.IgnoreCase);
+
+                if (!reg.IsMatch(tmp)) continue;
+                downloadUri = tmp;
+                break;
             }
 
-            HasUpdate = false;
-            return false;
-        }
-
-        public static string GetRemoteVersion()
-        {
-            if (JsonCache.ValueKind == JsonValueKind.Object)
+            if (string.IsNullOrEmpty(downloadUri))
             {
-                return JsonCache.GetProperty("name").GetString();
+                throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
             }
-
-            throw new KeyNotFoundException("Json cache date not loaded");
+        }
+        catch (Exception)
+        {
+            throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
         }
 
-        public static async Task ApplyUpdate()
+        bool downloadSuccess = false;
+        string filename = Path.Combine(tempDirectory, "ImageViewer.Updater.exe");
+
+        for (uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
         {
-            string tempDirectory = Path.GetTempPath();
-
-            HttpClient httpClient = new();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Image Viewer Updater");
-
-            string downloadUri = "";
-
             try
             {
-                for (int i = 0; i < JsonCache.GetProperty("assets").GetArrayLength(); i++)
+                if (File.Exists(filename))
                 {
-                    string tmp = JsonCache.GetProperty("assets")[i].GetProperty("browser_download_url").GetString();
-                    Regex reg = new("ImageViewer.Updater.exe$", RegexOptions.IgnoreCase);
-
-                    if (!reg.IsMatch(tmp)) continue;
-                    downloadUri = tmp;
-                    break;
+                    File.Delete(filename);
                 }
 
-                if (string.IsNullOrEmpty(downloadUri))
-                {
-                    throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
-                }
+                Stream s = await httpClient.GetStreamAsync(downloadUri);
+                FileStream fs = new(filename, FileMode.CreateNew);
+
+                await s.CopyToAsync(fs);
+                await fs.DisposeAsync();
+                await s.DisposeAsync();
+
+                downloadSuccess = true;
+
+                break;
             }
             catch (Exception)
             {
-                throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
+                // ignored
             }
+        }
 
-            bool downloadSuccess = false;
-            string filename = Path.Combine(tempDirectory, "ImageViewer.Updater.exe");
+        httpClient.Dispose();
 
-            for (uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
+        if (downloadSuccess)
+        {
+            ProcessStartInfo pStartInfo = new()
             {
-                try
-                {
-                    if (File.Exists(filename))
-                    {
-                        File.Delete(filename);
-                    }
+                FileName = filename,
+                UseShellExecute = true,
+            };
 
-                    Stream s = await httpClient.GetStreamAsync(downloadUri);
-                    FileStream fs = new(filename, FileMode.CreateNew);
-
-                    await s.CopyToAsync(fs);
-                    await fs.DisposeAsync();
-                    await s.DisposeAsync();
-
-                    downloadSuccess = true;
-
-                    break;
-                }
-                catch (Exception)
-                {
-                    // ignored
-                }
-            }
-
-            httpClient.Dispose();
-
-            if (downloadSuccess)
+            Process process = new()
             {
-                ProcessStartInfo pStartInfo = new()
-                {
-                    FileName = filename,
-                    UseShellExecute = true,
-                };
+                StartInfo = pStartInfo
+            };
 
-                Process process = new()
-                {
-                    StartInfo = pStartInfo
-                };
-
-                process.Start();
-                Environment.Exit(0);
-            }
-            else
-            {
-                throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
-            }
+            process.Start();
+            Environment.Exit(0);
+        }
+        else
+        {
+            throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
         }
     }
 }

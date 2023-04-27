@@ -3,13 +3,12 @@ using Microsoft.UI.Xaml.Controls;
 
 using Windows.UI.Core;
 
-namespace ImageViewer.Controls
+namespace ImageViewer.Controls;
+
+public class CursorGrid : Grid
 {
-    public class CursorGrid : Grid
+    public void SetCursor(CoreCursor cursor)
     {
-        public void SetCursor(CoreCursor cursor)
-        {
-            ProtectedCursor = InputCursor.CreateFromCoreCursor(cursor);
-        }
+        ProtectedCursor = InputCursor.CreateFromCoreCursor(cursor);
     }
 }

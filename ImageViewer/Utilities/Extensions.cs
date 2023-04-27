@@ -7,65 +7,64 @@ using System.Security;
 using Svg;
 using ImageViewer.Helpers;
 
-namespace ImageViewer.Utilities
+namespace ImageViewer.Utilities;
+
+public static class Extensions
 {
-    public static class Extensions
+    public static T[] RemoveAtIndex<T>(this T[] original, int index)
     {
-        public static T[] RemoveAtIndex<T>(this T[] original, int index)
-        {
-            if (index >= original.Length) return original;
-            List<T> tmp = new(original);
-            tmp.RemoveAt(index);
-            return tmp.ToArray();
-        }
-
-        public static SvgDocument AdjustSize(this SvgDocument original, uint maxWidth, uint maxHeight)
-        {
-            SizeF size = original.GetDimensions();
-
-            if (size.Width > maxWidth)
-            {
-                float ratio = size.Width / maxWidth;
-                size.Height /= ratio;
-                size.Width = maxWidth;
-            }
-
-            if (size.Height > maxHeight)
-            {
-                float ratio = size.Height / maxHeight;
-                size.Width /= ratio;
-                size.Height = maxHeight;
-            }
-
-            original.Width = size.Width;
-            original.Height = size.Height;
-
-            return original;
-        }
-
-        public static string UcFirst(this string original)
-        {
-            return char.ToUpper(original[0]) + original[1..];
-        }
-
-        public static string ToUpdateDate(this string original)
-        {
-            return string.IsNullOrEmpty(original) ? Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER") : DateTime.Parse(original).ToString(CultureInfo.CurrentCulture);
-        }
+        if (index >= original.Length) return original;
+        List<T> tmp = new(original);
+        tmp.RemoveAt(index);
+        return tmp.ToArray();
     }
 
-    [SuppressUnmanagedCodeSecurity]
-    internal static class SafeNativeMethods
+    public static SvgDocument AdjustSize(this SvgDocument original, uint maxWidth, uint maxHeight)
     {
-        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
-        public static extern int StrCmpLogicalW(string psz1, string psz2);
+        SizeF size = original.GetDimensions();
+
+        if (size.Width > maxWidth)
+        {
+            float ratio = size.Width / maxWidth;
+            size.Height /= ratio;
+            size.Width = maxWidth;
+        }
+
+        if (size.Height > maxHeight)
+        {
+            float ratio = size.Height / maxHeight;
+            size.Width /= ratio;
+            size.Height = maxHeight;
+        }
+
+        original.Width = size.Width;
+        original.Height = size.Height;
+
+        return original;
     }
 
-    public sealed class NaturalStringComparer : IComparer<string>
+    public static string UcFirst(this string original)
     {
-        public int Compare(string a, string b)
-        {
-            return SafeNativeMethods.StrCmpLogicalW(a, b);
-        }
+        return char.ToUpper(original[0]) + original[1..];
+    }
+
+    public static string ToUpdateDate(this string original)
+    {
+        return string.IsNullOrEmpty(original) ? Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER") : DateTime.Parse(original).ToString(CultureInfo.CurrentCulture);
+    }
+}
+
+[SuppressUnmanagedCodeSecurity]
+internal static class SafeNativeMethods
+{
+    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+    public static extern int StrCmpLogicalW(string psz1, string psz2);
+}
+
+public sealed class NaturalStringComparer : IComparer<string>
+{
+    public int Compare(string a, string b)
+    {
+        return SafeNativeMethods.StrCmpLogicalW(a, b);
     }
 }
