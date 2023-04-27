@@ -2,58 +2,28 @@
     x:Class="ImageViewer.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
     <Application.Resources>
+
         <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <ResourceDictionary Source="/Themes/Colors.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
             <Thickness x:Key="ContentDialogPadding">0</Thickness>
             <x:Double x:Key="ContentDialogMaxWidth">1280</x:Double>
             <x:Double x:Key="ContentDialogMinWidth">744</x:Double>
             <x:Double x:Key="ContentDialogMinHeight">64</x:Double>
-
-            <ResourceDictionary.MergedDictionaries>
-                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-            </ResourceDictionary.MergedDictionaries>
-
-            <ResourceDictionary.ThemeDictionaries>
-
-                <ResourceDictionary x:Key="Default">
-                    <Style TargetType="FontIcon">
-                        <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
-                    </Style>
-                </ResourceDictionary>
-
-                <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#1a202f" />
-                    <SolidColorBrush x:Key="AppBarBorderBrush" Color="#32363f" />
-                    <SolidColorBrush x:Key="TitleBarButtonBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="TitleBarButtonForeground" Color="White" />
-                    <SolidColorBrush x:Key="TitleBarButtonHoverBackground" Color="#32363f" />
-                    <SolidColorBrush x:Key="TitleBarButtonHoverForeground" Color="White" />
-                    <SolidColorBrush x:Key="TitleBarButtonPressedBackground" Color="#494d55" />
-                    <SolidColorBrush x:Key="TitleBarButtonPressedForeground" Color="White" />
-                    <SolidColorBrush x:Key="ImageViewContainerBackground" Color="#1d2026" />
-                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#292b32" />
-                    <SolidColorBrush x:Key="PanelBorderBrush" Color="#32363f" />
-                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#1d2026" />
-                </ResourceDictionary>
-
-                <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#f0f3f9" />
-                    <SolidColorBrush x:Key="AppBarBorderBrush" Color="#dde0e5" />
-                    <SolidColorBrush x:Key="TitleBarButtonBackground" Color="{ThemeResource ButtonBackgroundThemeBrush}" />
-                    <SolidColorBrush x:Key="TitleBarButtonForeground" Color="{ThemeResource ButtonForegroundThemeBrush}" />
-                    <SolidColorBrush x:Key="TitleBarButtonHoverBackground" Color="#dbdbdb" />
-                    <SolidColorBrush x:Key="TitleBarButtonHoverForeground" Color="{ThemeResource ButtonForegroundThemeBrush}" />
-                    <SolidColorBrush x:Key="TitleBarButtonPressedBackground" Color="#c0c2c7" />
-                    <SolidColorBrush x:Key="TitleBarButtonPressedForeground" Color="{ThemeResource ButtonForegroundThemeBrush}" />
-                    <SolidColorBrush x:Key="ImageViewContainerBackground" Color="#ffffff" />
-                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#fbfbfd" />
-                    <SolidColorBrush x:Key="PanelBorderBrush" Color="#dde0e5" />
-                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#f0f3f9" />
-                </ResourceDictionary>
-
-            </ResourceDictionary.ThemeDictionaries>
+            <x:Double x:Key="SettingActionControlMinWidth">240</x:Double>
+            
+            <Style TargetType="FontIcon">
+                <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
+            </Style>
 
         </ResourceDictionary>
+
     </Application.Resources>
+
 </Application>
