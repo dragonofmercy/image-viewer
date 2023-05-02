@@ -8,47 +8,47 @@
     xmlns:controls="using:ImageViewer.Controls"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
-    Background="{ThemeResource WindowBackgroundBrush}">
-    <StackPanel Orientation="Vertical" Padding="24">
+    Background="{ ThemeResource WindowBackgroundBrush }">
+    <StackPanel Orientation="Vertical" Padding="{ ThemeResource ContentDialogContentPadding }">
         
-        <Grid>
+        <Grid Margin="{ ThemeResource ContentDialogHeadingMargin }">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="44" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" FontSize="20" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_OPTIONS')}" />
-            <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="CloseButton_Click">
+            <HyperlinkButton Grid.Column="1" Foreground="{ ThemeResource ButtonForegroundThemeBrush }" Click="CloseButton_Click">
                 <SymbolIcon Symbol="Clear" />
             </HyperlinkButton>
         </Grid>
         
-        <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" Description="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}">
-            <controls:SettingsCard.Icon>
-                <FontIcon FontSize="24" Glyph="&#xe775;" />
-            </controls:SettingsCard.Icon>
-            <ComboBox 
-                Name="CboOptionsLanguage"
-                MinWidth="{StaticResource SettingActionControlMinWidth}"
-                ItemsSource="{x:Bind AvailableLanguages }" 
-                DisplayMemberPath="Key" 
-                SelectedValuePath="Value" 
-                SelectionChanged="CboOptionsLanguage_SelectionChanged">
-            </ComboBox>
-        </controls:SettingsCard>
-        
-        <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}">
-            <controls:SettingsCard.Icon>
-                <SymbolIcon Symbol="Sync" />
-            </controls:SettingsCard.Icon>
-            <ComboBox 
-                Name="CboOptionsUpdateInterval" 
-                MinWidth="{StaticResource SettingActionControlMinWidth}"
-                ItemsSource="{x:Bind UpdatesIntervals }" 
-                DisplayMemberPath="Key" 
-                SelectedValuePath="Value" 
-                SelectionChanged="CboOptionsUpdateInterval_SelectionChanged">
-            </ComboBox>
-        </controls:SettingsCard>
-        
+        <controls:SettingsGroup>
+            <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE')}" Description="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_LANGUAGE_HELP')}">
+                <controls:SettingsCard.Icon>
+                    <FontIcon Glyph="&#xe775;" />
+                </controls:SettingsCard.Icon>
+                <ComboBox 
+                    Name="CboOptionsLanguage"
+                    MinWidth="{ StaticResource SettingActionControlMinWidth }"
+                    ItemsSource="{x:Bind AvailableLanguages }" 
+                    DisplayMemberPath="Key" 
+                    SelectedValuePath="Value" 
+                    SelectionChanged="CboOptionsLanguage_SelectionChanged">
+                </ComboBox>
+            </controls:SettingsCard>
+            <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}">
+                <controls:SettingsCard.Icon>
+                    <SymbolIcon Symbol="Sync" />
+                </controls:SettingsCard.Icon>
+                <ComboBox 
+                    Name="CboOptionsUpdateInterval" 
+                    MinWidth="{ StaticResource SettingActionControlMinWidth }"
+                    ItemsSource="{x:Bind UpdatesIntervals }" 
+                    DisplayMemberPath="Key" 
+                    SelectedValuePath="Value" 
+                    SelectionChanged="CboOptionsUpdateInterval_SelectionChanged">
+                </ComboBox>
+            </controls:SettingsCard>
+        </controls:SettingsGroup>
     </StackPanel>
 </Page>
