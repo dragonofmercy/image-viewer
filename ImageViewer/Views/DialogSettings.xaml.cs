@@ -17,7 +17,7 @@ public sealed partial class DialogSettings : Page
 
     public DialogSettings(ContentDialog e)
     {
-        this.InitializeComponent();
+        InitializeComponent();
         Dialog = e;
 
         AvailableLanguages.Add(Culture.GetString("DEFAULT_SYSTEM_LANGUAGE"), "");
