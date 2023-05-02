@@ -8,8 +8,9 @@
     xmlns:controls="using:ImageViewer.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource WindowBackgroundBrush}">
-    <StackPanel Orientation="Vertical" Padding="24">
-        <Grid>
+    <StackPanel Orientation="Vertical" Padding="{ ThemeResource ContentDialogContentPadding }">
+        
+        <Grid Margin="{ ThemeResource ContentDialogHeadingMargin }">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="96" />
                 <ColumnDefinition Width="*" />
@@ -28,6 +29,7 @@
                 <SymbolIcon Symbol="Clear" />
             </HyperlinkButton>
         </Grid>
+        
         <controls:SettingsCard x:Name="UpdateSettingsCard">
             <controls:SettingsCard.Icon>
                 <SymbolIcon Symbol="Sync" />
@@ -38,10 +40,12 @@
                 <Button x:Name="ButtonCheckUpdate" Content="{x:Bind helpers:Culture.GetString('ABOUT_BTN_CHECK_UPDATE')}" HorizontalAlignment="Right" Click="ButtonCheckUpdate_Click" />
             </StackPanel>
         </controls:SettingsCard>
+        
         <InfoBar x:Name="UpdateStatusInfo" Margin="0,4,0,0" IsClosable="False">
             <InfoBar.ActionButton>
                 <HyperlinkButton x:Name="ButtonDownloadUpdate" Click="ButtonDownloadUpdate_Click" Content="{x:Bind helpers:Culture.GetString('ABOUT_BTN_DOWNLOAD_UPDATE')}" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,-10,0" />
             </InfoBar.ActionButton>
         </InfoBar>
+        
     </StackPanel>
 </Page>
