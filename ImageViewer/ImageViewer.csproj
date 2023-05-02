@@ -20,7 +20,7 @@
 		<Authors>DragonOfMercy</Authors>
         <ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
-		<FileVersion>1.23.5.1</FileVersion>
+		<FileVersion>1.23.5.2</FileVersion>
 		<Version>0.1.3-beta</Version>
         <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
         <SelfContained>true</SelfContained>
