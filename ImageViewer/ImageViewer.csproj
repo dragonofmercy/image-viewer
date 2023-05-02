@@ -23,7 +23,6 @@
 		<FileVersion>1.23.5.2</FileVersion>
 		<Version>0.1.3-beta</Version>
         <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
-        <SelfContained>true</SelfContained>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -64,5 +63,13 @@
         <PackageReference Include="WinUIEx" Version="2.1.0" />
         <Manifest Include="$(ApplicationManifest)" />
     </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Controls\&quot;" />
+        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Themes\&quot;" />
+        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Themes\&quot;" />
+        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Views\&quot;" />
+        <Exec Command="del &quot;$(ProjectDir)$(OutDir)\*.xbf&quot;" />
+    </Target>
     
 </Project>
