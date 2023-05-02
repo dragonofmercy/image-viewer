@@ -1,0 +1,26 @@
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+    xmlns:local="using:ImageViewer.Controls">
+
+    <Style TargetType="local:SettingsGroup">
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical" Spacing="2" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:SettingsGroup">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock x:Name="TitlePresenter" Text="{ TemplateBinding Title }" Margin="1,32,0,8" Style="{ ThemeResource BodyStrongTextBlockStyle }" />
+                        <ItemsPresenter />
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
