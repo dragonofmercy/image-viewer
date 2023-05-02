@@ -13,14 +13,24 @@ public partial class SettingsCard : ButtonBase
     protected override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
+        
         OnDescriptionChanged();
+        OnIconChanged();
     }
     
     private void OnDescriptionChanged()
     {
-        if (GetTemplateChild("DescriptionPresenter") is FrameworkElement descriptionPresenter)
+        if(GetTemplateChild("DescriptionPresenter") is FrameworkElement descriptionPresenter)
         {
             descriptionPresenter.Visibility = Description != null ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+    
+    private void OnIconChanged()
+    {
+        if(GetTemplateChild("IconPresenter") is FrameworkElement iconPresenter)
+        {
+            iconPresenter.Visibility = Icon != null ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }
