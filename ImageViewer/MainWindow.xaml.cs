@@ -15,7 +15,6 @@ using Microsoft.UI.Windowing;
 using Windows.UI.Core;
 using Windows.Foundation;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.ApplicationModel.Resources;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
@@ -67,7 +66,7 @@ public sealed partial class MainWindow : Window
         
         ResourceDictionary resourceTheme = Theme.GetThemeResourceDictionary(MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light");
         AppWindowTitleBar windowTitleBar = GetAppWindowForCurrentWindow().TitleBar;
-
+        
         windowTitleBar.ButtonBackgroundColor = Colors.Transparent;
         windowTitleBar.ButtonForegroundColor = windowTitleBar.ButtonInactiveForegroundColor = (resourceTheme["TitleBarButtonForeground"] as SolidColorBrush).Color;
 
@@ -76,6 +75,8 @@ public sealed partial class MainWindow : Window
 
         windowTitleBar.ButtonPressedBackgroundColor = (resourceTheme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
         windowTitleBar.ButtonPressedForegroundColor = (resourceTheme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
+
+        windowTitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
     }
 
     public void UpdateTheme(ElementTheme theme)
