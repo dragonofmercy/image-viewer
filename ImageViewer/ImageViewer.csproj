@@ -65,10 +65,18 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Controls\&quot;" />
-        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Themes\&quot;" />
-        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Themes\&quot;" />
-        <Exec Command="RD /S /Q &quot;$(ProjectDir)$(OutDir)\Views\&quot;" />
+        <ItemGroup>
+            <RemovingFiles Include="$(OutDir)*\*.mui" Exclude="$(OutDir)en-us\*.mui" />
+            <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
+        </ItemGroup>
+        <RemoveDir Directories="@(RemovingFolders)" />
+        
+        <RemoveDir Directories="$(OutDir)\Microsoft.UI.Xaml" />
+        <RemoveDir Directories="$(OutDir)\Controls\" />
+        <RemoveDir Directories="$(OutDir)\Themes\" />
+        <RemoveDir Directories="$(OutDir)\Views\" />
+        <RemoveDir Directories="$(OutDir)\Microsoft.UI.Xaml" />
+
         <Exec Command="del &quot;$(ProjectDir)$(OutDir)\*.xbf&quot;" />
     </Target>
     
