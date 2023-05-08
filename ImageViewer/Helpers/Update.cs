@@ -41,7 +41,7 @@ internal class Update
         DateTime dateTimeNow = DateTime.Now;
         Settings.LastUpdateCheck = dateTimeNow.ToString("yyyy-MM-dd HH:mm:ss");
 
-        if (string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
+        if(string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
         {
             HasUpdate = true;
             return true;
@@ -53,7 +53,7 @@ internal class Update
 
     public static string GetRemoteVersion()
     {
-        if (JsonCache.ValueKind == JsonValueKind.Object)
+        if(JsonCache.ValueKind == JsonValueKind.Object)
         {
             return JsonCache.GetProperty("name").GetString();
         }
@@ -72,7 +72,7 @@ internal class Update
 
         try
         {
-            for (int i = 0; i < JsonCache.GetProperty("assets").GetArrayLength(); i++)
+            for(int i = 0; i < JsonCache.GetProperty("assets").GetArrayLength(); i++)
             {
                 string tmp = JsonCache.GetProperty("assets")[i].GetProperty("browser_download_url").GetString();
                 Regex reg = new("ImageViewer.Updater.exe$", RegexOptions.IgnoreCase);
@@ -82,12 +82,12 @@ internal class Update
                 break;
             }
 
-            if (string.IsNullOrEmpty(downloadUri))
+            if(string.IsNullOrEmpty(downloadUri))
             {
                 throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
             }
         }
-        catch (Exception)
+        catch(Exception)
         {
             throw new Exception(Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND"));
         }
@@ -95,11 +95,11 @@ internal class Update
         bool downloadSuccess = false;
         string filename = Path.Combine(tempDirectory, "ImageViewer.Updater.exe");
 
-        for (uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
+        for(uint i = 0; i < MAX_DOWNLOAD_ATTEMPTS; i++)
         {
             try
             {
-                if (File.Exists(filename))
+                if(File.Exists(filename))
                 {
                     File.Delete(filename);
                 }
@@ -115,7 +115,7 @@ internal class Update
 
                 break;
             }
-            catch (Exception)
+            catch(Exception)
             {
                 // ignored
             }
@@ -123,7 +123,7 @@ internal class Update
 
         httpClient.Dispose();
 
-        if (downloadSuccess)
+        if(downloadSuccess)
         {
             ProcessStartInfo pStartInfo = new()
             {

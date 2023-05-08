@@ -15,7 +15,7 @@ public static class Theme
     internal const string H_VALUE_APP_THEME = "AppsUseLightTheme";
     internal const int DWMWA_IMMERSIVE_DARK_MODE = 20;
 
-    public static ElementTheme GetAppTheme()
+    public static ElementTheme GetSystemTheme()
     {
         object registryValue = Registry.GetValue(H_KEY, H_VALUE_APP_THEME, 1);
         int value = registryValue == null ? 1 : (int)registryValue;

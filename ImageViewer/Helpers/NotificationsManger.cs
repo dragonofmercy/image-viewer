@@ -8,7 +8,7 @@ namespace ImageViewer.Helpers;
 
 internal class NotificationsManger
 {
-    public AppNotificationManager Runtime;
+    public readonly AppNotificationManager Runtime;
 
     public NotificationsManger()
     {
