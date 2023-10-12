@@ -1,14 +1,8 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.Win32;
+using WinUIEx;
 
 namespace ImageViewer.Helpers;
-
-internal enum WindowState
-{
-    Normal,
-    Maximized,
-    Minimized
-}
 
 internal class Settings
 {
