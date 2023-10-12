@@ -27,9 +27,9 @@
                 <Image Grid.Column="0" Source="ImageViewer.ico" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16" Margin="16,0" />
                 <TextBlock Grid.Column="1" x:Name="AppTitleBarText" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
             </Grid>
-            <SplitView Grid.Row="2" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Overlay" PanePlacement="Left" PaneOpening="SplitViewContainer_PaneOpening">
+            <SplitView Grid.Row="2" BorderThickness="0" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Overlay" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
                 <SplitView.Pane>
-                    <Border BorderThickness="0,0,1,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                    <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
                         <StackPanel Orientation="Vertical" Padding="16">
                             <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
