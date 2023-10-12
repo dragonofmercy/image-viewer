@@ -13,14 +13,14 @@ namespace ImageViewer;
 public static class Startup
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.UI.Xaml.Markup.Compiler", " 1.0.0.0")]
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.STAThreadAttribute]
     private static void Main(string[] args)
     {
         Context.Instance().LaunchArgs = args;
 
         global::WinRT.ComWrappersSupport.InitializeComWrappers();
-        global::Microsoft.UI.Xaml.Application.Start((p) => {
+        global::Microsoft.UI.Xaml.Application.Start(p => {
             DispatcherQueueSynchronizationContext context = new global::Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(global::Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
             global::System.Threading.SynchronizationContext.SetSynchronizationContext(context);
             _ = new App();
@@ -32,7 +32,7 @@ public partial class App : Application
 {
     public App()
     {
-        Configuration.Default.MemoryAllocator = MemoryAllocator.Create(new MemoryAllocatorOptions(){ MaximumPoolSizeMegabytes = 32 });
+        Configuration.Default.MemoryAllocator = MemoryAllocator.Create(new MemoryAllocatorOptions{ MaximumPoolSizeMegabytes = 32 });
         Configuration.Default.PreferContiguousImageBuffers = true;
 
         InitializeComponent();
