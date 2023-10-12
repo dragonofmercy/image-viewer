@@ -11,6 +11,7 @@
             <SolidColorBrush x:Key="TitleBarButtonPressedForeground" Color="White" />
             <SolidColorBrush x:Key="ImageViewContainerBackground" Color="#1d2026" />
             <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#1d2026" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#2b2d32" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="AppBarBackgroundBrush" Color="#f0f3f9" />
@@ -22,6 +23,7 @@
             <SolidColorBrush x:Key="TitleBarButtonPressedForeground" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="ImageViewContainerBackground" Color="#ffffff" />
             <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#f0f3f9" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#f9f9fb" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries> 
 
