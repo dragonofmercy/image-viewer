@@ -1,8 +1,10 @@
 # Image Viewer for Windows
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://ko-fi.com/dragonofmercy)
+[![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=flat&logo=twitter)](https://twitter.com/intent/tweet?text=ImageViewer.%20A%20new%20image%20viewer%20for%20Windows%2010%20%26%2011.%20%23imageviewer%20%23dotnet%20%23winui3%20via%20%40dragonofmercy&url=https%3A%2F%2Fgithub.com%2Fdragonofmercy%2Fimage-viewer)
 
-Simple image viewer for Windows
+Simple image viewer for Windows.  
+Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp and svg
 
 ![](/documentation/assets/screen1.jpg)
 
@@ -29,7 +31,7 @@ https://github.com/dragonofmercy/image-viewer/releases
 4. Done
 
 ## Credits
-Jose M. Piñeiro for WebP Wrapper: https://github.com/JosePineiro/WebP-wrapper
+ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
 
 ## 
 
