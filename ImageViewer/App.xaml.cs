@@ -96,7 +96,7 @@ public partial class App : Application
     {
         if(e.Message.MessageId != 0x0112) return; // WM_SYSCOMMAND
 
-        switch(e.Message.WParam)
+        switch((int) e.Message.WParam)
         {
             case 0xF000: // SC_SIZE
             case 0xF010: // SC_MOVE
