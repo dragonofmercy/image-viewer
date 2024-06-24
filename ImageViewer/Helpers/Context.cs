@@ -42,7 +42,6 @@ internal class Context
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
-    public WindowManager Manager;
     public NotificationsManger NotificationsManger;
 
     public Image CurrentImage { get; protected set; }

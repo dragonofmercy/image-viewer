@@ -59,10 +59,9 @@ public partial class App : Application
         MainWindow mWindow = new(CurrentTheme);
         WindowManager manager = WindowManager.Get(mWindow);
 
-        Context.Instance().Manager = manager;
         Context.Instance().MainWindow = mWindow;
         Context.Instance().NotificationsManger = new NotificationsManger();
-            
+
         manager.MinWidth = 768;
         manager.MinHeight = 400;
         manager.PositionChanged += Window_PositionChanged;
