@@ -199,7 +199,11 @@
                                     <KeyboardAccelerator Key="Number1" Modifiers="Control" />
                                 </AppBarButton.KeyboardAccelerators>
                             </AppBarButton>
+                            <AppBarElementContainer VerticalAlignment="Center">
+                                <TextBlock x:Name="TextBlockDimensions" x:FieldModifier="public" FontSize="12" Foreground="Gray" Margin="8,0" TextAlignment="Center"></TextBlock>
+                            </AppBarElementContainer>
                         </CommandBar.PrimaryCommands>
+
                     </CommandBar>
                     <StackPanel Grid.Column="1" Padding="4,0" HorizontalAlignment="Center" Orientation="Horizontal">
                         <AppBarButton x:Name="ButtonImagePrevious" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_PREVIOUS')}" Width="45" IsCompact="false" Icon="Previous" LabelPosition="Collapsed" Click="ButtonPrevFile_Click" IsEnabled="False">

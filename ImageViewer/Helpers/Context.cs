@@ -156,12 +156,15 @@ internal class Context
     {
         FileOpenPicker openFilePicker = new();
 
+        InitializeWithWindow.Initialize(openFilePicker, WindowNative.GetWindowHandle(MainWindow));
+
+        openFilePicker.ViewMode = PickerViewMode.Thumbnail;
+
         foreach (string fileType in Image.SupportedFileTypes)
         {
             openFilePicker.FileTypeFilter.Add(fileType);
         }
 
-        InitializeWithWindow.Initialize(openFilePicker, WindowNative.GetWindowHandle(MainWindow));
         StorageFile selectedFile = await openFilePicker.PickSingleFileAsync();
 
         if (selectedFile == null || !CheckFileExtension(selectedFile.Path)) return;
@@ -184,8 +187,6 @@ internal class Context
 
         MainWindow.SplitViewContainer.IsPaneOpen = false;
         OpenImage(await clipboard.OpenReadAsync());
-
-        MainWindow.UpdateTitle(Culture.GetString("SYSTEM_PASTED_CONTENT"));
     }
 
     /// <summary>
@@ -390,6 +391,10 @@ internal class Context
             MainWindow.ButtonFileSave.IsEnabled = true;
 
             MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
+
+            MainWindow.TextBlockDimensions.Text = CurrentImage.Width + "x" + CurrentImage.Height;
+
+            MainWindow.UpdateTitle(Path.GetFileName(CurrentFilePath ?? Culture.GetString("SYSTEM_PASTED_CONTENT")));
         }
         else
         {
@@ -404,6 +409,15 @@ internal class Context
             MainWindow.ButtonFileSave.IsEnabled = false;
 
             MainWindow.ButtonFileInfo.IsEnabled = false;
+
+            MainWindow.TextBlockDimensions.Text = "";
+
+            MainWindow.UpdateTitle();
+        }
+
+        if(MainWindow.ImageLoadingIndicator.IsActive)
+        {
+            MainWindow.UpdateTitle("Loading");
         }
 
         if (FolderFiles is { Length: > 1 })
@@ -459,7 +473,7 @@ internal class Context
 
         if (!await Update.CheckNewVersionAsync()) return;
 
-        var builder = new AppNotificationBuilder()
+        AppNotificationBuilder builder = new AppNotificationBuilder()
             .AddText(Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"))
             .AddButton(new AppNotificationButton(Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE")).AddArgument("action", "doUpdate"));
 
@@ -521,11 +535,6 @@ internal class Context
     {
         if (!HasImageLoaded()) return;
 
-        if (CurrentFilePath != null)
-        {
-            MainWindow.UpdateTitle(Path.GetFileName(CurrentFilePath));
-        }
-
         UpdateButtonsAccessiblity();
         AdjustImage();
 
@@ -542,7 +551,6 @@ internal class Context
     /// </summary>
     private void ImageView_ImageFailed(object sender, ExceptionRoutedEventArgs e)
     {
-        MainWindow.UpdateTitle();
         MainWindow.ImageLoadingIndicator.IsActive = false;
 
         CurrentImage = null;
