@@ -2,8 +2,8 @@
     
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net7.0-windows10.0.19041.0</TargetFramework>
-        <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+        <TargetFramework>net7.0-windows10.0.22621</TargetFramework>
+        <TargetPlatformMinVersion>10.0.22621</TargetPlatformMinVersion>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <RootNamespace>ImageViewer</RootNamespace>
         <Platforms>x64</Platforms>
@@ -21,8 +21,9 @@
         <ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
 		<FileVersion>1.23.5.2</FileVersion>
-		<Version>0.1.4-beta</Version>
+		<Version>0.1.5-beta</Version>
         <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
+        <LangVersion>12</LangVersion>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -55,6 +56,7 @@
     </ItemGroup>
     
     <ItemGroup>
+        <PackageReference Include="CommunityToolkit.WinUI.Controls.ImageCropper" Version="8.1.240916" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240607001" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Globalization;
-
+using System.Reflection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppNotifications.Builder;
@@ -13,8 +13,6 @@ using Microsoft.Windows.AppNotifications.Builder;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
-
-using WinUIEx;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
@@ -371,6 +369,17 @@ internal class Context
     }
 
     /// <summary>
+    /// Crop image
+    /// </summary>
+    public void Crop(int x, int y, int width, int height)
+    {
+        if (!HasImageLoaded()) return;
+        CurrentImage.Crop(x, y, width, height);
+        CloseCropper();
+        ReloadImageView();
+    }
+
+    /// <summary>
     /// Update interface buttons.
     /// </summary>
     public void UpdateButtonsAccessiblity()
@@ -417,7 +426,7 @@ internal class Context
 
         if(MainWindow.ImageLoadingIndicator.IsActive)
         {
-            MainWindow.UpdateTitle("Loading");
+            MainWindow.UpdateTitle(Culture.GetString("SYSTEM_LOADING"));
         }
 
         if (FolderFiles is { Length: > 1 })
@@ -431,10 +440,53 @@ internal class Context
             MainWindow.ButtonImageNext.IsEnabled = false;
         }
 
+        if(MainWindow.ImageCropperContainer.Visibility == Visibility.Visible)
+        {
+            MainWindow.ButtonImageTransform.IsEnabled = false;
+            MainWindow.ButtonImagePrevious.IsEnabled = false;
+            MainWindow.ButtonImageNext.IsEnabled = false;
+
+            MainWindow.ButtonImageZoomIn.IsEnabled = false;
+            MainWindow.ButtonImageZoomOut.IsEnabled = false;
+
+            MainWindow.ButtonImageAdjust.IsEnabled = false;
+            MainWindow.ButtonImageZoomFull.IsEnabled = false;
+            MainWindow.ButtonImageTransform.IsEnabled = false;
+
+            MainWindow.ButtonImageDelete.IsEnabled = false;
+            MainWindow.ButtonFileSave.IsEnabled = false;
+            MainWindow.ButtonFileInfo.IsEnabled = false;
+        }
+
         MainWindow.ButtonImageTransformFlipHorizontal.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
         MainWindow.ButtonImageTransformFlipVertical.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
         MainWindow.ButtonImageTransformRotateLeft.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
         MainWindow.ButtonImageTransformRotateRight.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
+        MainWindow.ButtonImageTransformCrop.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
+    }
+
+    /// <summary>
+    /// Update Cropper layout.
+    /// </summary>
+    public void UpdateCropperLayout()
+    {
+        if(MainWindow.ImageCropper.Source == null) return;
+        MainWindow.ImageCropper.GetType().GetTypeInfo().GetDeclaredMethod("UpdateMaskArea").Invoke(MainWindow.ImageCropper, new object[] { false });
+    }
+
+    /// <summary>
+    /// Close Cropper.
+    /// </summary>
+    public void CloseCropper()
+    {
+        MainWindow.ImageCropper.IsEnabled = false;
+        MainWindow.ImageContainer.Visibility = Visibility.Visible;
+        MainWindow.ImageCropperContainer.Visibility = Visibility.Collapsed;
+
+        MainWindow.ImageCropper.Source = null;
+
+        UpdateButtonsAccessiblity();
+        MainWindow.ScrollView.Focus(FocusState.Programmatic);
     }
 
     /// <summary>
@@ -561,8 +613,10 @@ internal class Context
     /// <summary>
     /// Load current image
     /// </summary>
-    private void OpenImage(IInputStream stream = null)
+    public void OpenImage(IInputStream stream = null)
     {
+        CloseCropper();
+
         CurrentImage?.Dispose();
 
         LoadingDisplay(true);

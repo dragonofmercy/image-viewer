@@ -11,6 +11,7 @@ internal static class Fr
             { "DEFAULT_SYSTEM_LANGUAGE", "Langue du système" },
             { "SYSTEM_PASTED_CONTENT", "Contenu collé" },
             { "SYSTEM_LOADING_ERROR", "Désolé, l'application ne peut pas ouvrir ce fichier car le format n'est actuellement pas pris en charge ou le fichier est endommagé" },
+            { "SYSTEM_LOADING", "Chargement" },
 
             { "SETTINGS_FIELD_LANGUAGE", "Langue" },
             { "SETTINGS_FIELD_LANGUAGE_HELP", "Vous devez redémarrer l'application pour appliquer ce paramètre." },
@@ -43,10 +44,18 @@ internal static class Fr
             { "FOOTER_TOOLBAR_IMAGE_NEXT", "Image suivante" },
 
             { "FOOTER_TOOLBAR_TRANSFORM_MENU", "Transformation de l'image" },
+            { "FOOTER_TOOLBAR_TRANSFORM_CROP", "Rogner l'image" },
             { "FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT", "Rotation gauche" },
             { "FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT", "Rotation droite" },
             { "FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ", "Mirroir horizontal" },
             { "FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT", "Mirroir vertical" },
+
+            { "TRANSFORM_CROP_TITLE", "Outil de rognage" },
+            { "TRANSFORM_CROP_RATIO", "Choix du ratio" },
+            { "TRANSFORM_CROP_FREE", "Sans contraintes" },
+            { "TRANSFORM_CROP_SAME", "Proportions d'origne" },
+            { "TRANSFORM_CROP_RESET", "Ré-initialiser" },
+            { "TRANSFORM_CROP_VALIDATE", "Valider" },
 
             { "ABOUT_LINK_GITHUB_REPOSITORY", "Dépôt GitHub" },
             { "ABOUT_LINK_LATEST_RELEASE", "Dernières versions" },

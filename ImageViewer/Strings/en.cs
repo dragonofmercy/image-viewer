@@ -11,6 +11,7 @@ internal static class En
             { "DEFAULT_SYSTEM_LANGUAGE", "System language" },
             { "SYSTEM_PASTED_CONTENT", "Pasted content" },
             { "SYSTEM_LOADING_ERROR", "Sorry, the application cannot open this file because the format is currently not supported or the file is damaged" },
+            { "SYSTEM_LOADING", "Loading" },
 
             { "SETTINGS_FIELD_LANGUAGE", "Language" },
             { "SETTINGS_FIELD_LANGUAGE_HELP", "You need to restart the application to apply this setting." },
@@ -43,10 +44,18 @@ internal static class En
             { "FOOTER_TOOLBAR_IMAGE_NEXT", "Next image" },
 
             { "FOOTER_TOOLBAR_TRANSFORM_MENU", "Transform image" },
+            { "FOOTER_TOOLBAR_TRANSFORM_CROP", "Crop image" },
             { "FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT", "Rotate left" },
             { "FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT", "Rotate right" },
             { "FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ", "Flip horizontal" },
             { "FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT", "Flip vertical" },
+
+            { "TRANSFORM_CROP_TITLE", "Crop tool" },
+            { "TRANSFORM_CROP_RATIO", "Ratio" },
+            { "TRANSFORM_CROP_FREE", "No constraints" },
+            { "TRANSFORM_CROP_SAME", "Original proportions" },
+            { "TRANSFORM_CROP_RESET", "Reset" },
+            { "TRANSFORM_CROP_VALIDATE", "Validate" },
 
             { "ABOUT_LINK_GITHUB_REPOSITORY", "GitHub Repository" },
             { "ABOUT_LINK_LATEST_RELEASE", "Latest releases" },

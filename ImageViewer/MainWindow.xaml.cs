@@ -7,6 +7,7 @@ using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Documents;
@@ -17,7 +18,6 @@ using Windows.Foundation;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Streams;
-
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
@@ -31,6 +31,15 @@ public sealed partial class MainWindow : Window
 {
     private Point LastMousePoint;
     private bool ScrollViewMouseDrag;
+    private readonly Dictionary<string, string>CropperAspectRatios = new()
+    {
+        {Culture.GetString("TRANSFORM_CROP_FREE"), "free"},
+        {Culture.GetString("TRANSFORM_CROP_SAME"), "same"},
+        {"1:1", "11"},
+        {"16:9", "169"},
+        {"16:10", "1610"},
+        {"4:3", "43"}
+    };
 
     public MainWindow(ElementTheme theme)
     {
@@ -172,6 +181,33 @@ public sealed partial class MainWindow : Window
         Environment.Exit(0);
     }
 
+    private void CboCropAspectRatios_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        switch(CboCropAspectRatios.SelectedValue.ToString())
+        {
+            case "free":
+                ImageCropper.AspectRatio = null;
+                break;
+            case "same":
+                ImageCropper.AspectRatio = Context.Instance().CurrentImage.Width / Context.Instance().CurrentImage.Height;
+                break;
+            case "11":
+                ImageCropper.AspectRatio = 1;
+                break;
+            case "169":
+                ImageCropper.AspectRatio = 16d / 9d;
+                break;
+            case "1610":
+                ImageCropper.AspectRatio = 16d / 10d;
+                break;
+            case "43":
+                ImageCropper.AspectRatio = 4d / 3d;
+                break;
+            default:
+                throw new System.NotImplementedException();
+        }
+    }
+
     private void ButtonFileInfo_Click(object sender, RoutedEventArgs e)
     {
         SplitViewContainer.IsPaneOpen = true;
@@ -182,6 +218,50 @@ public sealed partial class MainWindow : Window
     {
         SplitViewContainer.IsPaneOpen = false;
         ScrollView.Focus(FocusState.Programmatic);
+    }
+
+    private void ButtonImageCrop_Click(object sender, RoutedEventArgs e)
+    {
+        if(ImageCropper.Source != null) return;
+
+        WriteableBitmap wb = new WriteableBitmap((int)Context.Instance().CurrentImage.Width, (int)Context.Instance().CurrentImage.Height);
+        wb.SetSource(Context.Instance().CurrentImage.GetBitmapImageSource());
+        ImageCropper.Source = wb;
+
+        CboCropAspectRatios.SelectedValue = "free";
+
+        ImageContainer.Visibility = Visibility.Collapsed;
+        ImageCropperContainer.Visibility = Visibility.Visible;
+        ImageCropperContainer.IsPaneOpen = true;
+
+        ImageCropper.IsEnabled = true;
+        Context.Instance().UpdateButtonsAccessiblity();
+    }
+
+    private void ImageCropperSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        Context.Instance().UpdateCropperLayout();
+    }
+
+    private void ImageCropperEnabledChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        Context.Instance().UpdateCropperLayout();
+    }
+
+    private void ButtonCropValidate_Click(object sender, RoutedEventArgs e)
+    {
+        Rect rect = ImageCropper.CroppedRegion;
+        Context.Instance().Crop((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+    }
+
+    private void ButtonCropCancel_Click(object sender, RoutedEventArgs e)
+    {
+        Context.Instance().CloseCropper();
+    }
+
+    private void ButtonCropReset_Click(object sender, RoutedEventArgs e)
+    {
+        ImageCropper.Reset();
     }
 
     private void TextBlockInfoFolder_Click(Hyperlink hyperlinkControl, RoutedEventArgs args)

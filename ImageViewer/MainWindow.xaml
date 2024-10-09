@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:ImageViewer.Controls"
     xmlns:helpers="using:ImageViewer.Helpers"
+    xmlns:cc="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d" Closed="Window_Closed">
     <Page x:Name="MainPage">
         <Grid SizeChanged="Grid_SizeChanged" x:Name="MainLayout" KeyboardAcceleratorPlacementMode="Hidden">
@@ -27,9 +28,9 @@
                 <Image Grid.Column="0" Source="ImageViewer.ico" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16" Margin="16,0" />
                 <TextBlock Grid.Column="1" x:Name="AppTitleBarText" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
             </Grid>
-            <SplitView Grid.Row="2" BorderThickness="0" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Overlay" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
+            <SplitView Grid.Row="2" BorderThickness="0" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Inline" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
                 <SplitView.Pane>
-                    <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                    <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource ContextBackgroundBrush}">
                         <StackPanel Orientation="Vertical" Padding="16">
                             <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
@@ -81,34 +82,81 @@
                         </StackPanel>
                     </Border>
                 </SplitView.Pane>
-                <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
-                    <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
-                    <StackPanel Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="40" x:Name="GlobalErrorMessage" x:FieldModifier="public">
-                        <FontIcon Glyph="&#xe91B;" FontSize="128" Foreground="{ ThemeResource TextFillColorDisabled }" Margin="0,0,0,10"></FontIcon>
-                        <TextBlock Foreground="{ ThemeResource TextFillColorSecondary }" TextAlignment="Center" Margin="0,0,0,5" x:Name="GlobalErrorMessageFileName" x:FieldModifier="public"></TextBlock>
-                        <TextBlock Foreground="{ ThemeResource TextFillColorTertiary }" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" Text="{x:Bind helpers:Culture.GetString('SYSTEM_LOADING_ERROR')}"></TextBlock>
-                    </StackPanel>
-                    <ScrollViewer
-                            PointerMoved="ScrollView_PointerMoved"
-                            PointerExited="ScrollView_PointerExited"
-                            PointerPressed="ScrollView_PointerPressed"
-                            PointerReleased="ScrollView_PointerReleased"
-                            PointerWheelChanged="ScrollView_PointerWheelChanged"
-                            ViewChanged="ScrollView_ViewChanged"
-                            IsScrollInertiaEnabled="True"
-                            IsZoomInertiaEnabled="True"
-                            x:FieldModifier="public"
-                            x:Name="ScrollView"
-                            ZoomMode="Enabled"
-                            VerticalScrollMode="Disabled"
-                            HorizontalScrollMode="Disabled"
-                            HorizontalScrollBarVisibility="Hidden"
-                            VerticalScrollBarVisibility="Hidden"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center">
-                        <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
-                    </ScrollViewer>
-                </controls:CursorGrid>
+                <Grid>
+                    <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
+                        <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
+                        <StackPanel Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="40" x:Name="GlobalErrorMessage" x:FieldModifier="public">
+                            <FontIcon Glyph="&#xe91B;" FontSize="128" Foreground="{ ThemeResource TextFillColorDisabled }" Margin="0,0,0,10"></FontIcon>
+                            <TextBlock Foreground="{ ThemeResource TextFillColorSecondary }" TextAlignment="Center" Margin="0,0,0,5" x:Name="GlobalErrorMessageFileName" x:FieldModifier="public"></TextBlock>
+                            <TextBlock Foreground="{ ThemeResource TextFillColorTertiary }" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" Text="{x:Bind helpers:Culture.GetString('SYSTEM_LOADING_ERROR')}"></TextBlock>
+                        </StackPanel>
+                        <ScrollViewer
+                                PointerMoved="ScrollView_PointerMoved"
+                                PointerExited="ScrollView_PointerExited"
+                                PointerPressed="ScrollView_PointerPressed"
+                                PointerReleased="ScrollView_PointerReleased"
+                                PointerWheelChanged="ScrollView_PointerWheelChanged"
+                                ViewChanged="ScrollView_ViewChanged"
+                                IsScrollInertiaEnabled="True"
+                                IsZoomInertiaEnabled="True"
+                                x:FieldModifier="public"
+                                x:Name="ScrollView"
+                                ZoomMode="Enabled"
+                                VerticalScrollMode="Disabled"
+                                HorizontalScrollMode="Disabled"
+                                HorizontalScrollBarVisibility="Hidden"
+                                VerticalScrollBarVisibility="Hidden"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center">
+                            <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
+                        </ScrollViewer>
+                    </controls:CursorGrid>
+                    <SplitView BorderThickness="0" x:Name="ImageCropperContainer" x:FieldModifier="public" Visibility="Collapsed" PanePlacement="Right" DisplayMode="Inline">
+                        <SplitView.Pane>
+                            <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource ContextBackgroundBrush}">
+                                <StackPanel Orientation="Vertical" Padding="16" HorizontalAlignment="Stretch">
+                                    <Grid Margin="0,0,0,24">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="44" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock FontSize="20" Text="{x:Bind helpers:Culture.GetString('TRANSFORM_CROP_TITLE')}" />
+                                        <HyperlinkButton Grid.Column="1" Foreground="{ThemeResource ButtonForegroundThemeBrush}" Click="ButtonCropCancel_Click">
+                                            <SymbolIcon Symbol="Clear" />
+                                        </HyperlinkButton>
+                                    </Grid>
+                                    <TextBlock Margin="0,0,0,12" Text="{x:Bind helpers:Culture.GetString('TRANSFORM_CROP_RATIO')}" />
+                                    <ComboBox
+                                        Name="CboCropAspectRatios"
+                                        ItemsSource="{x:Bind CropperAspectRatios }"
+                                        DisplayMemberPath="Key"
+                                        SelectedValuePath="Value"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,0,0,24"
+                                        SelectionChanged="CboCropAspectRatios_SelectionChanged" />
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" Content="{x:Bind helpers:Culture.GetString('TRANSFORM_CROP_RESET')}" Click="ButtonCropReset_Click" HorizontalAlignment="Stretch" />
+                                        <Button Grid.Column="2" Content="{x:Bind helpers:Culture.GetString('TRANSFORM_CROP_VALIDATE')}" Click="ButtonCropValidate_Click" HorizontalAlignment="Stretch" Style="{ThemeResource AccentButtonStyle}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </SplitView.Pane>
+                        <cc:ImageCropper
+                            x:Name="ImageCropper"
+                            CropShape="Rectangular"
+                            SizeChanged="ImageCropperSizeChanged"
+                            IsEnabledChanged="ImageCropperEnabledChanged"
+                            IsEnabled="False"
+                            PrimaryThumbStyle="{ThemeResource PrimaryThumbStyle}"
+                            SecondaryThumbStyle="{ThemeResource PrimaryThumbStyle}"
+                            x:FieldModifier="public" />
+                    </SplitView>
+                </Grid>
             </SplitView>
             <Grid Grid.Row="3" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">
@@ -203,7 +251,6 @@
                                 <TextBlock x:Name="TextBlockDimensions" x:FieldModifier="public" FontSize="12" Foreground="Gray" Margin="8,0" TextAlignment="Center"></TextBlock>
                             </AppBarElementContainer>
                         </CommandBar.PrimaryCommands>
-
                     </CommandBar>
                     <StackPanel Grid.Column="1" Padding="4,0" HorizontalAlignment="Center" Orientation="Horizontal">
                         <AppBarButton x:Name="ButtonImagePrevious" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_PREVIOUS')}" Width="45" IsCompact="false" Icon="Previous" LabelPosition="Collapsed" Click="ButtonPrevFile_Click" IsEnabled="False">
@@ -250,6 +297,15 @@
                                 </AppBarButton.Icon>
                                 <AppBarButton.Flyout>
                                     <MenuFlyout Placement="TopEdgeAlignedRight">
+                                        <MenuFlyoutItem x:Name="ButtonImageTransformCrop" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_CROP')}" Click="ButtonImageCrop_Click" IsEnabled="false">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE7A8;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="C" Modifiers="Menu" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
                                         <MenuFlyoutItem x:Name="ButtonImageTransformRotateLeft" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT')}" Click="ButtonImageRotateLeft_Click" IsEnabled="false">
                                             <MenuFlyoutItem.Icon>
                                                 <PathIcon Data="M170.666667 85.333333h128a85.333333 85.333333 0 0 1 85.333333 85.333334v682.666666a85.333333 85.333333 0 0 1-85.333333 85.333334H170.666667a85.333333 85.333333 0 0 1-85.333334-85.333334V170.666667a85.333333 85.333333 0 0 1 85.333334-85.333334m682.666666 554.666667a85.333333 85.333333 0 0 1 85.333334 85.333333v128a85.333333 85.333333 0 0 1-85.333334 85.333334h-384v-298.666667h384M597.333333 170.666667a341.333333 341.333333 0 0 1 341.333334 341.333333l-2.56 42.666667h-86.186667l3.413333-42.666667a256 256 0 0 0-256-256v128l-170.666666-170.666667 170.666666-170.666666v128z" />
