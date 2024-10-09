@@ -23,10 +23,10 @@ namespace ImageViewer.Wrapper;
 
 internal partial class Image
 {
-    public static readonly string[] SupportedFileTypes = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg" };
-    public static readonly string[] SaveFileTypes = { ".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga" };
+    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg"];
+    public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga"];
 
-    private readonly string[] NativeExtensions = { ".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp" };
+    private readonly string[] NativeExtensions = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp"];
 
     public event EventHandler ImageLoaded;
     public event EventHandler ImageFailed;
