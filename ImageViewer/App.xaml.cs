@@ -1,5 +1,4 @@
-﻿using Windows.ApplicationModel.Core;
-using ImageViewer.Helpers;
+﻿using ImageViewer.Helpers;
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
