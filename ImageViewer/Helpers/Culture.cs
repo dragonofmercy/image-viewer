@@ -30,7 +30,7 @@ internal class Culture
 
     public static List<string> GetAvailableLanguages()
     {
-        List<string> list = new();
+        List<string> list = [];
         list.AddRange(from Type type in Assembly.GetExecutingAssembly().GetTypes().Where(t => string.Equals(t.Namespace, LIBRARY_PATH, StringComparison.Ordinal)).ToArray()
             select type.Name.ToLower());
         return list;
@@ -40,6 +40,6 @@ internal class Culture
     {
         Dictionary<string, string> strings = (Dictionary<string, string>)_Class.GetMethod("GetStrings", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
 
-        return strings.TryGetValue(key, out var s) ? s : $"[{key}]";
+        return strings.TryGetValue(key, out string s) ? s : $"[{key}]";
     }
 }

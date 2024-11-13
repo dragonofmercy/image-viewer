@@ -471,7 +471,7 @@ internal class Context
     public void UpdateCropperLayout()
     {
         if(MainWindow.ImageCropper.Source == null) return;
-        MainWindow.ImageCropper.GetType().GetTypeInfo().GetDeclaredMethod("UpdateMaskArea").Invoke(MainWindow.ImageCropper, new object[] { false });
+        MainWindow.ImageCropper.GetType().GetTypeInfo().GetDeclaredMethod("UpdateMaskArea").Invoke(MainWindow.ImageCropper, [false]);
     }
 
     /// <summary>
@@ -569,15 +569,14 @@ internal class Context
 
         BitmapImage bitmapImage = new()
         {
-            CreateOptions = BitmapCreateOptions.IgnoreImageCache,
+            CreateOptions = BitmapCreateOptions.IgnoreImageCache
         };
 
         bitmapImage.ImageOpened += ImageView_ImageOpened;
         bitmapImage.ImageFailed += ImageView_ImageFailed;
+        bitmapImage.SetSource(CurrentImage.GetBitmapImageSource());
 
         MainWindow.ImageView.Source = bitmapImage;
-
-        bitmapImage.SetSource(CurrentImage.GetBitmapImageSource());
     }
 
     /// <summary>
@@ -621,7 +620,7 @@ internal class Context
 
         LoadingDisplay(true);
 
-        CurrentImage = new();
+        CurrentImage = new Image();
         CurrentImage.ImageLoaded += WorkingImage_ImageLoaded;
         CurrentImage.ImageFailed += WorkingImage_ImageFailed;
 

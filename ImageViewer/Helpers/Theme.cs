@@ -11,7 +11,7 @@ public static class Theme
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
-    internal const string H_KEY = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    internal const string H_KEY = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     internal const string H_VALUE_APP_THEME = "AppsUseLightTheme";
     internal const int DWMWA_IMMERSIVE_DARK_MODE = 20;
 
