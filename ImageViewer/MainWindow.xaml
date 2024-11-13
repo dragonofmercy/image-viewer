@@ -128,7 +128,6 @@
                                     <TextBlock Margin="0,0,0,12" Text="{x:Bind helpers:Culture.GetString('TRANSFORM_CROP_RATIO')}" />
                                     <ComboBox
                                         Name="CboCropAspectRatios"
-                                        ItemsSource="{x:Bind CropperAspectRatios }"
                                         DisplayMemberPath="Key"
                                         SelectedValuePath="Value"
                                         HorizontalAlignment="Stretch"

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-
+using System.Linq;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window
 {
     private Point LastMousePoint;
     private bool ScrollViewMouseDrag;
-    private readonly Dictionary<string, string>CropperAspectRatios = new()
+    public readonly Dictionary<string, string>CropperAspectRatios = new()
     {
         {Culture.GetString("TRANSFORM_CROP_FREE"), "free"},
         {Culture.GetString("TRANSFORM_CROP_SAME"), "same"},
@@ -47,6 +47,8 @@ public sealed partial class MainWindow : Window
         CustomizeAppBar();
         UpdateTheme(theme);
         UpdateTitle();
+
+        CboCropAspectRatios.ItemsSource = CropperAspectRatios.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
     }
 
     private void CustomizeAppBar()
