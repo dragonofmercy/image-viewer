@@ -15,12 +15,11 @@ internal class Update
     private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
     private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
     public static JsonElement JsonCache;
-    public static bool HasUpdate = false;
+    public static bool HasUpdate;
 
     public static async Task GetRemoteData()
     {
         HttpClient httpClient = new();
-
         httpClient.DefaultRequestHeaders.Add("User-Agent", "Image View Update Check");
 
         HttpResponseMessage responseMessage = await httpClient.GetAsync(GITHUB_API_RELEASE_PATH);
@@ -128,7 +127,7 @@ internal class Update
             ProcessStartInfo pStartInfo = new()
             {
                 FileName = filename,
-                UseShellExecute = true,
+                UseShellExecute = true
             };
 
             Process process = new()

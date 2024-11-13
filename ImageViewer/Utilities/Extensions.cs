@@ -14,7 +14,7 @@ public static class Extensions
     public static T[] RemoveAtIndex<T>(this T[] original, int index)
     {
         if (index >= original.Length) return original;
-        List<T> tmp = new(original);
+        List<T> tmp = [..original];
         tmp.RemoveAt(index);
         return tmp.ToArray();
     }
