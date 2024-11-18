@@ -171,7 +171,7 @@
                                     <MenuFlyout Placement="TopEdgeAlignedLeft">
                                         <MenuFlyoutItem Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_OPEN')}" Click="ButtonOpenFile_Click">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE7C5;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C5;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="O" Modifiers="Control" />
@@ -180,7 +180,7 @@
                                         <MenuFlyoutSeparator />
                                         <MenuFlyoutItem x:Name="ButtonFileInfo" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_INFO')}" IsEnabled="False" Click="ButtonFileInfo_Click">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE946;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE946;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="I" Modifiers="Control" />
@@ -188,7 +188,7 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem x:Name="ButtonFileSave" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_SAVE')}" IsEnabled="False" Click="ButtonFileSave_Click">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xEA35;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA35;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="S" Modifiers="Control" />
@@ -196,7 +196,7 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem x:Name="ButtonImageDelete" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_DELETE')}" IsEnabled="False" Click="ButtonDelete_Click">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE74D;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="Delete" />
@@ -213,7 +213,7 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_OPTIONS')}" Click="ButtonSettings_Click">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE713;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE713;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="O" Modifiers="Control,Menu" />
@@ -221,7 +221,7 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_QUIT')}" Click="ButtonQuit_Click">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xF3B1;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF3B1;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="Q" Modifiers="Control" />
@@ -232,7 +232,7 @@
                             </AppBarButton>
                             <AppBarButton x:Name="ButtonImageAdjust" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ADJUST')}" Width="45" IsCompact="false" LabelPosition="Collapsed" Click="ButtonAdjust_Click" Visibility="Collapsed" IsEnabled="False">
                                 <AppBarButton.Icon>
-                                    <FontIcon Glyph="&#xe9a6;" />
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe9a6;" />
                                 </AppBarButton.Icon>
                                 <AppBarButton.KeyboardAccelerators>
                                     <KeyboardAccelerator Key="Number0" Modifiers="Control" />
@@ -282,12 +282,12 @@
                         <CommandBar.PrimaryCommands>
                             <AppBarButton Width="45" LabelPosition="Collapsed" Click="ButtonSwitchThemeLight_Click" x:Name="ButtonSwitchThemeLight" x:FieldModifier="public">
                                 <AppBarButton.Icon>
-                                    <FontIcon Glyph="&#xE706;" />
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE706;" />
                                 </AppBarButton.Icon>
                             </AppBarButton>
                             <AppBarButton Width="45" LabelPosition="Collapsed" Click="ButtonSwitchThemeDark_Click" x:Name="ButtonSwitchThemeDark" x:FieldModifier="public">
                                 <AppBarButton.Icon>
-                                    <FontIcon Glyph="&#xE708;" />
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE708;" />
                                 </AppBarButton.Icon>
                             </AppBarButton>
                             <AppBarButton x:Name="ButtonImageTransform" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_MENU')}" Width="45" IsCompact="false" LabelPosition="Collapsed" IsEnabled="false">
@@ -298,7 +298,7 @@
                                     <MenuFlyout Placement="TopEdgeAlignedRight">
                                         <MenuFlyoutItem x:Name="ButtonImageTransformCrop" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_TRANSFORM_CROP')}" Click="ButtonImageCrop_Click" IsEnabled="false">
                                             <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE7A8;" />
+                                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7A8;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="C" Modifiers="Menu" />
