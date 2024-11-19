@@ -20,8 +20,8 @@
 		<Authors>DragonOfMercy</Authors>
         <ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
-		<FileVersion>1.23.5.2</FileVersion>
-		<Version>0.1.5-beta</Version>
+		<FileVersion>1.23.5.3</FileVersion>
+		<Version>0.1.6-beta</Version>
         <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
         <LangVersion>12</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
