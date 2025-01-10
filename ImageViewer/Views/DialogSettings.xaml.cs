@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 using ImageViewer.Helpers;
 using ImageViewer.Utilities;
@@ -11,8 +12,18 @@ namespace ImageViewer.Views;
 
 public sealed partial class DialogSettings : Page
 {
-    private readonly Dictionary<string, string>AvailableLanguages = new();
-    private readonly Dictionary<string, string>UpdatesIntervals = new();
+    private readonly Dictionary<string, string> AvailableLanguages = new()
+    {
+        { Culture.GetString("DEFAULT_SYSTEM_LANGUAGE"), "" }
+    };
+
+    private readonly Dictionary<string, string> UpdatesIntervals = new()
+    {
+        { Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_DAY"), "day" },
+        { Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_WEEK"), "week" },
+        { Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_MONTH"), "month" },
+        { Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL"), "" },
+    };
     private readonly ContentDialog Dialog;
 
     public DialogSettings(ContentDialog e)
@@ -20,17 +31,13 @@ public sealed partial class DialogSettings : Page
         InitializeComponent();
         Dialog = e;
 
-        AvailableLanguages.Add(Culture.GetString("DEFAULT_SYSTEM_LANGUAGE"), "");
-
         foreach(string languagesIso in Culture.GetAvailableLanguages()) 
         {
             AvailableLanguages.Add(new CultureInfo(languagesIso).NativeName.UcFirst(), languagesIso.ToLower());
         }
-             
-        UpdatesIntervals.Add(Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_DAY"), "day");
-        UpdatesIntervals.Add(Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_WEEK"), "week");
-        UpdatesIntervals.Add(Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_MONTH"), "month");
-        UpdatesIntervals.Add(Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL"), "");
+
+        CboOptionsLanguage.ItemsSource = AvailableLanguages.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
+        CboOptionsUpdateInterval.ItemsSource = UpdatesIntervals.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)

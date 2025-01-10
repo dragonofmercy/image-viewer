@@ -30,7 +30,6 @@
                 <ComboBox 
                     Name="CboOptionsLanguage"
                     MinWidth="{ StaticResource SettingActionControlMinWidth }"
-                    ItemsSource="{x:Bind AvailableLanguages }" 
                     DisplayMemberPath="Key" 
                     SelectedValuePath="Value" 
                     SelectionChanged="CboOptionsLanguage_SelectionChanged">
@@ -43,7 +42,6 @@
                 <ComboBox 
                     Name="CboOptionsUpdateInterval" 
                     MinWidth="{ StaticResource SettingActionControlMinWidth }"
-                    ItemsSource="{x:Bind UpdatesIntervals }" 
                     DisplayMemberPath="Key" 
                     SelectedValuePath="Value" 
                     SelectionChanged="CboOptionsUpdateInterval_SelectionChanged">
