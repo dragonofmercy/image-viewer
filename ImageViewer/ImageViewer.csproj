@@ -21,7 +21,7 @@
         <ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
 		<FileVersion>1.23.5.3</FileVersion>
-		<Version>0.1.7-beta</Version>
+		<Version>0.1.8-beta</Version>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
         <LangVersion>12</LangVersion>
