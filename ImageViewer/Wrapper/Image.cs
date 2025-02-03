@@ -132,6 +132,10 @@ internal partial class Image
                     case JpegEncoder:
                         Encoder = new JpegEncoder { Quality = 100 };
                         break;
+
+                    case PngEncoder:
+                        Encoder = new PngEncoder { ColorType = PngColorType.Palette };
+                        break;
                 }
             }
             else
@@ -144,7 +148,7 @@ internal partial class Image
                     svgDocument.ShapeRendering = SvgShapeRendering.Auto;
                     tmp = svgDocument.AdjustSize(1024, 1024).Draw();
 
-                    Encoder = new PngEncoder();
+                    Encoder = new PngEncoder { ColorType = PngColorType.Palette };
                 }
                 else
                 {
