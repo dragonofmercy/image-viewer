@@ -29,8 +29,10 @@ namespace ImageViewer;
 
 public sealed partial class MainWindow : Window
 {
+    private bool SavingProcess = false;
     private Point LastMousePoint;
     private bool ScrollViewMouseDrag;
+
     public readonly Dictionary<string, string>CropperAspectRatios = new()
     {
         {Culture.GetString("TRANSFORM_CROP_FREE"), "free"},
@@ -388,9 +390,19 @@ public sealed partial class MainWindow : Window
         Context.Instance().RotateFlip(RotateMode.None, FlipMode.Horizontal);
     }
 
-    private void ButtonFileSave_Click(object sender, RoutedEventArgs e)
+    private async void ButtonFileSave_Click(object sender, RoutedEventArgs e)
     {
-        Context.Instance().SaveAs();
+        if(SavingProcess) return;
+
+        try
+        {
+            SavingProcess = true;
+            await Context.Instance().SaveAs();
+        }
+        finally
+        {
+            SavingProcess = false;
+        }
     }
 
     private async void ButtonAbout_Click(object sender, RoutedEventArgs e)

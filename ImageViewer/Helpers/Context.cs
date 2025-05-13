@@ -351,7 +351,7 @@ internal class Context
     }
 
     /// <summary>
-    /// Zoom inside image view.
+    /// Zoom inside the image view.
     /// </summary>
     public void Zoom(double factor)
     {
@@ -535,9 +535,9 @@ internal class Context
     /// <summary>
     /// Save current file as.
     /// </summary>
-    public async void SaveAs()
+    public async Task<bool> SaveAs()
     {
-        if (!HasImageLoaded()) return;
+        if (!HasImageLoaded()) return false;
 
         FileSavePicker saveFilePicker = new()
         {
@@ -546,18 +546,20 @@ internal class Context
 
         foreach (string fileType in Image.SaveFileTypes)
         {
-            saveFilePicker.FileTypeChoices.Add(Culture.GetString("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT").Replace("{0}", fileType.Remove(0, 1).ToUpper()), new List<string>() { fileType });
+            saveFilePicker.FileTypeChoices.Add(Culture.GetString("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT").Replace("{0}", fileType.Remove(0, 1).ToUpper()), new List<string>{ fileType });
         }
 
         InitializeWithWindow.Initialize(saveFilePicker, WindowNative.GetWindowHandle(MainWindow));
         StorageFile outputFile = await saveFilePicker.PickSaveFileAsync();
 
-        if (outputFile == null) return;
-        if (!Image.SaveFileTypes.Contains(outputFile.FileType)) return;
+        if (outputFile == null) return false;
+        if (!Image.SaveFileTypes.Contains(outputFile.FileType)) return false;
 
         CurrentImage.Save(outputFile.Path, outputFile.FileType);
 
         LoadDirectoryFiles();
+
+        return true;
     }
 
     /// <summary>
