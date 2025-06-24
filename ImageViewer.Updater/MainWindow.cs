@@ -16,12 +16,12 @@ namespace ImageViewer.Updater
         private const uint MAX_DOWNLOAD_ATTEMPTS = 3;
         private const string GITHUB_API_RELEASE_PATH = "https://api.github.com/repos/dragonofmercy/image-viewer/releases/latest";
 
-        private const string APP_RUNTIME_SEARCH = "Microsoft.WindowsAppRuntime.1.6_6000.266.2241.0_x64";
-        private const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.6/1.6.240923002/windowsappruntimeinstall-x64.exe";
+        private const string APP_RUNTIME_SEARCH = "Microsoft.WindowsAppRuntime.1.7_7000.522.1444.0_x86";
+        private const string APP_RUNTIME_DOWNLOAD = "https://aka.ms/windowsappsdk/1.7/1.7.250606001/windowsappruntimeinstall-x64.exe";
 
-        private const string NET_RUNTIME_SEARCH = "Microsoft.WindowsDesktop.App 7.0.20";
-        private const string NET_RUNTIME_DOWNLOAD = "https://download.visualstudio.microsoft.com/download/pr/08bbfe8f-812d-479f-803b-23ea0bffce47/c320e4b037f3e92ab7ea92c3d7ea3ca1/windowsdesktop-runtime-7.0.20-win-x64.exe";
-        
+        private const string NET_RUNTIME_SEARCH = "Microsoft.WindowsDesktop.App 8.0.17";
+        private const string NET_RUNTIME_DOWNLOAD = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.17/windowsdesktop-runtime-8.0.17-win-x64.exe";
+
         private string TempDirectory;
         private string InstallSourcesDirectory;
         private string InstallDestinationDirectory;
