@@ -71,18 +71,23 @@
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <ItemGroup>
-            <RemovingFiles Include="$(OutDir)*\*.mui" Exclude="$(OutDir)en-us\*.mui" />
+            <RemovingFiles Include="$(OutDir)**\*.mui"
+                           Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui" />
             <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
         </ItemGroup>
-        <RemoveDir Directories="@(RemovingFolders)" />
+        <RemoveDir Directories="@(RemovingFolders)" Condition="'@(RemovingFolders)'!=''" />
 
-        <RemoveDir Directories="$(OutDir)\Microsoft.UI.Xaml" />
-        <RemoveDir Directories="$(OutDir)\Controls\" />
-        <RemoveDir Directories="$(OutDir)\Themes\" />
-        <RemoveDir Directories="$(OutDir)\Views\" />
-        <RemoveDir Directories="$(OutDir)\Microsoft.UI.Xaml" />
+        <ItemGroup Condition="'$(Configuration)'=='Release'">
+            <PdbFilesToRemove Include="$(OutDir)*.pdb"
+                              Exclude="$(OutDir)$(AssemblyName).pdb" />
+        </ItemGroup>
+        <Delete Files="@(PdbFilesToRemove)" Condition="'$(Configuration)'=='Release' And '@(PdbFilesToRemove)'!=''" ContinueOnError="true" />
 
-        <Exec Command="del &quot;$(ProjectDir)$(OutDir)\*.xbf&quot;" />
+        <ItemGroup Condition="'$(Configuration)'=='Release'">
+            <XmlDocsToRemove Include="$(OutDir)*.xml"
+                             Exclude="$(OutDir)$(AssemblyName).xml" />
+        </ItemGroup>
+        <Delete Files="@(XmlDocsToRemove)" Condition="'$(Configuration)'=='Release' And '@(XmlDocsToRemove)'!=''" ContinueOnError="true" />
     </Target>
 
 </Project>
