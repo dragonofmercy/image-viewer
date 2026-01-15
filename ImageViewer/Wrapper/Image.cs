@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Drawing.Imaging;
 using System.Threading;
 
 using Windows.Storage.Streams;
@@ -12,10 +12,10 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tga;
+using SixLabors.ImageSharp.PixelFormats;
 using Svg;
 
 using ImageSharpImage = SixLabors.ImageSharp.Image;
-using DrawingImage = System.Drawing.Bitmap;
 
 using ImageViewer.Utilities;
 
@@ -140,28 +140,43 @@ internal partial class Image
             }
             else
             {
-                DrawingImage tmp;
-
+                // Handle SVG and ICO formats
+                // NOTE: Both Svg library and ICO loading still require System.Drawing.Common
+                // This is kept minimal and isolated to this fallback path only
                 if(extension == ".svg")
                 {
+                    // Convert SVG to PNG using Svg library (requires System.Drawing)
                     SvgDocument svgDocument = SvgDocument.Open(path);
                     svgDocument.ShapeRendering = SvgShapeRendering.Auto;
-                    tmp = svgDocument.AdjustSize(1024, 1024).Draw();
+
+                    using MemoryStream svgMemoryStream = new();
+                    using (Bitmap svgBitmap = svgDocument.AdjustSize(1024, 1024).Draw())
+                    {
+                        svgBitmap.Save(svgMemoryStream, System.Drawing.Imaging.ImageFormat.Png);
+                    }
+
+                    svgMemoryStream.Position = 0;
+                    WorkingImage = await ImageSharpImage.LoadAsync<Rgba32>(svgMemoryStream);
 
                     Encoder = new PngEncoder { ColorType = PngColorType.Palette };
                 }
                 else
                 {
+                    // For ICO and other legacy formats (requires System.Drawing)
                     byte[] fileBytes = await File.ReadAllBytesAsync(path);
-                    using MemoryStream defaultMemoryStream = new(fileBytes);
-                    tmp = (DrawingImage)System.Drawing.Image.FromStream(defaultMemoryStream);
-                    await defaultMemoryStream.DisposeAsync();
-                }
+                    using MemoryStream inputStream = new(fileBytes);
+                    using MemoryStream pngStream = new();
 
-                using MemoryStream saveMemoryStream = new();
-                tmp.Save(saveMemoryStream, ImageFormat.Png);
-                WorkingImage = ImageSharpImage.Load(saveMemoryStream.ToArray());
-                await saveMemoryStream.DisposeAsync();
+                    using (System.Drawing.Image drawingImage = System.Drawing.Image.FromStream(inputStream))
+                    {
+                        drawingImage.Save(pngStream, System.Drawing.Imaging.ImageFormat.Png);
+                    }
+
+                    pngStream.Position = 0;
+                    WorkingImage = await ImageSharpImage.LoadAsync<Rgba32>(pngStream);
+
+                    Encoder = new PngEncoder();
+                }
             }
 
             WorkingImageLoaded = true;
