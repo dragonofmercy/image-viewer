@@ -40,7 +40,7 @@ internal class Update
         DateTime dateTimeNow = DateTime.Now;
         Settings.LastUpdateCheck = dateTimeNow.ToString("yyyy-MM-dd HH:mm:ss");
 
-        if(string.Compare(remoteVersion, Context.GetProductVersion(), StringComparison.InvariantCulture) > 0)
+        if(IsNewerVersion(remoteVersion, Context.GetProductVersion()))
         {
             HasUpdate = true;
             return true;
@@ -48,6 +48,83 @@ internal class Update
 
         HasUpdate = false;
         return false;
+    }
+
+    /// <summary>
+    /// Compare two semantic versions (supports formats like "1.2.3", "0.1.10-beta", etc.)
+    /// </summary>
+    /// <param name="remoteVersion">Remote version string</param>
+    /// <param name="currentVersion">Current version string</param>
+    /// <returns>True if remote version is newer than current version</returns>
+    private static bool IsNewerVersion(string remoteVersion, string currentVersion)
+    {
+        if (string.IsNullOrEmpty(remoteVersion) || string.IsNullOrEmpty(currentVersion))
+        {
+            return false;
+        }
+
+        // Remove prefixes like "v" if present
+        remoteVersion = remoteVersion.TrimStart('v', 'V');
+        currentVersion = currentVersion.TrimStart('v', 'V');
+
+        // Extract version numbers (remove suffixes like "-beta", "-alpha", etc.)
+        string remoteVersionNumber = ExtractVersionNumber(remoteVersion);
+        string currentVersionNumber = ExtractVersionNumber(currentVersion);
+
+        try
+        {
+            Version remote = new(remoteVersionNumber);
+            Version current = new(currentVersionNumber);
+
+            int comparison = remote.CompareTo(current);
+
+            // If versions are different, return the comparison result
+            if (comparison != 0)
+            {
+                return comparison > 0;
+            }
+
+            // If version numbers are equal, check pre-release tags
+            string remoteSuffix = GetVersionSuffix(remoteVersion);
+            string currentSuffix = GetVersionSuffix(currentVersion);
+
+            // No suffix (stable) is newer than any pre-release
+            if (string.IsNullOrEmpty(remoteSuffix) && !string.IsNullOrEmpty(currentSuffix))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(remoteSuffix) && string.IsNullOrEmpty(currentSuffix))
+            {
+                return false;
+            }
+
+            // Both have suffixes, compare lexicographically
+            return string.Compare(remoteSuffix, currentSuffix, StringComparison.OrdinalIgnoreCase) > 0;
+        }
+        catch (Exception)
+        {
+            // Fallback to string comparison if version parsing fails
+            return string.Compare(remoteVersion, currentVersion, StringComparison.OrdinalIgnoreCase) > 0;
+        }
+    }
+
+    /// <summary>
+    /// Extract version number from version string (removes pre-release suffix)
+    /// </summary>
+    private static string ExtractVersionNumber(string version)
+    {
+        int dashIndex = version.IndexOf('-');
+        return dashIndex > 0 ? version.Substring(0, dashIndex) : version;
+    }
+
+    /// <summary>
+    /// Get version suffix (pre-release tag like "beta", "alpha", etc.)
+    /// </summary>
+    private static string GetVersionSuffix(string version)
+    {
+        int dashIndex = version.IndexOf('-');
+        return dashIndex > 0 ? version.Substring(dashIndex + 1) : string.Empty;
     }
 
     public static string GetRemoteVersion()
