@@ -1,4 +1,5 @@
-﻿using ImageViewer.Helpers;
+﻿using System;
+using ImageViewer.Helpers;
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -32,8 +33,16 @@ public partial class App : Application
 {
     public App()
     {
-        Configuration.Default.MemoryAllocator = MemoryAllocator.Create(new MemoryAllocatorOptions{ MaximumPoolSizeMegabytes = 32 });
+        long totalMemoryMb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024);
+        int poolSizeMb = (int)Math.Min(totalMemoryMb * 0.15, 512);
+
+        Configuration.Default.MemoryAllocator = MemoryAllocator.Create(new MemoryAllocatorOptions
+        {
+            MaximumPoolSizeMegabytes = poolSizeMb,
+            AllocationLimitMegabytes = poolSizeMb * 2 // Limite totale
+        });
         Configuration.Default.PreferContiguousImageBuffers = true;
+
 
         InitializeComponent();
         Culture.Init();
