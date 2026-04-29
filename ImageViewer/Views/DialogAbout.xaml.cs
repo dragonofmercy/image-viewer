@@ -44,6 +44,8 @@ public sealed partial class DialogAbout : Page
 
         try
         {
+            if(!Context.Instance().UpdateMgr.IsInstalled) return;
+
             UpdateInfo info = await Context.Instance().UpdateMgr.CheckForUpdatesAsync();
             Settings.LastUpdateCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
@@ -68,10 +70,18 @@ public sealed partial class DialogAbout : Page
             UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_ERROR_NO_INTERNET");
             UpdateStatusInfo.IsOpen = true;
         }
-
-        UpdateCheckingProgress.IsActive = false;
-        ButtonCheckUpdate.Visibility = Visibility.Visible;
-        UpdateCheckingText.Visibility = Visibility.Collapsed;
+        catch(Exception ex)
+        {
+            UpdateStatusInfo.Severity = InfoBarSeverity.Error;
+            UpdateStatusInfo.Title = ex.Message;
+            UpdateStatusInfo.IsOpen = true;
+        }
+        finally
+        {
+            UpdateCheckingProgress.IsActive = false;
+            ButtonCheckUpdate.Visibility = Visibility.Visible;
+            UpdateCheckingText.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void DisplayUpdateMessage()
@@ -85,11 +95,11 @@ public sealed partial class DialogAbout : Page
 
     private async void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)
     {
-        ButtonDownloadUpdate.IsEnabled = false;
-        ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
-
         UpdateInfo pending = Context.Instance().PendingUpdate;
         if(pending == null) return;
+
+        ButtonDownloadUpdate.IsEnabled = false;
+        ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
         try
         {
