@@ -7,25 +7,22 @@
     then runs vpk pack to produce Setup.exe and the .nupkg files inside
     the Releases\ folder.
 
+    The Velopack package version is always read from <Version> in
+    ImageViewer\ImageViewer.csproj so it stays in sync with the binary.
+    Bump the csproj version before running this script.
+
     Run this from anywhere - the script resolves its own location and
     operates on the repo root.
 
     Requires the Velopack CLI (vpk). Install it once with:
         dotnet tool install -g vpk
 
-.PARAMETER Version
-    SemVer to stamp on the Velopack package. If omitted, the script reads
-    <Version> from ImageViewer\ImageViewer.csproj.
-
 .EXAMPLE
     .\Build-Release.ps1
-    .\Build-Release.ps1 -Version 1.0.1
 #>
 
 [CmdletBinding()]
-param(
-    [string]$Version
-)
+param()
 
 $ErrorActionPreference = 'Stop'
 
@@ -33,13 +30,11 @@ $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $RepoRoot
 
 try {
-    if (-not $Version) {
-        $csprojPath = Join-Path $RepoRoot 'ImageViewer\ImageViewer.csproj'
-        $xml = [xml](Get-Content -LiteralPath $csprojPath)
-        $Version = ($xml.Project.PropertyGroup | Where-Object { $_.Version }).Version
-        if (-not $Version) { throw "Could not read <Version> from $csprojPath" }
-        Write-Host "Using version from csproj: $Version" -ForegroundColor Cyan
-    }
+    $csprojPath = Join-Path $RepoRoot 'ImageViewer\ImageViewer.csproj'
+    $xml = [xml](Get-Content -LiteralPath $csprojPath)
+    $Version = ($xml.Project.PropertyGroup | Where-Object { $_.Version }).Version
+    if (-not $Version) { throw "Could not read <Version> from $csprojPath" }
+    Write-Host "Version (from csproj): $Version" -ForegroundColor Cyan
 
     Write-Host "==> Cleaning publish\ and Releases\" -ForegroundColor Yellow
     Remove-Item -Recurse -Force 'publish', 'Releases' -ErrorAction SilentlyContinue

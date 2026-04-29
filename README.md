@@ -43,14 +43,13 @@ If this project help to increase your productivity, you can give me a cup of cof
 
 One-time setup: `dotnet tool install -g vpk`
 
-Then from the repo root:
+Bump `<Version>` in `ImageViewer\ImageViewer.csproj` first, then from the repo root:
 
 ```pwsh
-.\Build-Release.ps1                # uses <Version> from csproj
-.\Build-Release.ps1 -Version 1.0.1 # explicit version override
+.\Build-Release.ps1
 ```
 
-The helper script wraps `dotnet publish` (self-contained, `win-x64`) and `vpk pack` with the standard arguments (`--packId Dragon.ImageViewer`, `--shortcuts StartMenuRoot`, etc.). Output goes to `Releases\`.
+The helper script reads the version from the csproj (so it always matches the binary), then wraps `dotnet publish` (self-contained, `win-x64`) and `vpk pack` with the standard arguments (`--packId Dragon.ImageViewer`, `--shortcuts StartMenuRoot`, etc.). Output goes to `Releases\`.
 
 For deltas across releases, run `vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer` before the script so the previous `.nupkg` is available.
 
