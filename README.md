@@ -26,7 +26,7 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 
 1. Download `Setup.exe` from the latest release  
 https://github.com/dragonofmercy/image-viewer/releases
-2. Run `Setup.exe`. Windows SmartScreen will warn that the file is not signed — click "More info" then "Run anyway".
+2. Run `Setup.exe`. Windows SmartScreen will warn that the file is not signed - click "More info" then "Run anyway".
 3. The app installs to `%LOCALAPPDATA%\Dragon.ImageViewer\` and adds a Start Menu shortcut.
 4. Updates are downloaded and applied automatically from within the app.
 
