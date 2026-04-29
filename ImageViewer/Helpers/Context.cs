@@ -16,6 +16,9 @@ using Windows.Storage.Streams;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
+using Velopack;
+using Velopack.Sources;
+
 using ImageViewer.Utilities;
 using ImageViewer.Wrapper;
 
@@ -41,6 +44,16 @@ internal class Context
     public string[] LaunchArgs;
     public MainWindow MainWindow;
     public NotificationsManger NotificationsManger;
+
+    public UpdateManager UpdateMgr { get; } = new(
+        new GithubSource(
+            repoUrl: "https://github.com/dragonofmercy/image-viewer",
+            accessToken: null,
+            prerelease: false));
+
+    public UpdateInfo PendingUpdate { get; private set; }
+
+    public void SetPendingUpdate(UpdateInfo info) => PendingUpdate = info;
 
     public Image CurrentImage { get; protected set; }
     public string CurrentFilePath { get; protected set; }
