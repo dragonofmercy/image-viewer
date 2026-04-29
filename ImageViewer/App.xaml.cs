@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 
+using Velopack;
+
 using WinUIEx;
 
 namespace ImageViewer;
@@ -18,6 +20,10 @@ public static class Startup
     [global::System.STAThreadAttribute]
     private static void Main(string[] args)
     {
+        VelopackApp.Build()
+            .OnFirstRun(_ => Helpers.LegacyCleanup.Run())
+            .Run();
+
         Context.Instance().LaunchArgs = args;
 
         global::WinRT.ComWrappersSupport.InitializeComWrappers();
