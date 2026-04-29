@@ -353,3 +353,8 @@ MigrationBackup/
 # Velopack output
 Releases/
 publish/
+
+# Local development artifacts
+CLAUDE.md
+.claude/
+bash.exe.stackdump
