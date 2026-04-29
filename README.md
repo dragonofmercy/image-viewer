@@ -44,15 +44,6 @@ dotnet publish ImageViewer\ImageViewer.csproj -c Release -r win-x64 -o publish
 
 To uninstall, use **Settings → Apps & features → Image Viewer → Uninstall**.
 
-## Credits
-ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
-
-## 
-
-If this project help to increase your productivity, you can give me a cup of coffee :) 
-
-[![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
-
 ## How to release (maintainer only)
 
 One-time setup: `dotnet tool install -g vpk`
@@ -68,3 +59,12 @@ The helper script reads the version from the csproj (so it always matches the bi
 For deltas across releases, run `vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer` before the script so the previous `.nupkg` is available.
 
 Then upload the contents of `Releases\` to a new GitHub Release.
+
+## Credits
+ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
+
+## 
+
+If this project help to increase your productivity, you can give me a cup of coffee :) 
+
+[![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
