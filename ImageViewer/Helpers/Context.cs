@@ -536,7 +536,20 @@ internal class Context
             }
         }
 
-        if (!await Update.CheckNewVersionAsync()) return;
+        if (!UpdateMgr.IsInstalled) return;
+
+        try
+        {
+            PendingUpdate = await UpdateMgr.CheckForUpdatesAsync();
+            Settings.LastUpdateCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Update check failed: {ex.Message}");
+            return;
+        }
+
+        if (PendingUpdate == null) return;
 
         AppNotificationBuilder builder = new AppNotificationBuilder()
             .AddText(Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"))
