@@ -4,7 +4,7 @@
 
 **Goal:** Remplacer le projet `ImageViewer.Updater` (.NET FX 4.8) et `Helpers/Update.cs` par [Velopack](https://github.com/velopack/velopack) en une seule release majeure (1.0.0), avec auto-update intégré, deltas binaires, rollback automatique, et nettoyage transparent de l'ancien install au premier lancement post-Setup.
 
-**Architecture:** L'app principale embarque le NuGet `Velopack`. `Startup.Main` invoque `VelopackApp.Build().WithFirstRun(LegacyCleanup.Run).Run()` avant `Application.Start`. Un singleton `UpdateManager` vit dans `Context`, lit GitHub Releases via `GithubSource`, et drive le toast existant + le bouton « Vérifier les mises à jour » de `DialogAbout`. Publish `dotnet publish -c Release -r win-x64` self-contained, packing via `vpk pack`, distribution sur GitHub Releases.
+**Architecture:** L'app principale embarque le NuGet `Velopack`. `Startup.Main` invoque `VelopackApp.Build().OnFirstRun(LegacyCleanup.Run).Run()` avant `Application.Start`. Un singleton `UpdateManager` vit dans `Context`, lit GitHub Releases via `GithubSource`, et drive le toast existant + le bouton « Vérifier les mises à jour » de `DialogAbout`. Publish `dotnet publish -c Release -r win-x64` self-contained, packing via `vpk pack`, distribution sur GitHub Releases.
 
 **Tech Stack:** .NET 8, WinUI 3, WindowsAppSDK, Velopack (NuGet + dotnet tool global `vpk`), GitHub Releases.
 
@@ -228,7 +228,7 @@ Le remplacer par :
 private static void Main(string[] args)
 {
     VelopackApp.Build()
-        .WithFirstRun(_ => Helpers.LegacyCleanup.Run())
+        .OnFirstRun(_ => Helpers.LegacyCleanup.Run())
         .Run();
 
     Context.Instance().LaunchArgs = args;

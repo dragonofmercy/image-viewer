@@ -43,7 +43,7 @@ L'objectif est de remplacer ces deux composants par [Velopack](https://github.co
 - Champ `Context.UpdateMgr` (instance `Velopack.UpdateManager` typée).
 - Champ privé `Context._pendingUpdate` (de type `Velopack.UpdateInfo`) pour transporter l'update détectée entre `CheckUpdate()` et `NotificationsManger.HandleNotificationAsync`.
 - Nouveau fichier `ImageViewer/Helpers/LegacyCleanup.cs` exposant `LegacyCleanup.Run()` (statique).
-- Hook `VelopackApp.Build().WithFirstRun(_ => LegacyCleanup.Run()).Run()` au début de `Startup.Main`.
+- Hook `VelopackApp.Build().OnFirstRun(_ => LegacyCleanup.Run()).Run()` au début de `Startup.Main`.
 - Propriétés csproj : `<SelfContained>true</SelfContained>`, `<RuntimeIdentifier>win-x64</RuntimeIdentifier>` (singulier), `<PublishSingleFile>false</PublishSingleFile>`.
 
 ## Ce qui reste inchangé
@@ -65,7 +65,7 @@ L'ordre est critique. Velopack utilise des arguments CLI spéciaux (`--veloapp-i
 private static void Main(string[] args)
 {
     VelopackApp.Build()
-        .WithFirstRun(_ => LegacyCleanup.Run())
+        .OnFirstRun(_ => LegacyCleanup.Run())
         .Run();
     // Si args contient un veloapp-*, .Run() exécute le hook puis Environment.Exit.
     // Sinon return immédiat et on continue le démarrage normal.
@@ -159,7 +159,7 @@ case "doUpdate":
 
 ### Cleanup ancien install — `Helpers/LegacyCleanup.cs`
 
-Fichier dédié, isolé pour pouvoir être supprimé proprement (`git rm`) une fois que tous les utilisateurs actifs auront migré (typiquement 2-3 releases plus tard). Appelé une seule fois par Velopack via `WithFirstRun` après le tout premier lancement post-install Velopack, sur les machines qui avaient l'ancien install.
+Fichier dédié, isolé pour pouvoir être supprimé proprement (`git rm`) une fois que tous les utilisateurs actifs auront migré (typiquement 2-3 releases plus tard). Appelé une seule fois par Velopack via `OnFirstRun` après le tout premier lancement post-install Velopack, sur les machines qui avaient l'ancien install.
 
 ```csharp
 namespace ImageViewer.Helpers;
