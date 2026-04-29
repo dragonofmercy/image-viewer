@@ -27,6 +27,9 @@ L'objectif est de remplacer ces deux composants par [Velopack](https://github.co
 | 3 | Bundling du runtime | **A** — Self-contained complet (.NET + WindowsAppSDK bundlés) |
 | 4 | Signature de code | **A** — Pas de signature au début (assumé via README, migration possible vers Azure Trusted Signing plus tard) |
 | 5 | Refactor de `Helpers/Update.cs` | **2** — Suppression complète, intégration directe de `UpdateManager` |
+| 6 | Localisation du cleanup legacy | Fichier dédié `ImageViewer/Helpers/LegacyCleanup.cs` (jetable proprement après quelques releases) |
+| 7 | AppId Velopack | `Dragon.ImageViewer` (figé, ne plus jamais changer après la première release) |
+| 8 | Première version Velopack | `1.0.0` (saut depuis `0.1.10-beta` pour marquer la refonte de l'installeur) |
 
 ## Ce qui disparaît
 
@@ -39,8 +42,8 @@ L'objectif est de remplacer ces deux composants par [Velopack](https://github.co
 - Référence NuGet `Velopack` dans `ImageViewer.csproj` (dernière version stable au moment du commit, à fixer pendant l'implémentation).
 - Champ `Context.UpdateMgr` (instance `Velopack.UpdateManager` typée).
 - Champ privé `Context._pendingUpdate` (de type `Velopack.UpdateInfo`) pour transporter l'update détectée entre `CheckUpdate()` et `NotificationsManger.HandleNotificationAsync`.
-- Méthode `App.CleanupLegacyInstall()` (ou nouveau `Helpers/LegacyCleanup.cs`).
-- Hook `VelopackApp.Build().WithFirstRun(_ => CleanupLegacyInstall()).Run()` au début de `Startup.Main`.
+- Nouveau fichier `ImageViewer/Helpers/LegacyCleanup.cs` exposant `LegacyCleanup.Run()` (statique).
+- Hook `VelopackApp.Build().WithFirstRun(_ => LegacyCleanup.Run()).Run()` au début de `Startup.Main`.
 - Propriétés csproj : `<SelfContained>true</SelfContained>`, `<RuntimeIdentifier>win-x64</RuntimeIdentifier>` (singulier), `<PublishSingleFile>false</PublishSingleFile>`.
 
 ## Ce qui reste inchangé
@@ -62,7 +65,7 @@ L'ordre est critique. Velopack utilise des arguments CLI spéciaux (`--veloapp-i
 private static void Main(string[] args)
 {
     VelopackApp.Build()
-        .WithFirstRun(_ => CleanupLegacyInstall())
+        .WithFirstRun(_ => LegacyCleanup.Run())
         .Run();
     // Si args contient un veloapp-*, .Run() exécute le hook puis Environment.Exit.
     // Sinon return immédiat et on continue le démarrage normal.
@@ -154,27 +157,32 @@ case "doUpdate":
     break;
 ```
 
-### Cleanup ancien install — `CleanupLegacyInstall()`
+### Cleanup ancien install — `Helpers/LegacyCleanup.cs`
 
-Vit dans `App.xaml.cs` (ou `Helpers/LegacyCleanup.cs` si on veut isoler). Appelée une seule fois par Velopack via `WithFirstRun` après le tout premier lancement post-install Velopack, sur les machines qui avaient l'ancien install.
+Fichier dédié, isolé pour pouvoir être supprimé proprement (`git rm`) une fois que tous les utilisateurs actifs auront migré (typiquement 2-3 releases plus tard). Appelé une seule fois par Velopack via `WithFirstRun` après le tout premier lancement post-install Velopack, sur les machines qui avaient l'ancien install.
 
 ```csharp
-private static void CleanupLegacyInstall()
-{
-    var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    var legacy = Path.Combine(localAppData, "Dragon Industries");
-    var shortcut = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
-        "Programs", "Image Viewer.lnk");
+namespace ImageViewer.Helpers;
 
-    TrySwallow(() => { if (Directory.Exists(legacy)) Directory.Delete(legacy, true); });
-    TrySwallow(() => { if (File.Exists(shortcut)) File.Delete(shortcut); });
-}
-
-private static void TrySwallow(Action action)
+internal static class LegacyCleanup
 {
-    try { action(); }
-    catch (Exception ex) { Debug.WriteLine($"Legacy cleanup: {ex.Message}"); }
+    public static void Run()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var legacy = Path.Combine(localAppData, "Dragon Industries");
+        var shortcut = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
+            "Programs", "Image Viewer.lnk");
+
+        TrySwallow(() => { if (Directory.Exists(legacy)) Directory.Delete(legacy, true); });
+        TrySwallow(() => { if (File.Exists(shortcut)) File.Delete(shortcut); });
+    }
+
+    private static void TrySwallow(Action action)
+    {
+        try { action(); }
+        catch (Exception ex) { Debug.WriteLine($"Legacy cleanup: {ex.Message}"); }
+    }
 }
 ```
 
@@ -227,10 +235,12 @@ Supprimer ensuite le dossier `ImageViewer.Updater/` du repo.
 **Étapes pour publier une nouvelle version** (à exécuter par l'utilisateur depuis la racine du repo) :
 
 ```bash
-# 1. Bump <Version> dans ImageViewer/ImageViewer.csproj (ex. 0.1.10-beta -> 0.1.11-beta)
+# 1. Bump <Version> dans ImageViewer/ImageViewer.csproj
+#    Première release Velopack : 0.1.10-beta -> 1.0.0
 #    Le <FileVersion> Win32 peut être bumpé en parallèle ou laissé tel quel.
 
 # 2. Récupérer les .nupkg de la release précédente pour générer un delta binaire
+#    (à partir de la release suivant la première Velopack — pas applicable au passage 1.0.0 lui-même)
 vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer
 
 # 3. Publish self-contained
@@ -238,26 +248,26 @@ dotnet publish ImageViewer/ImageViewer.csproj -c Release -r win-x64 -o publish
 
 # 4. Packer via Velopack
 vpk pack \
-    --packId ImageViewer \
+    --packId Dragon.ImageViewer \
     --packTitle "Image Viewer" \
     --packAuthors "DragonOfMercy" \
-    --packVersion 0.1.11-beta \
+    --packVersion 1.0.0 \
     --packDir publish \
     --mainExe ImageViewer.exe \
     --icon ImageViewer/ImageViewer.ico
 
 # 5. Upload manuel des fichiers de Releases/ sur GitHub Releases via l'UI,
 #    OU :
-# vpk upload github --repoUrl https://github.com/dragonofmercy/image-viewer --releaseName "v0.1.11-beta"
+# vpk upload github --repoUrl https://github.com/dragonofmercy/image-viewer --releaseName "v1.0.0"
 #    (à lancer manuellement, jamais automatisé par Claude — instruction globale "git local only")
 ```
 
-**AppId Velopack** : `ImageViewer`. **Critique** : ne plus jamais changer après la première release Velopack — un changement d'AppId ferait que les users actuels ne reçoivent plus les MAJ (Velopack utilise l'AppId comme clé d'identification).
+**AppId Velopack** : `Dragon.ImageViewer`. **Critique** : ne plus jamais changer après la première release Velopack — un changement d'AppId ferait que les users actuels ne reçoivent plus les MAJ (Velopack utilise l'AppId comme clé d'identification). L'install destination sera `%LOCALAPPDATA%\Dragon.ImageViewer\`.
 
 **Sortie de `vpk pack`** dans `Releases/` :
 - `Setup.exe` — bootstrapper que les nouveaux users téléchargent depuis GitHub.
-- `ImageViewer-X.Y.Z-full.nupkg` — package complet de la version.
-- `ImageViewer-X.Y.Z-delta.nupkg` — diff binaire depuis la version précédente (si présente dans `Releases/` après l'étape 2). Les users existants téléchargent uniquement ce delta lors de l'auto-update.
+- `Dragon.ImageViewer-X.Y.Z-full.nupkg` — package complet de la version.
+- `Dragon.ImageViewer-X.Y.Z-delta.nupkg` — diff binaire depuis la version précédente (si présente dans `Releases/` après l'étape 2). Les users existants téléchargent uniquement ce delta lors de l'auto-update.
 - `releases.win.json` — manifest que `UpdateManager` lit pour décider quelles MAJ sont disponibles.
 
 Les 4 fichiers (ou 3 à la première release Velopack, sans delta) doivent tous être uploadés sur la GitHub Release pour que `UpdateManager` côté users les trouve via `GithubSource`.
@@ -292,7 +302,7 @@ Le projet n'a pas de framework de test. Checklist à exécuter avant de pousser 
 
 3. **Install neuve sur machine vierge**
    - Sur VM Windows 11 sans aucune trace d'ImageViewer : double-clic `Setup.exe`. Cliquer à travers le warning SmartScreen ("Plus d'infos" → "Exécuter quand même") — c'est attendu vu qu'on n'a pas signé.
-   - Vérifier l'install à `%LOCALAPPDATA%\ImageViewer\current\`.
+   - Vérifier l'install à `%LOCALAPPDATA%\Dragon.ImageViewer\current\`.
    - Raccourci Start Menu présent.
    - Lancer l'app, ouvrir une image, vérifier rotation/crop/save.
 
@@ -304,15 +314,16 @@ Le projet n'a pas de framework de test. Checklist à exécuter avant de pousser 
      - `HKCU\SOFTWARE\Dragon Industries\Image Viewer` doit être intacte (theme, taille fenêtre, langue conservés au prochain run).
 
 5. **Auto-update bout en bout**
-   - Publier une première release `0.1.11-beta`.
-   - Bumper à `0.1.12-beta`, repacker, ré-uploader.
-   - Sur une machine où la 0.1.11 est installée, forcer le check (`Settings.UpdateInterval = "day"` + reset `LastUpdateCheck`).
-   - Toast d'update apparaît. Cliquer "Télécharger" → app redémarre en 0.1.12.
+   - Publier `1.0.0` (première release Velopack).
+   - Bumper à `1.0.1`, repacker, ré-uploader.
+   - Sur une machine où la `1.0.0` est installée, forcer le check (`Settings.UpdateInterval = "day"` + reset `LastUpdateCheck`).
+   - Toast d'update apparaît. Cliquer "Télécharger" → app redémarre en `1.0.1`.
    - Vérifier la taille du delta téléchargé (quelques Mo, pas 100 Mo).
+   - Tester aussi le bouton **« Vérifier les mises à jour »** dans `DialogAbout` (visible sur le screenshot du DialogAbout actuel) → doit déclencher un check immédiat.
 
 6. **Rollback automatique** *(optionnel mais rassurant)*
-   - Publier une `0.1.13-beta` qui crash intentionnellement au démarrage (`throw` dans le constructeur de `App`).
-   - Auto-update dessus depuis 0.1.12. Velopack doit détecter le crash et revenir à 0.1.12 automatiquement au lancement suivant.
+   - Publier une `1.0.2` qui crash intentionnellement au démarrage (`throw` dans le constructeur de `App`).
+   - Auto-update dessus depuis `1.0.1`. Velopack doit détecter le crash et revenir à `1.0.1` automatiquement au lancement suivant.
 
 7. **Mode dev**
    - F5 dans VS. App se lance, aucune exception `UpdateManager`.
@@ -333,4 +344,5 @@ Ces points sont volontairement exclus de cette migration et restent ouverts pour
 - Velopack documentation : https://docs.velopack.io/
 - Velopack GitHub : https://github.com/velopack/velopack
 - Code à supprimer : `ImageViewer.Updater/` (dossier complet), `ImageViewer/Helpers/Update.cs`
-- Code à modifier : `ImageViewer/App.xaml.cs`, `ImageViewer/Helpers/Context.cs`, `ImageViewer/Helpers/NotificationsManger.cs`, `ImageViewer/ImageViewer.csproj`, `ImageViewer.sln`, `.gitignore`
+- Code à créer : `ImageViewer/Helpers/LegacyCleanup.cs`
+- Code à modifier : `ImageViewer/App.xaml.cs`, `ImageViewer/Helpers/Context.cs`, `ImageViewer/Helpers/NotificationsManger.cs`, `ImageViewer/Views/DialogAbout.xaml.cs` (recâblage du bouton « Vérifier les mises à jour »), `ImageViewer/ImageViewer.csproj`, `ImageViewer.sln`, `.gitignore`
