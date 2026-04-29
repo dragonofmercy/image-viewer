@@ -45,7 +45,7 @@ If this project help to increase your productivity, you can give me a cup of cof
 dotnet tool install -g vpk   # one-time install
 vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer
 dotnet publish ImageViewer/ImageViewer.csproj -c Release -r win-x64 -o publish
-vpk pack --packId Dragon.ImageViewer --packTitle "Image Viewer" --packAuthors "DragonOfMercy" --packVersion <X.Y.Z> --packDir publish --mainExe ImageViewer.exe --icon ImageViewer/ImageViewer.ico
+vpk pack --packId Dragon.ImageViewer --packTitle "Image Viewer" --packAuthors "DragonOfMercy" --packVersion <X.Y.Z> --packDir publish --mainExe ImageViewer.exe --icon ImageViewer/ImageViewer.ico --shortcuts StartMenu
 ```
 
 Then upload the contents of `Releases/` to a new GitHub Release.
