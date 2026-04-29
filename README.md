@@ -41,11 +41,17 @@ If this project help to increase your productivity, you can give me a cup of cof
 
 ## How to release (maintainer only)
 
-```bash
-dotnet tool install -g vpk   # one-time install
-vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer
-dotnet publish ImageViewer/ImageViewer.csproj -c Release -r win-x64 -o publish
-vpk pack --packId Dragon.ImageViewer --packTitle "Image Viewer" --packAuthors "DragonOfMercy" --packVersion <X.Y.Z> --packDir publish --mainExe ImageViewer.exe --icon ImageViewer/ImageViewer.ico --shortcuts StartMenu
+One-time setup: `dotnet tool install -g vpk`
+
+Then from the repo root:
+
+```pwsh
+.\Build-Release.ps1                # uses <Version> from csproj
+.\Build-Release.ps1 -Version 1.0.1 # explicit version override
 ```
 
-Then upload the contents of `Releases/` to a new GitHub Release.
+The helper script wraps `dotnet publish` (self-contained, `win-x64`) and `vpk pack` with the standard arguments (`--packId Dragon.ImageViewer`, `--shortcuts StartMenuRoot`, etc.). Output goes to `Releases\`.
+
+For deltas across releases, run `vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer` before the script so the previous `.nupkg` is available.
+
+Then upload the contents of `Releases\` to a new GitHub Release.
