@@ -7,7 +7,9 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <RootNamespace>ImageViewer</RootNamespace>
         <Platforms>x64</Platforms>
-        <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <SelfContained>true</SelfContained>
+        <PublishSingleFile>false</PublishSingleFile>
         <UseWinUI>true</UseWinUI>
         <WindowsPackageType>None</WindowsPackageType>
         <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
@@ -65,27 +67,25 @@
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
         <PackageReference Include="Svg" Version="3.4.7" />
         <PackageReference Include="System.Drawing.Common" Version="9.0.8" />
+        <PackageReference Include="Velopack" Version="0.0.1298" />
         <PackageReference Include="WinUIEx" Version="2.7.0" />
         <Manifest Include="$(ApplicationManifest)" />
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <ItemGroup>
-            <RemovingFiles Include="$(OutDir)**\*.mui"
-                           Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui" />
+            <RemovingFiles Include="$(OutDir)**\*.mui" Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui" />
             <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
         </ItemGroup>
         <RemoveDir Directories="@(RemovingFolders)" Condition="'@(RemovingFolders)'!=''" />
 
         <ItemGroup Condition="'$(Configuration)'=='Release'">
-            <PdbFilesToRemove Include="$(OutDir)*.pdb"
-                              Exclude="$(OutDir)$(AssemblyName).pdb" />
+            <PdbFilesToRemove Include="$(OutDir)*.pdb" Exclude="$(OutDir)$(AssemblyName).pdb" />
         </ItemGroup>
         <Delete Files="@(PdbFilesToRemove)" Condition="'$(Configuration)'=='Release' And '@(PdbFilesToRemove)'!=''" ContinueOnError="true" />
 
         <ItemGroup Condition="'$(Configuration)'=='Release'">
-            <XmlDocsToRemove Include="$(OutDir)*.xml"
-                             Exclude="$(OutDir)$(AssemblyName).xml" />
+            <XmlDocsToRemove Include="$(OutDir)*.xml" Exclude="$(OutDir)$(AssemblyName).xml" />
         </ItemGroup>
         <Delete Files="@(XmlDocsToRemove)" Condition="'$(Configuration)'=='Release' And '@(XmlDocsToRemove)'!=''" ContinueOnError="true" />
     </Target>
