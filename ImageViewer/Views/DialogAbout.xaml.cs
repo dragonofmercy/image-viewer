@@ -44,9 +44,10 @@ public sealed partial class DialogAbout : Page
 
         try
         {
-            if(!Context.Instance().UpdateMgr.IsInstalled) return;
+            UpdateInfo info = Context.Instance().UpdateMgr.IsInstalled
+                ? await Context.Instance().UpdateMgr.CheckForUpdatesAsync()
+                : null;
 
-            UpdateInfo info = await Context.Instance().UpdateMgr.CheckForUpdatesAsync();
             Settings.LastUpdateCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
             if(info != null)
