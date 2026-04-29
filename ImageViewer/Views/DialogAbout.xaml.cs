@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 
 using ImageViewer.Helpers;
@@ -7,6 +6,8 @@ using ImageViewer.Utilities;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+
+using Velopack;
 
 namespace ImageViewer.Views;
 
@@ -22,7 +23,7 @@ public sealed partial class DialogAbout : Page
         UpdateSettingsCard.Label = string.Concat("v", Context.GetProductVersion());
         UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
 
-        if(Update.HasUpdate)
+        if(Context.Instance().PendingUpdate != null)
         {
             DisplayUpdateMessage();
         }
@@ -43,24 +44,23 @@ public sealed partial class DialogAbout : Page
 
         try
         {
-            if(await Update.CheckNewVersionAsync())
+            UpdateInfo info = await Context.Instance().UpdateMgr.CheckForUpdatesAsync();
+            Settings.LastUpdateCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            if(info != null)
             {
+                Context.Instance().SetPendingUpdate(info);
                 DisplayUpdateMessage();
             }
             else
             {
+                Context.Instance().SetPendingUpdate(null);
                 UpdateStatusInfo.Severity = InfoBarSeverity.Success;
                 UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST");
                 UpdateStatusInfo.IsOpen = true;
             }
 
             UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
-        }
-        catch(KeyNotFoundException)
-        {
-            UpdateStatusInfo.Severity = InfoBarSeverity.Error;
-            UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND");
-            UpdateStatusInfo.IsOpen = true;
         }
         catch(HttpRequestException)
         {
@@ -88,9 +88,13 @@ public sealed partial class DialogAbout : Page
         ButtonDownloadUpdate.IsEnabled = false;
         ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
+        UpdateInfo pending = Context.Instance().PendingUpdate;
+        if(pending == null) return;
+
         try
         {
-            await Update.ApplyUpdate();
+            await Context.Instance().UpdateMgr.DownloadUpdatesAsync(pending);
+            Context.Instance().UpdateMgr.ApplyUpdatesAndRestart(pending);
         }
         catch(Exception ex)
         {
