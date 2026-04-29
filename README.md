@@ -24,11 +24,11 @@ https://docs.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-develo
 
 ## How to install
 
-1. Download ImageViewer.Updater.exe from the last release  
+1. Download `Setup.exe` from the latest release  
 https://github.com/dragonofmercy/image-viewer/releases
-2. Trust the file (Help needed for that, just contact me)
-3. Run ImageViewer.Updater.exe
-4. Done
+2. Run `Setup.exe`. Windows SmartScreen will warn that the file is not signed — click "More info" then "Run anyway".
+3. The app installs to `%LOCALAPPDATA%\Dragon.ImageViewer\` and adds a Start Menu shortcut.
+4. Updates are downloaded and applied automatically from within the app.
 
 ## Credits
 ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
@@ -38,3 +38,14 @@ ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
 If this project help to increase your productivity, you can give me a cup of coffee :) 
 
 [![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
+
+## How to release (maintainer only)
+
+```bash
+dotnet tool install -g vpk   # one-time install
+vpk download github --repoUrl https://github.com/dragonofmercy/image-viewer
+dotnet publish ImageViewer/ImageViewer.csproj -c Release -r win-x64 -o publish
+vpk pack --packId Dragon.ImageViewer --packTitle "Image Viewer" --packAuthors "DragonOfMercy" --packVersion <X.Y.Z> --packDir publish --mainExe ImageViewer.exe --icon ImageViewer/ImageViewer.ico
+```
+
+Then upload the contents of `Releases/` to a new GitHub Release.
