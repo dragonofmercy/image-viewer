@@ -90,4 +90,22 @@
         <Delete Files="@(XmlDocsToRemove)" Condition="'$(Configuration)'=='Release' And '@(XmlDocsToRemove)'!=''" ContinueOnError="true" />
     </Target>
 
+    <Target Name="PostPublish" AfterTargets="Publish">
+        <ItemGroup>
+            <PublishMuiToRemove Include="$(PublishDir)**\*.mui" Exclude="$(PublishDir)en-us\*.mui;$(PublishDir)fr-FR\*.mui;$(PublishDir)fr\*.mui" />
+            <PublishMuiFolders Include="@(PublishMuiToRemove->'%(RootDir)%(Directory)')" />
+        </ItemGroup>
+        <RemoveDir Directories="@(PublishMuiFolders)" Condition="'@(PublishMuiFolders)'!=''" />
+
+        <ItemGroup Condition="'$(Configuration)'=='Release'">
+            <PublishPdbToRemove Include="$(PublishDir)*.pdb" Exclude="$(PublishDir)$(AssemblyName).pdb" />
+        </ItemGroup>
+        <Delete Files="@(PublishPdbToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishPdbToRemove)'!=''" ContinueOnError="true" />
+
+        <ItemGroup Condition="'$(Configuration)'=='Release'">
+            <PublishXmlToRemove Include="$(PublishDir)*.xml" Exclude="$(PublishDir)$(AssemblyName).xml" />
+        </ItemGroup>
+        <Delete Files="@(PublishXmlToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishXmlToRemove)'!=''" ContinueOnError="true" />
+    </Target>
+
 </Project>
