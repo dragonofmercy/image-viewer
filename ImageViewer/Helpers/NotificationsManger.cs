@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 
+using Velopack;
+
 namespace ImageViewer.Helpers;
 
 internal class NotificationsManger
@@ -34,9 +36,13 @@ internal class NotificationsManger
         switch (args.Arguments["action"])
         {
             case "doUpdate":
+                UpdateInfo pending = Context.Instance().PendingUpdate;
+                if (pending == null) return;
+
                 try
                 {
-                    await Update.ApplyUpdate();
+                    await Context.Instance().UpdateMgr.DownloadUpdatesAsync(pending);
+                    Context.Instance().UpdateMgr.ApplyUpdatesAndRestart(pending);
                 }
                 catch (Exception ex)
                 {
