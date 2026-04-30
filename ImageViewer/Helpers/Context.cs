@@ -45,7 +45,7 @@ internal class Context
     public MainWindow MainWindow;
     public NotificationsManger NotificationsManger;
 
-    public UpdateManager UpdateMgr { get; } = new(
+    private readonly UpdateManager UpdateManager = new(
         new GithubSource(
             repoUrl: "https://github.com/dragonofmercy/image-viewer",
             accessToken: null,
@@ -53,7 +53,36 @@ internal class Context
 
     public UpdateInfo PendingUpdate { get; private set; }
 
-    public void SetPendingUpdate(UpdateInfo info) => PendingUpdate = info;
+    /// <summary>
+    /// Query the update source and cache the result in <see cref="PendingUpdate"/>.
+    /// Returns null when no update is available or when running outside a Velopack install.
+    /// Network/parse errors bubble to the caller so the UI can react.
+    /// </summary>
+    public async Task<UpdateInfo> CheckForUpdateAsync()
+    {
+        if (!UpdateManager.IsInstalled)
+        {
+            PendingUpdate = null;
+            return null;
+        }
+
+        UpdateInfo info = await UpdateManager.CheckForUpdatesAsync();
+        Settings.TouchLastUpdateCheck();
+        PendingUpdate = info;
+        return info;
+    }
+
+    /// <summary>
+    /// Download <see cref="PendingUpdate"/> and restart into the new version.
+    /// No-op when there is no pending update.
+    /// </summary>
+    public async Task ApplyPendingUpdateAsync()
+    {
+        if (PendingUpdate == null) return;
+
+        await UpdateManager.DownloadUpdatesAsync(PendingUpdate);
+        UpdateManager.ApplyUpdatesAndRestart(PendingUpdate);
+    }
 
     public Image CurrentImage { get; protected set; }
     public string CurrentFilePath { get; protected set; }
@@ -503,10 +532,12 @@ internal class Context
     }
 
     /// <summary>
-    /// Check update using UpdateInterval setting
+    /// Background update check honoring the UpdateInterval setting. Errors are swallowed.
     /// </summary>
     public async void CheckUpdate()
     {
+        if (!UpdateManager.IsInstalled) return;
+
         if (string.IsNullOrEmpty(Settings.UpdateInterval))
         {
             return;
@@ -536,20 +567,15 @@ internal class Context
             }
         }
 
-        if (!UpdateMgr.IsInstalled) return;
-
         try
         {
-            PendingUpdate = await UpdateMgr.CheckForUpdatesAsync();
-            Settings.LastUpdateCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            if (await CheckForUpdateAsync() == null) return;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Update check failed: {ex.Message}");
             return;
         }
-
-        if (PendingUpdate == null) return;
 
         AppNotificationBuilder builder = new AppNotificationBuilder()
             .AddText(Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"))

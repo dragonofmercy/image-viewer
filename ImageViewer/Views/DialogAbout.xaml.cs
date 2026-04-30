@@ -7,8 +7,6 @@ using ImageViewer.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-using Velopack;
-
 namespace ImageViewer.Views;
 
 public sealed partial class DialogAbout : Page
@@ -44,20 +42,12 @@ public sealed partial class DialogAbout : Page
 
         try
         {
-            UpdateInfo info = Context.Instance().UpdateMgr.IsInstalled
-                ? await Context.Instance().UpdateMgr.CheckForUpdatesAsync()
-                : null;
-
-            Settings.LastUpdateCheck = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-            if(info != null)
+            if(await Context.Instance().CheckForUpdateAsync() != null)
             {
-                Context.Instance().SetPendingUpdate(info);
                 DisplayUpdateMessage();
             }
             else
             {
-                Context.Instance().SetPendingUpdate(null);
                 UpdateStatusInfo.Severity = InfoBarSeverity.Success;
                 UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST");
                 UpdateStatusInfo.IsOpen = true;
@@ -96,16 +86,14 @@ public sealed partial class DialogAbout : Page
 
     private async void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)
     {
-        UpdateInfo pending = Context.Instance().PendingUpdate;
-        if(pending == null) return;
+        if(Context.Instance().PendingUpdate == null) return;
 
         ButtonDownloadUpdate.IsEnabled = false;
         ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
         try
         {
-            await Context.Instance().UpdateMgr.DownloadUpdatesAsync(pending);
-            Context.Instance().UpdateMgr.ApplyUpdatesAndRestart(pending);
+            await Context.Instance().ApplyPendingUpdateAsync();
         }
         catch(Exception ex)
         {

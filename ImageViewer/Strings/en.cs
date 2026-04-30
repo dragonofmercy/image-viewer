@@ -71,7 +71,6 @@ internal static class En
             { "ABOUT_UPDATE_INFO_UPDATE_LATEST", "Image Viewer is up to date." },
             { "ABOUT_UPDATE_INFO_UPDATE_AVAILABLE", "An update is available." },
             { "ABOUT_UPDATE_INFO_ERROR_NO_INTERNET", "No internet access." },
-            { "ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND", "Cannot get last version manifest." },
 
         };
     }

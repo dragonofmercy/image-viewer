@@ -71,7 +71,6 @@ internal static class Fr
             { "ABOUT_UPDATE_INFO_UPDATE_LATEST", "Image Viewer est à jour." },
             { "ABOUT_UPDATE_INFO_UPDATE_AVAILABLE", "Une mise à jour est disponible." },
             { "ABOUT_UPDATE_INFO_ERROR_NO_INTERNET", "Pas d'accès à internet." },
-            { "ABOUT_UPDATE_INFO_ERROR_KEY_NOT_FOUND", "Impossible de récupèrer la dernière version." },
 
         };
     }

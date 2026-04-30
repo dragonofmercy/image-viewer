@@ -84,6 +84,11 @@ internal class Settings
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_LAST_UPDATE_CHECK, value);
     }
 
+    public static void TouchLastUpdateCheck()
+    {
+        LastUpdateCheck = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
     public static string UpdateInterval
     {
         get => (string)Registry.GetValue(HKEY_APP_PATH, H_VALUE_CHECK_UPDATE_INTERVAL, "");
