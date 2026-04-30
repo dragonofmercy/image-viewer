@@ -88,12 +88,9 @@
 
         <ItemGroup Condition="'$(Configuration)'=='Release'">
             <PdbFilesToRemove Include="$(OutDir)*.pdb" Exclude="$(OutDir)$(AssemblyName).pdb" />
-        </ItemGroup>
-        <Delete Files="@(PdbFilesToRemove)" Condition="'$(Configuration)'=='Release' And '@(PdbFilesToRemove)'!=''" ContinueOnError="true" />
-
-        <ItemGroup Condition="'$(Configuration)'=='Release'">
             <XmlDocsToRemove Include="$(OutDir)*.xml" Exclude="$(OutDir)$(AssemblyName).xml" />
         </ItemGroup>
+        <Delete Files="@(PdbFilesToRemove)" Condition="'$(Configuration)'=='Release' And '@(PdbFilesToRemove)'!=''" ContinueOnError="true" />
         <Delete Files="@(XmlDocsToRemove)" Condition="'$(Configuration)'=='Release' And '@(XmlDocsToRemove)'!=''" ContinueOnError="true" />
     </Target>
 
@@ -106,12 +103,9 @@
 
         <ItemGroup Condition="'$(Configuration)'=='Release'">
             <PublishPdbToRemove Include="$(PublishDir)*.pdb" Exclude="$(PublishDir)$(AssemblyName).pdb" />
-        </ItemGroup>
-        <Delete Files="@(PublishPdbToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishPdbToRemove)'!=''" ContinueOnError="true" />
-
-        <ItemGroup Condition="'$(Configuration)'=='Release'">
             <PublishXmlToRemove Include="$(PublishDir)*.xml" Exclude="$(PublishDir)$(AssemblyName).xml" />
         </ItemGroup>
+        <Delete Files="@(PublishPdbToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishPdbToRemove)'!=''" ContinueOnError="true" />
         <Delete Files="@(PublishXmlToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishXmlToRemove)'!=''" ContinueOnError="true" />
     </Target>
 

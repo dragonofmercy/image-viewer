@@ -15,7 +15,7 @@ internal static class LegacyCleanup
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string legacy = Path.Combine(localAppData, "Dragon Industries");
 
-        TrySwallow(() => { if (Directory.Exists(legacy)) Directory.Delete(legacy, true); });
+        TrySwallow(() => Directory.Delete(legacy, true));
     }
 
     private static void TrySwallow(Action action)
