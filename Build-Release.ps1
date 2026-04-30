@@ -36,8 +36,10 @@ try {
     if (-not $Version) { throw "Could not read <Version> from $csprojPath" }
     Write-Host "Version (from csproj): $Version" -ForegroundColor Cyan
 
-    Write-Host "==> Cleaning publish\ and Releases\" -ForegroundColor Yellow
-    Remove-Item -Recurse -Force 'publish', 'Releases' -ErrorAction SilentlyContinue
+    # Only clean publish\. Releases\ is preserved so vpk can compute delta packages
+    # against the previous release; wiping it forces every release to ship as a full pack.
+    Write-Host "==> Cleaning publish\" -ForegroundColor Yellow
+    Remove-Item -Recurse -Force 'publish' -ErrorAction SilentlyContinue
 
     Write-Host "==> dotnet publish (self-contained, win-x64)" -ForegroundColor Yellow
     dotnet publish ImageViewer\ImageViewer.csproj -c Release -r win-x64 -o publish
