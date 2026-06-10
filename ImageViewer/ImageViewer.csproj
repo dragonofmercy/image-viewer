@@ -22,8 +22,8 @@
 		<Authors>DragonOfMercy</Authors>
         <ApplicationIcon>ImageViewer.ico</ApplicationIcon>
 		<Copyright>Dragon Industries $([System.DateTime]::Now.ToString('yyyy'))</Copyright>
-		<FileVersion>1.23.5.3</FileVersion>
-		<Version>1.0.0</Version>
+		<FileVersion>1.1.0.0</FileVersion>
+		<Version>1.1.0</Version>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
         <LangVersion>12</LangVersion>
