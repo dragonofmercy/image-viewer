@@ -19,7 +19,7 @@ internal class NotificationsManger
         Runtime = notificationManager;
     }
 
-    public async void Clear()
+    public async Task Clear()
     {
         await Runtime.RemoveAllAsync();
     }
@@ -36,6 +36,12 @@ internal class NotificationsManger
             case "doUpdate":
                 try
                 {
+                    // The toast can outlive the process: a fresh instance must re-resolve the update first
+                    if (Context.Instance().PendingUpdate == null)
+                    {
+                        await Context.Instance().CheckForUpdateAsync();
+                    }
+
                     await Context.Instance().ApplyPendingUpdateAsync();
                 }
                 catch (Exception ex)

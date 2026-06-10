@@ -2,6 +2,7 @@
 using ImageViewer.Helpers;
 
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 
 using SixLabors.ImageSharp;
@@ -37,6 +38,14 @@ public static class Startup
 
 public partial class App : Application
 {
+    // Window geometry is tracked in memory and flushed to the registry once on close,
+    // because size/position events fire on every tick of a drag/resize
+    private static WindowState TrackedWindowState;
+    private static int? PendingPositionX;
+    private static int? PendingPositionY;
+    private static uint? PendingSizeW;
+    private static uint? PendingSizeH;
+
     public App()
     {
         long totalMemoryMb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024);
@@ -54,24 +63,17 @@ public partial class App : Application
         Culture.Init();
     }
 
-    public static ElementTheme CurrentTheme
+    public static void SaveWindowGeometry()
     {
-        get
-        {
-            ElementTheme themeSettings = Settings.Theme;
-
-            if(themeSettings == ElementTheme.Default)
-            {
-                themeSettings = Theme.GetSystemTheme();
-            }
-
-            return themeSettings;
-        }
+        if(PendingPositionX.HasValue) Settings.AppPositionX = PendingPositionX;
+        if(PendingPositionY.HasValue) Settings.AppPositionY = PendingPositionY;
+        if(PendingSizeW.HasValue) Settings.AppSizeW = PendingSizeW.Value;
+        if(PendingSizeH.HasValue) Settings.AppSizeH = PendingSizeH.Value;
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        MainWindow mWindow = new(CurrentTheme);
+        MainWindow mWindow = new(Settings.Theme);
         WindowManager manager = WindowManager.Get(mWindow);
 
         Context.Instance().MainWindow = mWindow;
@@ -83,23 +85,36 @@ public partial class App : Application
         manager.WindowMessageReceived += Manager_WindowMessageReceived;
         mWindow.SizeChanged += Window_SizeChanged;
 
-        if(Settings.AppPositionX == null && Settings.AppPositionY == null)
+        bool positionRestored = false;
+
+        if(Settings.AppPositionX != null && Settings.AppPositionY != null)
+        {
+            int posX = (int)Settings.AppPositionX;
+            int posY = (int)Settings.AppPositionY;
+
+            // Only restore a position that still intersects a connected display (monitor may have been unplugged)
+            if(DisplayArea.GetFromRect(new Windows.Graphics.RectInt32(posX, posY, (int)Settings.AppSizeW, (int)Settings.AppSizeH), DisplayAreaFallback.None) != null)
+            {
+                mWindow.MoveAndResize(posX, posY, Settings.AppSizeW, Settings.AppSizeH);
+                positionRestored = true;
+            }
+        }
+
+        if(!positionRestored)
         {
             mWindow.SetWindowSize(Settings.AppSizeW, Settings.AppSizeH);
             mWindow.CenterOnScreen();
         }
-        else
-        {
-            mWindow.MoveAndResize((double)Settings.AppPositionX, (double)Settings.AppPositionY, Settings.AppSizeW, Settings.AppSizeH);
-        }
 
         if(Settings.WindowState == WindowState.Maximized)
         {
+            TrackedWindowState = WindowState.Maximized;
             mWindow.Maximize();
         }
         else
         {
             Settings.WindowState = WindowState.Normal;
+            TrackedWindowState = WindowState.Normal;
             mWindow.Activate();
         }
 
@@ -111,37 +126,39 @@ public partial class App : Application
     {
         if(e.Message.MessageId != 0x0112) return; // WM_SYSCOMMAND
 
-        switch((int) e.Message.WParam)
+        // The low 4 bits of WParam are used internally by the system and must be masked out
+        switch((int) e.Message.WParam & 0xFFF0)
         {
             case 0xF000: // SC_SIZE
             case 0xF010: // SC_MOVE
             case 0xF120: // SC_RESTORE
-            case 0xF122: // SC_RESTORE (dbl click)
-                Settings.WindowState = WindowState.Normal;
+                Settings.WindowState = TrackedWindowState = WindowState.Normal;
                 break;
             case 0xF030: // SC_MAXIMIZE
-            case 0xF032: // SC_MAXIMIZE (dbl click)
-                Settings.WindowState = WindowState.Maximized;
+                Settings.WindowState = TrackedWindowState = WindowState.Maximized;
                 break;
             case 0xF020: // SC_MINIMIZE
-                Settings.WindowState = WindowState.Minimized;
+                Settings.WindowState = TrackedWindowState = WindowState.Minimized;
                 break;
         }
     }
 
     private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
     {
-        if(Settings.WindowState != WindowState.Normal) return;
+        if(TrackedWindowState != WindowState.Normal) return;
 
-        Settings.AppSizeH = (uint)args.Size.Height;
-        Settings.AppSizeW = (uint)args.Size.Width;
+        PendingSizeH = (uint)args.Size.Height;
+        PendingSizeW = (uint)args.Size.Width;
     }
 
     private void Window_PositionChanged(object sender, Windows.Graphics.PointInt32 e)
     {
-        if(Settings.WindowState != WindowState.Normal) return;
+        if(TrackedWindowState != WindowState.Normal) return;
 
-        Settings.AppPositionX = e.X;
-        Settings.AppPositionY = e.Y;
+        // Some minimize paths bypass WM_SYSCOMMAND (Win+D, Win+Down) and park the window at -32000
+        if(e.X <= -32000 || e.Y <= -32000) return;
+
+        PendingPositionX = e.X;
+        PendingPositionY = e.Y;
     }
 }

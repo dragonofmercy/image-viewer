@@ -22,7 +22,6 @@ using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
 using ImageViewer.Helpers;
-using ImageViewer.Controls;
 using ImageViewer.Views;
 
 namespace ImageViewer;
@@ -47,6 +46,10 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         CustomizeAppBar();
+
+        // Follow OS theme switches at runtime while the preference is ElementTheme.Default
+        MainPage.ActualThemeChanged += (_, _) => ApplyResolvedTheme();
+
         UpdateTheme(theme);
         UpdateTitle();
 
@@ -94,27 +97,25 @@ public sealed partial class MainWindow : Window
 
     public void UpdateTheme(ElementTheme theme)
     {
-        Theme.SetImmersiveDarkMode(WindowNative.GetWindowHandle(this), theme == ElementTheme.Dark);
         MainPage.RequestedTheme = theme;
 
-        Settings.Theme = MainPage.ActualTheme;
+        // Persist the user intent: Default must survive so the app keeps following the system theme
+        Settings.Theme = theme;
 
-        if(theme == ElementTheme.Dark)
-        {
-            ButtonSwitchThemeDark.IsEnabled = false;
-            ButtonSwitchThemeDark.Visibility = Visibility.Collapsed;
+        ApplyResolvedTheme();
+    }
 
-            ButtonSwitchThemeLight.IsEnabled = true;
-            ButtonSwitchThemeLight.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            ButtonSwitchThemeDark.IsEnabled = true;
-            ButtonSwitchThemeDark.Visibility = Visibility.Visible;
+    private void ApplyResolvedTheme()
+    {
+        bool isDark = MainPage.ActualTheme == ElementTheme.Dark;
 
-            ButtonSwitchThemeLight.IsEnabled = false;
-            ButtonSwitchThemeLight.Visibility = Visibility.Collapsed;
-        }
+        Theme.SetImmersiveDarkMode(WindowNative.GetWindowHandle(this), isDark);
+
+        ButtonSwitchThemeDark.IsEnabled = !isDark;
+        ButtonSwitchThemeDark.Visibility = isDark ? Visibility.Collapsed : Visibility.Visible;
+
+        ButtonSwitchThemeLight.IsEnabled = isDark;
+        ButtonSwitchThemeLight.Visibility = isDark ? Visibility.Visible : Visibility.Collapsed;
 
         RedrawTitleBar();
     }
@@ -177,10 +178,18 @@ public sealed partial class MainWindow : Window
         Close();
     }
 
-    private void Window_Closed(object sender, WindowEventArgs args)
+    private async void Window_Closed(object sender, WindowEventArgs args)
     {
-        VirtualKeyboard.ControlRelease();
-        Context.Instance().NotificationsManger.Clear();
+        App.SaveWindowGeometry();
+
+        try
+        {
+            await Context.Instance().NotificationsManger.Clear();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Notification cleanup failed: {ex.Message}");
+        }
 
         Environment.Exit(0);
     }
@@ -228,9 +237,7 @@ public sealed partial class MainWindow : Window
     {
         if(ImageCropper.Source != null) return;
 
-        WriteableBitmap wb = new WriteableBitmap((int)Context.Instance().CurrentImage.Width, (int)Context.Instance().CurrentImage.Height);
-        wb.SetSource(Context.Instance().CurrentImage.GetBitmapImageSource());
-        ImageCropper.Source = wb;
+        ImageCropper.Source = Context.Instance().CurrentImage.GetWriteableBitmap();
 
         CboCropAspectRatios.SelectedValue = "free";
 
@@ -299,8 +306,6 @@ public sealed partial class MainWindow : Window
     {
         ImageContainer.SetCursor(new CoreCursor(CoreCursorType.Arrow, 0));
         ScrollViewMouseDrag = false;
-
-        VirtualKeyboard.ControlRelease();
     }
 
     private void ScrollView_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -329,10 +334,22 @@ public sealed partial class MainWindow : Window
 
     private void ScrollView_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
-        if(!VirtualKeyboard.ControlPressed())
-        {
-            VirtualKeyboard.ControlPress();
-        }
+        if(!Context.Instance().HasImageLoaded()) return;
+
+        PointerPoint point = e.GetCurrentPoint(ScrollView);
+        int delta = point.Properties.MouseWheelDelta;
+
+        if(delta == 0) return;
+
+        float newZoom = Math.Clamp((float)(ScrollView.ZoomFactor * Math.Pow(1.1, delta / 120.0)), ScrollView.MinZoomFactor, ScrollView.MaxZoomFactor);
+
+        // Keep the pixel under the cursor stable while zooming
+        double scale = newZoom / ScrollView.ZoomFactor;
+        double offsetX = (ScrollView.HorizontalOffset + point.Position.X) * scale - point.Position.X;
+        double offsetY = (ScrollView.VerticalOffset + point.Position.Y) * scale - point.Position.Y;
+
+        ScrollView.ChangeView(offsetX, offsetY, newZoom);
+        e.Handled = true;
     }
 
     private void ScrollView_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
@@ -340,8 +357,6 @@ public sealed partial class MainWindow : Window
         TextBlockZoomFactor.Text = string.Concat(Math.Round(ScrollView.ZoomFactor * 100).ToString(CultureInfo.InvariantCulture), "%");
 
         if(e.IsIntermediate) return;
-
-        VirtualKeyboard.ControlRelease();
 
         if(ScrollView.ZoomFactor == Context.Instance().GetAdjustedZoomFactor())
         {

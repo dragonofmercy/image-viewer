@@ -2,8 +2,11 @@
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.UI.Xaml.Media.Imaging;
 
 using Windows.Storage.Streams;
 
@@ -50,6 +53,7 @@ internal partial class Image
     public bool Loaded => WorkingImageLoaded;
     public double Height => WorkingImage.Height;
     public double Width => WorkingImage.Width;
+    public bool IsAnimated => WorkingImage is { Frames.Count: > 1 };
 
     public void Dispose()
     {
@@ -79,6 +83,39 @@ internal partial class Image
         memory.Position = 0;
 
         return memory.AsRandomAccessStream();
+    }
+
+    public WriteableBitmap GetWriteableBitmap()
+    {
+        if(WorkingImage == null) return null;
+
+        WriteableBitmap bitmap = new(WorkingImage.Width, WorkingImage.Height);
+        byte[] pixels = new byte[WorkingImage.Width * WorkingImage.Height * 4];
+
+        using(SixLabors.ImageSharp.Image<Bgra32> converted = WorkingImage.CloneAs<Bgra32>())
+        {
+            converted.CopyPixelDataTo(pixels);
+        }
+
+        // XAML composition expects premultiplied alpha
+        for(int i = 0; i < pixels.Length; i += 4)
+        {
+            byte alpha = pixels[i + 3];
+
+            if(alpha == 255) continue;
+
+            pixels[i] = (byte)(pixels[i] * alpha / 255);
+            pixels[i + 1] = (byte)(pixels[i + 1] * alpha / 255);
+            pixels[i + 2] = (byte)(pixels[i + 2] * alpha / 255);
+        }
+
+        using(Stream buffer = bitmap.PixelBuffer.AsStream())
+        {
+            buffer.Write(pixels, 0, pixels.Length);
+        }
+
+        bitmap.Invalidate();
+        return bitmap;
     }
 
     public async Task Save(string path, string type)

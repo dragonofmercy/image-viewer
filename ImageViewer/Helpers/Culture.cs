@@ -10,7 +10,7 @@ namespace ImageViewer.Helpers;
 internal class Culture
 {
     private const string LIBRARY_PATH = "ImageViewer.Strings";
-    private static Type _Class;
+    private static Dictionary<string, string> _Strings;
 
     public static void Init()
     {
@@ -25,7 +25,9 @@ internal class Culture
             classname = string.Concat(LIBRARY_PATH, ".", Windows.System.UserProfile.GlobalizationPreferences.Languages[0].Split('-')[0].UcFirst());
         }
 
-        _Class = Type.GetType(Type.GetType(classname) != null ? classname : string.Concat(LIBRARY_PATH, ".En"));
+        Type languageClass = Type.GetType(Type.GetType(classname) != null ? classname : string.Concat(LIBRARY_PATH, ".En"));
+
+        _Strings = (Dictionary<string, string>)languageClass.GetMethod("GetStrings", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
     }
 
     public static List<string> GetAvailableLanguages()
@@ -38,8 +40,6 @@ internal class Culture
 
     public static string GetString(string key)
     {
-        Dictionary<string, string> strings = (Dictionary<string, string>)_Class.GetMethod("GetStrings", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
-
-        return strings.TryGetValue(key, out string s) ? s : $"[{key}]";
+        return _Strings != null && _Strings.TryGetValue(key, out string s) ? s : $"[{key}]";
     }
 }

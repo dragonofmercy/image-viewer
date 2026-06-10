@@ -655,16 +655,24 @@ internal class Context
     {
         if (!HasImageLoaded()) return;
 
-        BitmapImage bitmapImage = new()
+        // Animated images must go through BitmapImage (WriteableBitmap only renders a single frame)
+        if (CurrentImage.IsAnimated)
         {
-            CreateOptions = BitmapCreateOptions.IgnoreImageCache
-        };
+            BitmapImage bitmapImage = new()
+            {
+                CreateOptions = BitmapCreateOptions.IgnoreImageCache
+            };
 
-        bitmapImage.ImageOpened += ImageView_ImageOpened;
-        bitmapImage.ImageFailed += ImageView_ImageFailed;
-        bitmapImage.SetSource(CurrentImage.GetBitmapImageSource());
+            bitmapImage.ImageOpened += ImageView_ImageOpened;
+            bitmapImage.ImageFailed += ImageView_ImageFailed;
+            bitmapImage.SetSource(CurrentImage.GetBitmapImageSource());
 
-        MainWindow.ImageView.Source = bitmapImage;
+            MainWindow.ImageView.Source = bitmapImage;
+            return;
+        }
+
+        MainWindow.ImageView.Source = CurrentImage.GetWriteableBitmap();
+        ImageView_ImageOpened(MainWindow.ImageView, null);
     }
 
     /// <summary>
