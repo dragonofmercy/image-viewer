@@ -97,7 +97,7 @@ internal class Context
     /// </summary>
     public bool CheckFileExtension(string path)
     {
-        return Image.SupportedFileTypes.Any(x => path.EndsWith(x, true, null));
+        return Image.SupportedFileTypes.Any(x => path.EndsWith(x, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -124,12 +124,21 @@ internal class Context
     {
         if (!string.IsNullOrEmpty(CurrentFilePath))
         {
-            FolderFiles = Directory.EnumerateFiles(Path.GetDirectoryName(CurrentFilePath), "*.*", SearchOption.TopDirectoryOnly)
-                .Where(s => Image.SupportedFileTypes.Any(x => s.EndsWith(x, true, null)))
-                .OrderBy(s => s, new NaturalStringComparer())
-                .ToArray();
+            try
+            {
+                FolderFiles = Directory.EnumerateFiles(Path.GetDirectoryName(CurrentFilePath), "*.*", SearchOption.TopDirectoryOnly)
+                    .Where(s => Image.SupportedFileTypes.Any(x => s.EndsWith(x, StringComparison.OrdinalIgnoreCase)))
+                    .OrderBy(s => s, new NaturalStringComparer())
+                    .ToArray();
 
-            CurrentIndex = Array.IndexOf(FolderFiles, CurrentFilePath);
+                CurrentIndex = Array.FindIndex(FolderFiles, s => string.Equals(s, CurrentFilePath, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception)
+            {
+                // Folder vanished or is unreadable (network share dropped): keep the image, disable navigation
+                FolderFiles = null;
+                CurrentIndex = -1;
+            }
         }
 
         UpdateButtonsAccessiblity();
@@ -153,7 +162,9 @@ internal class Context
 
                 if (!LoadImageFromString(FolderFiles[CurrentIndex]))
                 {
+                    // The removal shifts the next file into CurrentIndex: step back so the increment lands on it
                     FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
+                    CurrentIndex -= 1;
                     continue;
                 }
             }
@@ -236,7 +247,8 @@ internal class Context
     {
         if (!File.Exists(imagePath) || !CheckFileExtension(imagePath)) return false;
 
-        CurrentFilePath = imagePath;
+        // Normalize relative launch arguments so directory enumeration and index lookups match
+        CurrentFilePath = Path.GetFullPath(imagePath);
         MemoryOnly = false;
 
         OpenImage();
@@ -310,6 +322,9 @@ internal class Context
 
                 CurrentFilePath = null;
                 FolderFiles = FolderFiles.RemoveAtIndex(CurrentIndex);
+
+                // The next file shifted into CurrentIndex: step back so LoadNextImage lands on it
+                CurrentIndex -= 1;
             }
 
             if (FolderFiles is { Length: > 0 })
@@ -543,11 +558,9 @@ internal class Context
             return;
         }
 
-        if (!string.IsNullOrEmpty(Settings.LastUpdateCheck))
+        // A corrupted registry value must not prevent startup: an unparseable date simply triggers a new check
+        if (!string.IsNullOrEmpty(Settings.LastUpdateCheck) && DateTime.TryParseExact(Settings.LastUpdateCheck, Settings.UPDATE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime lastCheck))
         {
-            DateTime now = DateTime.Now;
-            DateTime lastCheck = DateTime.Parse(Settings.LastUpdateCheck);
-
             switch (Settings.UpdateInterval)
             {
                 case "day":
@@ -561,7 +574,7 @@ internal class Context
                     break;
             }
 
-            if (lastCheck.Date > now.Date)
+            if (lastCheck.Date > DateTime.Now.Date)
             {
                 return;
             }
@@ -605,9 +618,30 @@ internal class Context
         StorageFile outputFile = await saveFilePicker.PickSaveFileAsync();
 
         if (outputFile == null) return false;
-        if (!Image.SaveFileTypes.Contains(outputFile.FileType)) return false;
 
-        CurrentImage.Save(outputFile.Path, outputFile.FileType);
+        string outputFileType = outputFile.FileType.ToLowerInvariant();
+
+        if (!Image.SaveFileTypes.Contains(outputFileType)) return false;
+
+        try
+        {
+            await CurrentImage.Save(outputFile.Path, outputFileType);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Save failed: {ex.Message}");
+
+            Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
+            {
+                XamlRoot = MainWindow.Content.XamlRoot,
+                RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
+                Content = Culture.GetString("SYSTEM_SAVING_ERROR"),
+                CloseButtonText = Culture.GetString("SYSTEM_OK")
+            };
+
+            await errorDialog.ShowAsync();
+            return false;
+        }
 
         LoadDirectoryFiles();
 
@@ -670,7 +704,12 @@ internal class Context
     {
         CloseCropper();
 
-        CurrentImage?.Dispose();
+        if (CurrentImage != null)
+        {
+            CurrentImage.ImageLoaded -= WorkingImage_ImageLoaded;
+            CurrentImage.ImageFailed -= WorkingImage_ImageFailed;
+            CurrentImage.Dispose();
+        }
 
         LoadingDisplay(true);
 
@@ -693,6 +732,9 @@ internal class Context
     /// </summary>
     private void WorkingImage_ImageFailed(object sender, EventArgs e)
     {
+        // A stale load can complete after the user navigated to another image: never touch the new one
+        if (!ReferenceEquals(sender, CurrentImage)) return;
+
         MainWindow.UpdateTitle();
 
         MainWindow.ImageLoadingIndicator.IsActive = false;
@@ -709,6 +751,8 @@ internal class Context
     /// </summary>
     private void WorkingImage_ImageLoaded(object sender, EventArgs e)
     {
+        if (!ReferenceEquals(sender, CurrentImage)) return;
+
         ReloadImageView();
     }
 

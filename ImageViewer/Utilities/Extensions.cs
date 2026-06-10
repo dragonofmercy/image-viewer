@@ -17,7 +17,7 @@ public static class Extensions
 {
     public static T[] RemoveAtIndex<T>(this T[] original, int index)
     {
-        if (index >= original.Length) return original;
+        if (index < 0 || index >= original.Length) return original;
         List<T> tmp = [..original];
         tmp.RemoveAt(index);
         return tmp.ToArray();
@@ -58,7 +58,10 @@ public static class Extensions
 
     public static string ToUpdateDate(this string original)
     {
-        return string.IsNullOrEmpty(original) ? Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER") : DateTime.Parse(original).ToString(CultureInfo.CurrentCulture);
+        // A corrupted registry value must not crash the About dialog: treat it as "never checked"
+        return DateTime.TryParseExact(original, Settings.UPDATE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsed)
+            ? parsed.ToString(CultureInfo.CurrentCulture)
+            : Culture.GetString("ABOUT_LABEL_LAST_UPDATE_NEVER");
     }
 }
 

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Windows.Storage.Streams;
 
@@ -32,6 +33,7 @@ internal partial class Image
     public event EventHandler ImageFailed;
 
     protected bool WorkingImageLoaded;
+    protected bool Disposed;
     protected ImageSharpImage WorkingImage;
     protected IImageEncoder Encoder = new JpegEncoder { Quality = 100 };
 
@@ -51,6 +53,7 @@ internal partial class Image
 
     public void Dispose()
     {
+        Disposed = true;
         WorkingImage?.Dispose();
         WorkingImageLoaded = false;
     }
@@ -78,7 +81,7 @@ internal partial class Image
         return memory.AsRandomAccessStream();
     }
 
-    public async void Save(string path, string type)
+    public async Task Save(string path, string type)
     {
         switch(type)
         {
@@ -109,6 +112,9 @@ internal partial class Image
             case ".tiff":
                 await WorkingImage.SaveAsTiffAsync(path);
                 break;
+
+            default:
+                throw new NotSupportedException($"Unsupported save format: {type}");
         }
     }
 
@@ -179,11 +185,21 @@ internal partial class Image
                 }
             }
 
+            // Load completed after Dispose (user navigated away): drop the decoded image silently
+            if(Disposed)
+            {
+                WorkingImage?.Dispose();
+                WorkingImage = null;
+                return;
+            }
+
             WorkingImageLoaded = true;
             ImageLoaded?.Invoke(this, EventArgs.Empty);
         }
         catch(Exception e)
         {
+            if(Disposed) return;
+
             ImageFailedEventArgs args = new()
             {
                 Message = e.Message,
@@ -201,11 +217,21 @@ internal partial class Image
             WorkingImage = await ImageSharpImage.LoadAsync(stream.AsStreamForRead());
             Encoder = new PngEncoder();
 
+            // Load completed after Dispose (user navigated away): drop the decoded image silently
+            if(Disposed)
+            {
+                WorkingImage?.Dispose();
+                WorkingImage = null;
+                return;
+            }
+
             WorkingImageLoaded = true;
             ImageLoaded?.Invoke(this, EventArgs.Empty);
         }
         catch(Exception e)
         {
+            if(Disposed) return;
+
             ImageFailedEventArgs args = new()
             {
                 Message = e.Message

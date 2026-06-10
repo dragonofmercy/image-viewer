@@ -11,6 +11,8 @@ internal static class Fr
             { "DEFAULT_SYSTEM_LANGUAGE", "Langue du système" },
             { "SYSTEM_PASTED_CONTENT", "Contenu collé" },
             { "SYSTEM_LOADING_ERROR", "Désolé, l'application ne peut pas ouvrir ce fichier car le format n'est actuellement pas pris en charge ou le fichier est endommagé" },
+            { "SYSTEM_SAVING_ERROR", "Désolé, l'application ne peut pas enregistrer l'image à cet emplacement" },
+            { "SYSTEM_OK", "OK" },
             { "SYSTEM_LOADING", "Chargement" },
 
             { "SETTINGS_FIELD_LANGUAGE", "Langue" },

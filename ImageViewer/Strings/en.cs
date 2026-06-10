@@ -11,6 +11,8 @@ internal static class En
             { "DEFAULT_SYSTEM_LANGUAGE", "System language" },
             { "SYSTEM_PASTED_CONTENT", "Pasted content" },
             { "SYSTEM_LOADING_ERROR", "Sorry, the application cannot open this file because the format is currently not supported or the file is damaged" },
+            { "SYSTEM_SAVING_ERROR", "Sorry, the application cannot save the image to this location" },
+            { "SYSTEM_OK", "OK" },
             { "SYSTEM_LOADING", "Loading" },
 
             { "SETTINGS_FIELD_LANGUAGE", "Language" },

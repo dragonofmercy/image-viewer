@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System.Globalization;
+using Microsoft.UI.Xaml;
 using Microsoft.Win32;
 using WinUIEx;
 
@@ -16,6 +17,7 @@ internal class Settings
     internal const string H_VALUE_LAST_UPDATE_CHECK = "LastUpdateCheck";
     internal const string H_VALUE_LANGUAGE = "Lang";
     internal const string H_VALUE_CHECK_UPDATE_INTERVAL = "UpdateInterval";
+    internal const string UPDATE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     public static ElementTheme Theme
     {
@@ -86,7 +88,7 @@ internal class Settings
 
     public static void TouchLastUpdateCheck()
     {
-        LastUpdateCheck = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        LastUpdateCheck = System.DateTime.Now.ToString(UPDATE_DATE_FORMAT, CultureInfo.InvariantCulture);
     }
 
     public static string UpdateInterval
