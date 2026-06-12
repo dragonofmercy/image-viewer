@@ -77,7 +77,6 @@ public partial class App : Application
         WindowManager manager = WindowManager.Get(mWindow);
 
         Context.Instance().MainWindow = mWindow;
-        Context.Instance().NotificationsManger = new NotificationsManger();
 
         manager.MinWidth = 768;
         manager.MinHeight = 400;
@@ -118,8 +117,16 @@ public partial class App : Application
             mWindow.Activate();
         }
 
-        Context.Instance().CheckUpdate();
         Context.Instance().LoadDefaultImage();
+
+        // Defer non-essential startup work (toast registration + update check, which pulls in
+        // the Velopack assemblies) until after the first frame so the window appears sooner.
+        mWindow.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            Context context = Context.Instance();
+            context.NotificationsManger = new NotificationsManger();
+            context.CheckUpdate();
+        });
     }
 
     private void Manager_WindowMessageReceived(object sender, WinUIEx.Messaging.WindowMessageEventArgs e)

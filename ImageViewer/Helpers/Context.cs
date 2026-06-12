@@ -45,7 +45,10 @@ internal class Context
     public MainWindow MainWindow;
     public NotificationsManger NotificationsManger;
 
-    private readonly UpdateManager UpdateManager = new(
+    // Built lazily so the Velopack assemblies are not loaded on the startup path:
+    // the first touch happens from the deferred CheckUpdate(), after the window is shown.
+    private UpdateManager _UpdateManager;
+    private UpdateManager UpdateManager => _UpdateManager ??= new UpdateManager(
         new GithubSource(
             repoUrl: "https://github.com/dragonofmercy/image-viewer",
             accessToken: null,
@@ -109,7 +112,9 @@ internal class Context
         if (!CheckFileExtension(LaunchArgs[0])) return;
 
         LoadingDisplay(true);
-        await Task.Delay(200);
+        // Brief yield so the window paints and the loading indicator shows before the
+        // first decode competes for the UI thread. Kept short to minimize "Open with" latency.
+        await Task.Delay(50);
 
         if (LoadImageFromString(LaunchArgs[0]))
         {

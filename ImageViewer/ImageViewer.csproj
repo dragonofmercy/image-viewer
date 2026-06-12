@@ -50,6 +50,9 @@
         <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
         <WarningsNotAsErrors>CA1720</WarningsNotAsErrors>
         <Optimize>true</Optimize>
+        <!-- Precompile app + dependencies to native code so the startup path is not JITed.
+             Only takes effect on `dotnet publish` with the win-x64 RID (Build-Release.ps1). -->
+        <PublishReadyToRun>true</PublishReadyToRun>
     </PropertyGroup>
 
     <ItemGroup>
