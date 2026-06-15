@@ -36,8 +36,8 @@ try {
     if (-not $Version) { throw "Could not read <Version> from $csprojPath" }
     Write-Host "Version (from csproj): $Version" -ForegroundColor Cyan
 
-    # Only clean publish\. Releases\ is preserved so vpk can compute delta packages
-    # against the previous release; wiping it forces every release to ship as a full pack.
+    # Only clean publish\. Delta packages are disabled (--delta None below), so every
+    # release ships as a full pack and Releases\ no longer needs the previous -full.nupkg.
     Write-Host "==> Cleaning publish\" -ForegroundColor Yellow
     Remove-Item -Recurse -Force 'publish' -ErrorAction SilentlyContinue
 
@@ -54,7 +54,8 @@ try {
         --packDir publish `
         --mainExe ImageViewer.exe `
         --icon ImageViewer\ImageViewer.ico `
-        --shortcuts StartMenuRoot
+        --shortcuts StartMenuRoot `
+        --delta None
     if ($LASTEXITCODE -ne 0) { throw "vpk pack failed (exit $LASTEXITCODE)" }
 
     Write-Host ""
