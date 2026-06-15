@@ -529,6 +529,7 @@ internal class Context
 
             MainWindow.ButtonImageDelete.IsEnabled = true;
             MainWindow.ButtonFileSave.IsEnabled = true;
+            MainWindow.ButtonFileSaveDirect.IsEnabled = CurrentImage.Modified;
 
             MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
 
@@ -547,6 +548,7 @@ internal class Context
 
             MainWindow.ButtonImageDelete.IsEnabled = false;
             MainWindow.ButtonFileSave.IsEnabled = false;
+            MainWindow.ButtonFileSaveDirect.IsEnabled = false;
 
             MainWindow.ButtonFileInfo.IsEnabled = false;
 
@@ -586,6 +588,7 @@ internal class Context
 
             MainWindow.ButtonImageDelete.IsEnabled = false;
             MainWindow.ButtonFileSave.IsEnabled = false;
+            MainWindow.ButtonFileSaveDirect.IsEnabled = false;
             MainWindow.ButtonFileInfo.IsEnabled = false;
         }
 
@@ -669,6 +672,48 @@ internal class Context
             .AddButton(new AppNotificationButton(Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE")).AddArgument("action", "doUpdate"));
 
         NotificationsManger.Runtime.Show(builder.BuildNotification());
+    }
+
+    /// <summary>
+    /// Overwrite the current file in place. No-op unless the image was modified.
+    /// Falls back to Save As for pasted images and non-writable source formats (svg/ico).
+    /// </summary>
+    public async Task<bool> Save()
+    {
+        if (!HasImageLoaded() || !CurrentImage.Modified) return false;
+
+        // Pasted content has no source file: route to Save As.
+        if (CurrentFilePath == null) return await SaveAs();
+
+        string type = Path.GetExtension(CurrentFilePath).ToLowerInvariant();
+        if (type == ".jpeg") type = ".jpg";
+        if (type == ".tif") type = ".tiff";
+
+        // Source format we cannot re-encode (svg/ico): route to Save As.
+        if (!Image.SaveFileTypes.Contains(type)) return await SaveAs();
+
+        try
+        {
+            await CurrentImage.Save(CurrentFilePath, type);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Save failed: {ex.Message}");
+
+            Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
+            {
+                XamlRoot = MainWindow.Content.XamlRoot,
+                RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
+                Content = Culture.GetString("SYSTEM_SAVING_ERROR"),
+                CloseButtonText = Culture.GetString("SYSTEM_OK")
+            };
+
+            await errorDialog.ShowAsync();
+            return false;
+        }
+
+        UpdateButtonsAccessiblity();
+        return true;
     }
 
     /// <summary>
