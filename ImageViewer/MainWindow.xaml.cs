@@ -153,6 +153,11 @@ public sealed partial class MainWindow : Window
 
         if(enabled)
         {
+            // Raise the guard BEFORE switching presenter: SetPresenter triggers a synchronous
+            // size/position change, and the fullscreen bounds must never be persisted as the
+            // windowed geometry
+            App.IsFullScreen = true;
+
             appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
 
             AppTitleBar.Visibility = Visibility.Collapsed;
@@ -170,9 +175,11 @@ public sealed partial class MainWindow : Window
             MainLayout.RowDefinitions[3].Height = OriginalFooterRowHeight.Value;
 
             RedrawTitleBar();
-        }
 
-        App.IsFullScreen = enabled;
+            // Lower the guard only after the presenter is restored, so the transition's
+            // size/position change back to the windowed bounds is not recorded mid-flight
+            App.IsFullScreen = false;
+        }
     }
 
     private void ButtonOpenFile_Click(object sender, RoutedEventArgs e)
