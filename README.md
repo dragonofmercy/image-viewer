@@ -60,4 +60,4 @@ ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
 
 If this project helps to increase your productivity, you can give me a cup of coffee :)
 
-[![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
+<a href="https://ko-fi.com/dragonofmercy"><img src="https://cdn.ko-fi.com/cdn/kofi2.png?v=3" alt="Donate" width="160"></a>
