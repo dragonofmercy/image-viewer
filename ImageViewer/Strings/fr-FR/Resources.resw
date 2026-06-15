@@ -72,8 +72,20 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_INFO" xml:space="preserve">
     <value>Informations de l'image</value>
   </data>
-  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_AS" xml:space="preserve">
     <value>Enregistrer sous...</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="SAVE_OPTIONS_TITLE" xml:space="preserve">
+    <value>Options d'enregistrement</value>
+  </data>
+  <data name="SAVE_OPTIONS_QUALITY" xml:space="preserve">
+    <value>Qualité</value>
+  </data>
+  <data name="SYSTEM_CANCEL" xml:space="preserve">
+    <value>Annuler</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>Image {0}</value>
