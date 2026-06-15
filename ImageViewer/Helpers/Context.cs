@@ -206,6 +206,57 @@ internal class Context
     }
 
     /// <summary>
+    /// Jump to the first image of the folder.
+    /// </summary>
+    public void LoadFirstImage()
+    {
+        if (FolderFiles is not { Length: > 0 }) return;
+
+        // Land on index 0 via LoadNextImage so dead-file handling is reused
+        CurrentIndex = -1;
+        LoadNextImage();
+    }
+
+    /// <summary>
+    /// Jump to the last image of the folder.
+    /// </summary>
+    public void LoadLastImage()
+    {
+        if (FolderFiles is not { Length: > 0 }) return;
+
+        // Land on the last index via LoadPrevImage (wraps from 0 to Length-1)
+        CurrentIndex = 0;
+        LoadPrevImage();
+    }
+
+    /// <summary>
+    /// Esc: back out of the current mode, by priority - cropper, then info pane, then fullscreen.
+    /// No-op (never quits) when nothing is open.
+    /// </summary>
+    public void EscapeAction()
+    {
+        if (MainWindow == null) return;
+
+        if (MainWindow.ImageCropperContainer.Visibility == Visibility.Visible)
+        {
+            CloseCropper();
+            return;
+        }
+
+        if (MainWindow.SplitViewContainer.IsPaneOpen)
+        {
+            MainWindow.SplitViewContainer.IsPaneOpen = false;
+            MainWindow.ScrollView.Focus(FocusState.Programmatic);
+            return;
+        }
+
+        if (App.IsFullScreen)
+        {
+            MainWindow.SetFullScreen(false);
+        }
+    }
+
+    /// <summary>
     /// Load an image from the load picker.
     /// </summary>
     public async void LoadImageFromPicker()

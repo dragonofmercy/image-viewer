@@ -31,6 +31,9 @@ public sealed partial class MainWindow : Window
     private bool SavingProcess = false;
     private Point LastMousePoint;
     private bool ScrollViewMouseDrag;
+    private GridLength? OriginalTitleBarRowHeight;
+    private GridLength? OriginalFooterRowHeight;
+    private Visibility? OriginalTitleBarVisibility;
 
     public readonly Dictionary<string, string>CropperAspectRatios = new()
     {
@@ -131,6 +134,45 @@ public sealed partial class MainWindow : Window
         IntPtr hWnd = WindowNative.GetWindowHandle(this);
         WindowId wndId = Win32Interop.GetWindowIdFromWindow(hWnd);
         return AppWindow.GetFromWindowId(wndId);
+    }
+
+    public void ToggleFullScreen()
+    {
+        SetFullScreen(!App.IsFullScreen);
+    }
+
+    public void SetFullScreen(bool enabled)
+    {
+        AppWindow appWindow = GetAppWindowForCurrentWindow();
+
+        // Capture the windowed layout once so it restores correctly (row 0 may be Auto when
+        // the custom title bar is unsupported)
+        OriginalTitleBarRowHeight ??= MainLayout.RowDefinitions[0].Height;
+        OriginalFooterRowHeight ??= MainLayout.RowDefinitions[3].Height;
+        OriginalTitleBarVisibility ??= AppTitleBar.Visibility;
+
+        if(enabled)
+        {
+            appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+
+            AppTitleBar.Visibility = Visibility.Collapsed;
+            FooterToolbar.Visibility = Visibility.Collapsed;
+            MainLayout.RowDefinitions[0].Height = new GridLength(0);
+            MainLayout.RowDefinitions[3].Height = new GridLength(0);
+        }
+        else
+        {
+            appWindow.SetPresenter(AppWindowPresenterKind.Default);
+
+            AppTitleBar.Visibility = OriginalTitleBarVisibility.Value;
+            FooterToolbar.Visibility = Visibility.Visible;
+            MainLayout.RowDefinitions[0].Height = OriginalTitleBarRowHeight.Value;
+            MainLayout.RowDefinitions[3].Height = OriginalFooterRowHeight.Value;
+
+            RedrawTitleBar();
+        }
+
+        App.IsFullScreen = enabled;
     }
 
     private void ButtonOpenFile_Click(object sender, RoutedEventArgs e)
@@ -495,5 +537,29 @@ public sealed partial class MainWindow : Window
 
         RandomAccessStreamReference clipboardImage = await clipboard.GetBitmapAsync();
         Context.Instance().LoadImageFromBuffer(clipboardImage);
+    }
+
+    private void Window_Escape(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        Context.Instance().EscapeAction();
+        e.Handled = true;
+    }
+
+    private void Window_Home(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        Context.Instance().LoadFirstImage();
+        e.Handled = true;
+    }
+
+    private void Window_End(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        Context.Instance().LoadLastImage();
+        e.Handled = true;
+    }
+
+    private void Window_FullScreen(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        ToggleFullScreen();
+        e.Handled = true;
     }
 }

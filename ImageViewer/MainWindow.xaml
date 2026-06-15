@@ -13,6 +13,10 @@
             <Grid.KeyboardAccelerators>
                 <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="Window_Paste" />
                 <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="Window_Copy" />
+                <KeyboardAccelerator Key="Escape" Invoked="Window_Escape" />
+                <KeyboardAccelerator Key="Home" Invoked="Window_Home" />
+                <KeyboardAccelerator Key="End" Invoked="Window_End" />
+                <KeyboardAccelerator Key="F11" Invoked="Window_FullScreen" />
             </Grid.KeyboardAccelerators>
             <Grid.RowDefinitions>
                 <RowDefinition Height="48" />
@@ -158,7 +162,7 @@
                     </SplitView>
                 </Grid>
             </SplitView>
-            <Grid Grid.Row="3" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
+            <Grid Grid.Row="3" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
