@@ -1,7 +1,11 @@
 # Image Viewer for Windows
 
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://ko-fi.com/dragonofmercy)
-[![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=flat&logo=twitter)](https://twitter.com/intent/tweet?text=ImageViewer.%20A%20new%20image%20viewer%20for%20Windows%2010%20%26%2011.%20%23imageviewer%20%23dotnet%20%23winui3%20via%20%40dragonofmercy&url=https%3A%2F%2Fgithub.com%2Fdragonofmercy%2Fimage-viewer)
+[![Latest release](https://img.shields.io/github/v/release/dragonofmercy/image-viewer?logo=github)](https://github.com/dragonofmercy/image-viewer/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/dragonofmercy/image-viewer/total?logo=github)](https://github.com/dragonofmercy/image-viewer/releases)
+[![License](https://img.shields.io/github/license/dragonofmercy/image-viewer)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
+[![Donate](https://img.shields.io/badge/Donate-Ko--fi-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/dragonofmercy)
 
 Simple image viewer for Windows.  
 Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp and svg
@@ -10,12 +14,12 @@ Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp 
 
 ## How to build
 
-**Requirements**: Windows 10 22H2 / Windows 11, .NET 8 SDK, and the Windows App SDK build tools.
+**Requirements**: Windows 10 22H2 / Windows 11, .NET 10 SDK, and the Windows App SDK build tools.
 
 ### From Visual Studio (easiest)
 
 1. Install [Visual Studio 2022](https://visualstudio.microsoft.com/vs/) (Community edition is fine).
-2. During install, enable the **Windows application development** workload, which pulls the .NET 8 SDK and the Windows App SDK build tools ([Microsoft docs](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment)).
+2. During install, enable the **Windows application development** workload, which pulls the .NET 10 SDK and the Windows App SDK build tools ([Microsoft docs](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment)).
 
    ![](/documentation/assets/vs2022_install_req.jpg)
 
@@ -63,8 +67,8 @@ Then upload the contents of `Releases\` to a new GitHub Release.
 ## Credits
 ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
 
-## 
+## Support
 
-If this project help to increase your productivity, you can give me a cup of coffee :) 
+If this project helps to increase your productivity, you can give me a cup of coffee :)
 
 [![Donate](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/dragonofmercy)
