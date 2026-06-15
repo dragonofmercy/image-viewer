@@ -78,14 +78,8 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
     <value>保存</value>
   </data>
-  <data name="SAVE_OPTIONS_TITLE" xml:space="preserve">
-    <value>保存选项</value>
-  </data>
-  <data name="SAVE_OPTIONS_QUALITY" xml:space="preserve">
-    <value>质量</value>
-  </data>
-  <data name="SYSTEM_CANCEL" xml:space="preserve">
-    <value>取消</value>
+  <data name="SETTINGS_FIELD_JPEG_QUALITY" xml:space="preserve">
+    <value>JPEG 质量</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>{0} 图像</value>

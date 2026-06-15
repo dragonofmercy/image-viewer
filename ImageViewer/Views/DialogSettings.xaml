@@ -39,13 +39,28 @@
                 <controls:SettingsCard.Icon>
                     <SymbolIcon Symbol="Sync" />
                 </controls:SettingsCard.Icon>
-                <ComboBox 
-                    Name="CboOptionsUpdateInterval" 
+                <ComboBox
+                    Name="CboOptionsUpdateInterval"
                     MinWidth="{ StaticResource SettingActionControlMinWidth }"
-                    DisplayMemberPath="Key" 
-                    SelectedValuePath="Value" 
+                    DisplayMemberPath="Key"
+                    SelectedValuePath="Value"
                     SelectionChanged="CboOptionsUpdateInterval_SelectionChanged">
                 </ComboBox>
+            </controls:SettingsCard>
+            <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_JPEG_QUALITY')}">
+                <controls:SettingsCard.Icon>
+                    <FontIcon Glyph="&#xE8B9;" />
+                </controls:SettingsCard.Icon>
+                <NumberBox
+                    Name="NumOptionsJpegQuality"
+                    MinWidth="{ StaticResource SettingActionControlMinWidth }"
+                    Minimum="1"
+                    Maximum="100"
+                    SmallChange="1"
+                    LargeChange="10"
+                    SpinButtonPlacementMode="Compact"
+                    ValueChanged="NumOptionsJpegQuality_ValueChanged">
+                </NumberBox>
             </controls:SettingsCard>
         </controls:SettingsGroup>
     </StackPanel>

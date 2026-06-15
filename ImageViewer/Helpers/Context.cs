@@ -694,9 +694,8 @@ internal class Context
 
         try
         {
-            // Direct overwrite re-encodes at quality 100 by design (silent save, no dialog):
-            // a sub-100 JPEG/WebP original may grow. Use Save As to pick a lower quality.
-            await CurrentImage.Save(CurrentFilePath, type);
+            // JPEG re-encodes at the quality configured in Settings; other formats ignore the parameter.
+            await CurrentImage.Save(CurrentFilePath, type, type == ".jpg" ? Settings.JpegQuality : null);
         }
         catch (Exception ex)
         {
@@ -744,12 +743,8 @@ internal class Context
 
         if (!Image.SaveFileTypes.Contains(outputFileType)) return false;
 
-        int? quality = null;
-        if (outputFileType is ".jpg" or ".webp")
-        {
-            quality = await ShowSaveQualityDialog();
-            if (quality == null) return false; // user cancelled the options dialog
-        }
+        // JPEG re-encodes at the quality configured in Settings; other formats ignore the parameter.
+        int? quality = outputFileType == ".jpg" ? Settings.JpegQuality : null;
 
         try
         {
@@ -774,39 +769,6 @@ internal class Context
         LoadDirectoryFiles();
 
         return true;
-    }
-
-    /// <summary>
-    /// Asks the user for an encoding quality (1-100) for lossy formats.
-    /// Returns the chosen value, or null if the user cancelled.
-    /// </summary>
-    private async Task<int?> ShowSaveQualityDialog()
-    {
-        Microsoft.UI.Xaml.Controls.Slider qualitySlider = new()
-        {
-            Minimum = 1,
-            Maximum = 100,
-            Value = 100,
-            StepFrequency = 1,
-            TickFrequency = 10,
-            Header = Culture.GetString("SAVE_OPTIONS_QUALITY")
-        };
-
-        Microsoft.UI.Xaml.Controls.ContentDialog dialog = new()
-        {
-            XamlRoot = MainWindow.Content.XamlRoot,
-            RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
-            Title = Culture.GetString("SAVE_OPTIONS_TITLE"),
-            Content = qualitySlider,
-            PrimaryButtonText = Culture.GetString("SYSTEM_OK"),
-            CloseButtonText = Culture.GetString("SYSTEM_CANCEL"),
-            DefaultButton = Microsoft.UI.Xaml.Controls.ContentDialogButton.Primary
-        };
-
-        Microsoft.UI.Xaml.Controls.ContentDialogResult result = await dialog.ShowAsync();
-        if (result != Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary) return null;
-
-        return (int)qualitySlider.Value;
     }
 
     /// <summary>

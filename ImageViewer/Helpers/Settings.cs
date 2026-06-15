@@ -17,7 +17,9 @@ internal class Settings
     internal const string H_VALUE_LAST_UPDATE_CHECK = "LastUpdateCheck";
     internal const string H_VALUE_LANGUAGE = "Lang";
     internal const string H_VALUE_CHECK_UPDATE_INTERVAL = "UpdateInterval";
+    internal const string H_VALUE_JPEG_QUALITY = "JpegQuality";
     internal const string UPDATE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    internal const int JPEG_QUALITY_DEFAULT = 90;
 
     public static ElementTheme Theme
     {
@@ -101,5 +103,16 @@ internal class Settings
     {
         get => (string)Registry.GetValue(HKEY_APP_PATH, H_VALUE_LANGUAGE, "");
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_LANGUAGE, value);
+    }
+
+    public static int JpegQuality
+    {
+        get
+        {
+            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, null);
+            return tmp != null && int.TryParse(tmp.ToString(), out int q) ? System.Math.Clamp(q, 1, 100) : JPEG_QUALITY_DEFAULT;
+        }
+
+        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, System.Math.Clamp(value, 1, 100));
     }
 }

@@ -78,14 +78,8 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
     <value>Enregistrer</value>
   </data>
-  <data name="SAVE_OPTIONS_TITLE" xml:space="preserve">
-    <value>Options d'enregistrement</value>
-  </data>
-  <data name="SAVE_OPTIONS_QUALITY" xml:space="preserve">
-    <value>Qualité</value>
-  </data>
-  <data name="SYSTEM_CANCEL" xml:space="preserve">
-    <value>Annuler</value>
+  <data name="SETTINGS_FIELD_JPEG_QUALITY" xml:space="preserve">
+    <value>Qualité JPEG</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>Image {0}</value>

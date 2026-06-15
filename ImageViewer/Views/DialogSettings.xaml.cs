@@ -44,6 +44,7 @@ public sealed partial class DialogSettings : Page
     {
         CboOptionsLanguage.SelectedValue = Settings.Language;
         CboOptionsUpdateInterval.SelectedValue = Settings.UpdateInterval;
+        NumOptionsJpegQuality.Value = Settings.JpegQuality;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -59,5 +60,11 @@ public sealed partial class DialogSettings : Page
     private void CboOptionsUpdateInterval_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         Settings.UpdateInterval = CboOptionsUpdateInterval.SelectedValue.ToString();
+    }
+
+    private void NumOptionsJpegQuality_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
+    {
+        if(double.IsNaN(e.NewValue)) return;
+        Settings.JpegQuality = (int)e.NewValue;
     }
 }

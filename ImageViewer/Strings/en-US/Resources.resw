@@ -78,14 +78,8 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="SAVE_OPTIONS_TITLE" xml:space="preserve">
-    <value>Save options</value>
-  </data>
-  <data name="SAVE_OPTIONS_QUALITY" xml:space="preserve">
-    <value>Quality</value>
-  </data>
-  <data name="SYSTEM_CANCEL" xml:space="preserve">
-    <value>Cancel</value>
+  <data name="SETTINGS_FIELD_JPEG_QUALITY" xml:space="preserve">
+    <value>JPEG quality</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>{0} image</value>
