@@ -36,10 +36,11 @@ try {
     if (-not $Version) { throw "Could not read <Version> from $csprojPath" }
     Write-Host "Version (from csproj): $Version" -ForegroundColor Cyan
 
-    # Only clean publish\. Delta packages are disabled (--delta None below), so every
-    # release ships as a full pack and Releases\ no longer needs the previous -full.nupkg.
-    Write-Host "==> Cleaning publish\" -ForegroundColor Yellow
+    # Delta packages are disabled (--delta None below), so each release is full-only and
+    # Releases\ holds nothing worth keeping between builds - wipe both for a clean slate.
+    Write-Host "==> Cleaning publish\ and Releases\" -ForegroundColor Yellow
     Remove-Item -Recurse -Force 'publish' -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force 'Releases' -ErrorAction SilentlyContinue
 
     Write-Host "==> dotnet publish (self-contained, win-x64)" -ForegroundColor Yellow
     dotnet publish ImageViewer\ImageViewer.csproj -c Release -r win-x64 -o publish
