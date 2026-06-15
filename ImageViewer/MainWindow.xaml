@@ -12,6 +12,7 @@
         <Grid SizeChanged="Grid_SizeChanged" x:Name="MainLayout" KeyboardAcceleratorPlacementMode="Hidden">
             <Grid.KeyboardAccelerators>
                 <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="Window_Paste" />
+                <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="Window_Copy" />
             </Grid.KeyboardAccelerators>
             <Grid.RowDefinitions>
                 <RowDefinition Height="48" />

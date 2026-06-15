@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tga;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using Svg;
 
 using ImageSharpImage = SixLabors.ImageSharp.Image;
@@ -80,6 +81,21 @@ internal partial class Image
 
         MemoryStream memory = new();
         WorkingImage.Save(memory, Encoder);
+        memory.Position = 0;
+
+        return memory.AsRandomAccessStream();
+    }
+
+    /// <summary>
+    /// Encode the working image to a lossless PNG stream, suitable for the clipboard.
+    /// Independent of the current <see cref="Encoder"/> so quality is never reduced.
+    /// </summary>
+    public IRandomAccessStream GetPngStream()
+    {
+        if(WorkingImage == null) return null;
+
+        MemoryStream memory = new();
+        WorkingImage.Save(memory, new PngEncoder());
         memory.Position = 0;
 
         return memory.AsRandomAccessStream();
@@ -164,6 +180,11 @@ internal partial class Image
             if(NativeExtensions.Contains(extension))
             {
                 WorkingImage = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
+
+                // Apply EXIF orientation so portrait photos are not displayed sideways.
+                // No-op when the image carries no orientation metadata.
+                WorkingImage.Mutate(x => x.AutoOrient());
+
                 Encoder = WorkingImage.DetectEncoder(path);
 
                 switch(Encoder)
@@ -177,7 +198,9 @@ internal partial class Image
                         break;
 
                     case PngEncoder:
-                        Encoder = new PngEncoder { ColorType = PngColorType.Palette };
+                        // Keep the default truecolor PngEncoder: forcing PngColorType.Palette
+                        // capped truecolor PNGs at 256 colors when re-encoded (animated/clipboard paths)
+                        Encoder = new PngEncoder();
                         break;
                 }
             }
@@ -201,7 +224,7 @@ internal partial class Image
                     svgMemoryStream.Position = 0;
                     WorkingImage = await ImageSharpImage.LoadAsync<Rgba32>(svgMemoryStream);
 
-                    Encoder = new PngEncoder { ColorType = PngColorType.Palette };
+                    Encoder = new PngEncoder();
                 }
                 else
                 {

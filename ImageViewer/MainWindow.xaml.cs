@@ -478,6 +478,12 @@ public sealed partial class MainWindow : Window
         e.DragUIOverride.IsGlyphVisible = false;
     }
 
+    private void Window_Copy(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        Context.Instance().CopyImageToClipboard();
+        e.Handled = true;
+    }
+
     private async void Window_Paste(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
     {
         DataPackageView clipboard = Clipboard.GetContent();

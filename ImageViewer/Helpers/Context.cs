@@ -13,6 +13,7 @@ using Microsoft.Windows.AppNotifications.Builder;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
+using Windows.ApplicationModel.DataTransfer;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
@@ -231,6 +232,21 @@ internal class Context
 
         OpenImage();
         LoadDirectoryFiles();
+    }
+
+    /// <summary>
+    /// Copy the current image to the clipboard as a lossless PNG bitmap (symmetric with paste).
+    /// </summary>
+    public void CopyImageToClipboard()
+    {
+        if (!HasImageLoaded()) return;
+
+        IRandomAccessStream stream = CurrentImage.GetPngStream();
+        if (stream == null) return;
+
+        DataPackage dataPackage = new();
+        dataPackage.SetBitmap(RandomAccessStreamReference.CreateFromStream(stream));
+        Clipboard.SetContent(dataPackage);
     }
 
     /// <summary>
