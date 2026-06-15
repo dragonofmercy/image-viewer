@@ -84,6 +84,11 @@
         <Manifest Include="$(ApplicationManifest)" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- Grant the test assembly access to internal types (Wrapper.Image, Utilities, Culture, ...) -->
+        <InternalsVisibleTo Include="ImageViewer.Tests" />
+    </ItemGroup>
+
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <ItemGroup>
             <RemovingFiles Include="$(OutDir)**\*.mui" Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui" />

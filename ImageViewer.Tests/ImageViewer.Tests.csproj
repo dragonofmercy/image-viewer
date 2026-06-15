@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows10.0.22621</TargetFramework>
+        <TargetPlatformMinVersion>10.0.22621</TargetPlatformMinVersion>
+        <RootNamespace>ImageViewer.Tests</RootNamespace>
+        <AssemblyName>ImageViewer.Tests</AssemblyName>
+        <Platforms>x64</Platforms>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <LangVersion>12</LangVersion>
+        <Nullable>disable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <EnableMsixTooling>false</EnableMsixTooling>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+        <PackageReference Include="xunit" Version="2.9.2" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+        <!-- Explicit (not just transitive) so the ICO-fixture generator can use System.Drawing. -->
+        <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ImageViewer\ImageViewer.csproj" />
+    </ItemGroup>
+
+</Project>
