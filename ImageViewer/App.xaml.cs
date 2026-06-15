@@ -46,6 +46,10 @@ public partial class App : Application
     private static uint? PendingSizeW;
     private static uint? PendingSizeH;
 
+    // True while the window is in fullscreen; suppresses geometry persistence so the
+    // fullscreen bounds are never saved as the normal window size/position.
+    public static bool IsFullScreen;
+
     public App()
     {
         long totalMemoryMb = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024);
@@ -152,6 +156,7 @@ public partial class App : Application
 
     private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
     {
+        if(IsFullScreen) return;
         if(TrackedWindowState != WindowState.Normal) return;
 
         PendingSizeH = (uint)args.Size.Height;
@@ -160,6 +165,7 @@ public partial class App : Application
 
     private void Window_PositionChanged(object sender, Windows.Graphics.PointInt32 e)
     {
+        if(IsFullScreen) return;
         if(TrackedWindowState != WindowState.Normal) return;
 
         // Some minimize paths bypass WM_SYSCOMMAND (Win+D, Win+Down) and park the window at -32000
