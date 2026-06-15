@@ -694,6 +694,8 @@ internal class Context
 
         try
         {
+            // Direct overwrite re-encodes at quality 100 by design (silent save, no dialog):
+            // a sub-100 JPEG/WebP original may grow. Use Save As to pick a lower quality.
             await CurrentImage.Save(CurrentFilePath, type);
         }
         catch (Exception ex)
