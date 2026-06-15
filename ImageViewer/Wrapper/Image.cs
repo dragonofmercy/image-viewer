@@ -87,18 +87,21 @@ internal partial class Image
     }
 
     /// <summary>
-    /// Encode the working image to a lossless PNG stream, suitable for the clipboard.
-    /// Independent of the current <see cref="Encoder"/> so quality is never reduced.
+    /// Copy the working image as top-down BGRA32 pixels, the order the clipboard DIB path expects.
     /// </summary>
-    public IRandomAccessStream GetPngStream()
+    public byte[] GetBgra32Pixels(out int width, out int height)
     {
-        if(WorkingImage == null) return null;
+        width = WorkingImage.Width;
+        height = WorkingImage.Height;
 
-        MemoryStream memory = new();
-        WorkingImage.Save(memory, new PngEncoder());
-        memory.Position = 0;
+        byte[] pixels = new byte[width * height * 4];
 
-        return memory.AsRandomAccessStream();
+        using(SixLabors.ImageSharp.Image<Bgra32> converted = WorkingImage.CloneAs<Bgra32>())
+        {
+            converted.CopyPixelDataTo(pixels);
+        }
+
+        return pixels;
     }
 
     public WriteableBitmap GetWriteableBitmap()

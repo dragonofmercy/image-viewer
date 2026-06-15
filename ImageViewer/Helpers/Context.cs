@@ -13,7 +13,6 @@ using Microsoft.Windows.AppNotifications.Builder;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
-using Windows.ApplicationModel.DataTransfer;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
@@ -241,12 +240,15 @@ internal class Context
     {
         if (!HasImageLoaded()) return;
 
-        IRandomAccessStream stream = CurrentImage.GetPngStream();
-        if (stream == null) return;
-
-        DataPackage dataPackage = new();
-        dataPackage.SetBitmap(RandomAccessStreamReference.CreateFromStream(stream));
-        Clipboard.SetContent(dataPackage);
+        try
+        {
+            byte[] pixels = CurrentImage.GetBgra32Pixels(out int width, out int height);
+            ClipboardHelper.SetImageAsDib(WindowNative.GetWindowHandle(MainWindow), pixels, width, height);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Copy to clipboard failed: {ex.Message}");
+        }
     }
 
     /// <summary>
