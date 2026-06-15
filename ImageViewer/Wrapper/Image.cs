@@ -16,6 +16,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tga;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Svg;
@@ -138,12 +139,12 @@ internal partial class Image
         return bitmap;
     }
 
-    public async Task Save(string path, string type)
+    public async Task Save(string path, string type, int? quality = null)
     {
         switch(type)
         {
             case ".jpg":
-                await WorkingImage.SaveAsJpegAsync(path, new JpegEncoder { Quality = 100 });
+                await WorkingImage.SaveAsJpegAsync(path, new JpegEncoder { Quality = quality ?? 100 });
                 break;
 
             case ".png":
@@ -151,7 +152,7 @@ internal partial class Image
                 break;
 
             case ".webp":
-                await WorkingImage.SaveAsWebpAsync(path);
+                await WorkingImage.SaveAsWebpAsync(path, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = quality ?? 100 });
                 break;
 
             case ".bmp":

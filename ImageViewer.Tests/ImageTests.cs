@@ -152,4 +152,32 @@ public class ImageTests
             image.Dispose();
         }
     }
+
+    [Theory]
+    [InlineData(".jpg")]
+    [InlineData(".webp")]
+    public async Task Save_LowerQuality_ProducesSmallerFile(string type)
+    {
+        using TempDir dir = new();
+        string path = FixtureFactory.SaveNoisy(dir, "src.png", 256, 256);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            string high = dir.File("high" + type);
+            string low = dir.File("low" + type);
+
+            await image.Save(high, type, 95);
+            await image.Save(low, type, 20);
+
+            long highSize = new System.IO.FileInfo(high).Length;
+            long lowSize = new System.IO.FileInfo(low).Length;
+
+            Assert.True(lowSize < highSize, $"expected q20 ({lowSize}) < q95 ({highSize})");
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
 }
