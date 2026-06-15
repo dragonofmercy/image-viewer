@@ -129,4 +129,27 @@ public class ImageTests
             image.Dispose();
         }
     }
+
+    [Fact]
+    public async Task Modified_FalseAfterLoad_TrueAfterTransform_FalseAfterSave()
+    {
+        using TempDir dir = new();
+        string path = FixtureFactory.Save(dir, "modflag.png", 4, 2);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            Assert.False(image.Modified);
+
+            image.RotateFlip(RotateMode.Rotate90, FlipMode.None);
+            Assert.True(image.Modified);
+
+            await image.Save(dir.File("modflag-out.png"), ".png");
+            Assert.False(image.Modified);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
 }

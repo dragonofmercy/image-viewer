@@ -55,6 +55,7 @@ internal partial class Image
     public double Height => WorkingImage.Height;
     public double Width => WorkingImage.Width;
     public bool IsAnimated => WorkingImage is { Frames.Count: > 1 };
+    public bool Modified { get; private set; }
 
     public void Dispose()
     {
@@ -172,6 +173,8 @@ internal partial class Image
             default:
                 throw new NotSupportedException($"Unsupported save format: {type}");
         }
+
+        Modified = false;
     }
 
     private async void LoadImageFromPath(string path)

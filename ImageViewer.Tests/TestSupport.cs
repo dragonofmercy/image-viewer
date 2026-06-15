@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -58,6 +59,29 @@ public static class FixtureFactory
         string path = dir.File(fileName);
         string svg = $"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\"><rect width=\"{width}\" height=\"{height}\" fill=\"red\"/></svg>";
         System.IO.File.WriteAllText(path, svg);
+        return path;
+    }
+
+    public static string SaveNoisy(TempDir dir, string fileName, int width, int height)
+    {
+        string path = dir.File(fileName);
+        using Image<Rgba32> image = new(width, height);
+        image.ProcessPixelRows(accessor =>
+        {
+            for (int y = 0; y < accessor.Height; y++)
+            {
+                Span<Rgba32> row = accessor.GetRowSpan(y);
+                for (int x = 0; x < row.Length; x++)
+                {
+                    // High-frequency deterministic pattern so JPEG/WebP quality changes file size.
+                    byte r = (byte)((x * 37 + y * 17) & 0xFF);
+                    byte g = (byte)((x * 13 + y * 53) & 0xFF);
+                    byte b = (byte)((x * 91 + y * 7) & 0xFF);
+                    row[x] = new Rgba32(r, g, b, 255);
+                }
+            }
+        });
+        image.Save(path);
         return path;
     }
 

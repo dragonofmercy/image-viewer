@@ -10,17 +10,20 @@ internal partial class Image
     {
         if(!WorkingImageLoaded) return;
         WorkingImage.Mutate(ctx => ctx.RotateFlip(rotateMode, flipMode));
+        Modified = true;
     }
 
     public void Resize(int width, int height, IResampler mode)
     {
         if(!WorkingImageLoaded) return;
         WorkingImage.Mutate(ctx => ctx.Resize(width, height, mode));
+        Modified = true;
     }
 
     public void Crop(int x, int y, int cropWidth, int cropHeight)
     {
         if(!WorkingImageLoaded) return;
         WorkingImage.Mutate(ctx => ctx.Crop(new Rectangle(x, y, cropWidth, cropHeight)));
+        Modified = true;
     }
 }
