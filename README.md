@@ -1,8 +1,8 @@
 # Image Viewer for Windows
 
-[![Latest release](https://img.shields.io/github/v/release/dragonofmercy/image-viewer?logo=github)](https://github.com/dragonofmercy/image-viewer/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/dragonofmercy/image-viewer/total?logo=github)](https://github.com/dragonofmercy/image-viewer/releases)
-[![License](https://img.shields.io/github/license/dragonofmercy/image-viewer)](LICENSE)
+[![Latest release](https://badgen.net/github/release/dragonofmercy/image-viewer/stable?icon=github)](https://github.com/dragonofmercy/image-viewer/releases/latest)
+[![Downloads](https://badgen.net/github/assets-dl/dragonofmercy/image-viewer?icon=github)](https://github.com/dragonofmercy/image-viewer/releases)
+[![License](https://badgen.net/github/license/dragonofmercy/image-viewer)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![Donate](https://img.shields.io/badge/Donate-Ko--fi-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/dragonofmercy)
