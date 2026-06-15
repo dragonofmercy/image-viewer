@@ -19,7 +19,7 @@ internal class Settings
     internal const string H_VALUE_CHECK_UPDATE_INTERVAL = "UpdateInterval";
     internal const string H_VALUE_JPEG_QUALITY = "JpegQuality";
     internal const string UPDATE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    internal const int JPEG_QUALITY_DEFAULT = 90;
+    internal const int JPEG_QUALITY_DEFAULT = 100;
 
     public static ElementTheme Theme
     {
