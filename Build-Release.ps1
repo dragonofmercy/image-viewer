@@ -59,6 +59,11 @@ try {
         --delta None
     if ($LASTEXITCODE -ne 0) { throw "vpk pack failed (exit $LASTEXITCODE)" }
 
+    # Pack succeeded - the publish\ staging dir is now redundant. On failure the throw
+    # above skips this, so publish\ is left in place for debugging.
+    Write-Host "==> Cleaning publish\ (pack succeeded)" -ForegroundColor Yellow
+    Remove-Item -Recurse -Force 'publish' -ErrorAction SilentlyContinue
+
     Write-Host ""
     Write-Host "==> Done. Artifacts in Releases\:" -ForegroundColor Green
     Get-ChildItem Releases | Format-Table Name, @{Name='Size';Expression={'{0:N1} MB' -f ($_.Length / 1MB)}} -AutoSize
