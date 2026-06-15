@@ -14,18 +14,7 @@ Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp 
 
 ## How to build
 
-**Requirements**: Windows 10 22H2 / Windows 11, .NET 10 SDK, and the Windows App SDK build tools.
-
-### From Visual Studio (easiest)
-
-1. Install [Visual Studio 2022](https://visualstudio.microsoft.com/vs/) (Community edition is fine).
-2. During install, enable the **Windows application development** workload, which pulls the .NET 10 SDK and the Windows App SDK build tools ([Microsoft docs](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment)).
-
-   ![](/documentation/assets/vs2022_install_req.jpg)
-
-3. Open `ImageViewer.sln`, wait for NuGet restore, then build (`Ctrl+Shift+B`) or run (`F5`).
-
-### From the command line
+**Requirements**: Windows 10 22H2 / Windows 11, [.NET 10 SDK](https://dotnet.microsoft.com/download), and the Windows App SDK build tools ([Microsoft docs](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment)).
 
 ```pwsh
 dotnet build ImageViewer.sln -c Release
