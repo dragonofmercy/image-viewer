@@ -234,7 +234,7 @@ internal class Context
     }
 
     /// <summary>
-    /// Copy the current image to the clipboard as a lossless PNG bitmap (symmetric with paste).
+    /// Copy the current image to the clipboard as a CF_DIB bitmap (symmetric with paste).
     /// </summary>
     public void CopyImageToClipboard()
     {
