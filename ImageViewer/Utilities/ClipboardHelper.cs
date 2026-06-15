@@ -62,7 +62,7 @@ internal static class ClipboardHelper
         }
     }
 
-    private static byte[] BuildDib(byte[] topDownBgra, int width, int height)
+    internal static byte[] BuildDib(byte[] topDownBgra, int width, int height)
     {
         int stride = width * 4;
         int imageSize = stride * height;
