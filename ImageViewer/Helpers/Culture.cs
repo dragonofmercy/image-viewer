@@ -1,45 +1,39 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 
-using ImageViewer.Utilities;
+using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace ImageViewer.Helpers;
 
 internal class Culture
 {
-    private const string LIBRARY_PATH = "ImageViewer.Strings";
-    private static Dictionary<string, string> _Strings;
+    private static ResourceManager _Manager;
+    private static ResourceContext _Context;
+
+    // Supported BCP-47 tags; en-US is the default language.
+    private static readonly string[] AvailableLanguages = { "en-US", "fr-FR" };
 
     public static void Init()
     {
-        string classname;
+        _Manager = new ResourceManager();
+        _Context = _Manager.CreateResourceContext();
 
-        if(Settings.Language != "" && GetAvailableLanguages().Contains(Settings.Language))
+        // Empty Settings.Language means follow the system language (no override)
+        if(!string.IsNullOrEmpty(Settings.Language))
         {
-            classname = string.Concat(LIBRARY_PATH, ".", Settings.Language.UcFirst());
+            _Context.QualifierValues["Language"] = Settings.Language;
         }
-        else
-        {
-            classname = string.Concat(LIBRARY_PATH, ".", Windows.System.UserProfile.GlobalizationPreferences.Languages[0].Split('-')[0].UcFirst());
-        }
-
-        Type languageClass = Type.GetType(Type.GetType(classname) != null ? classname : string.Concat(LIBRARY_PATH, ".En"));
-
-        _Strings = (Dictionary<string, string>)languageClass.GetMethod("GetStrings", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
     }
 
     public static List<string> GetAvailableLanguages()
     {
-        List<string> list = [];
-        list.AddRange(from Type type in Assembly.GetExecutingAssembly().GetTypes().Where(t => string.Equals(t.Namespace, LIBRARY_PATH, StringComparison.Ordinal)).ToArray()
-            select type.Name.ToLower());
-        return list;
+        return new List<string>(AvailableLanguages);
     }
 
     public static string GetString(string key)
     {
-        return _Strings != null && _Strings.TryGetValue(key, out string s) ? s : $"[{key}]";
+        if(_Manager == null) return $"[{key}]";
+
+        ResourceCandidate candidate = _Manager.MainResourceMap.TryGetValue($"Resources/{key}", _Context);
+        return candidate != null ? candidate.ValueAsString : $"[{key}]";
     }
 }

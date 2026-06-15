@@ -33,7 +33,7 @@ public sealed partial class DialogSettings : Page
 
         foreach(string languagesIso in Culture.GetAvailableLanguages()) 
         {
-            AvailableLanguages.Add(new CultureInfo(languagesIso).NativeName.UcFirst(), languagesIso.ToLower());
+            AvailableLanguages.Add(new CultureInfo(languagesIso).NativeName.UcFirst(), languagesIso);
         }
 
         CboOptionsLanguage.ItemsSource = AvailableLanguages.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DEFAULT_SYSTEM_LANGUAGE" xml:space="preserve">
+    <value>System language</value>
+  </data>
+  <data name="SYSTEM_PASTED_CONTENT" xml:space="preserve">
+    <value>Pasted content</value>
+  </data>
+  <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
+    <value>Sorry, the application cannot open this file because the format is currently not supported or the file is damaged</value>
+  </data>
+  <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
+    <value>Sorry, the application cannot save the image to this location</value>
+  </data>
+  <data name="SYSTEM_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SYSTEM_LOADING" xml:space="preserve">
+    <value>Loading</value>
+  </data>
+  <data name="SETTINGS_FIELD_LANGUAGE" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
+    <value>You need to restart the application to apply this setting.</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
+    <value>Find updates</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_DAY" xml:space="preserve">
+    <value>Every days</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_WEEK" xml:space="preserve">
+    <value>Every weeks</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MONTH" xml:space="preserve">
+    <value>Every months</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL" xml:space="preserve">
+    <value>Manually</value>
+  </data>
+  <data name="FILE_INFORMATION_TITLE" xml:space="preserve">
+    <value>File informations</value>
+  </data>
+  <data name="FILE_INFORMATION_DIMENSIONS" xml:space="preserve">
+    <value>File dimensions</value>
+  </data>
+  <data name="FILE_INFORMATION_FOLDER_PATH" xml:space="preserve">
+    <value>Folder path</value>
+  </data>
+  <data name="FILE_INFORMATION_FOLDER_PATH_TIP" xml:space="preserve">
+    <value>Display directory in Windows Explorer</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU" xml:space="preserve">
+    <value>Menu</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_OPEN" xml:space="preserve">
+    <value>Open image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_INFO" xml:space="preserve">
+    <value>File info</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
+    <value>Save as...</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
+    <value>{0} image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_DELETE" xml:space="preserve">
+    <value>Delete image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_ABOUT" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_OPTIONS" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_QUIT" xml:space="preserve">
+    <value>Quit</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ADJUST" xml:space="preserve">
+    <value>Zoom to fit</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ZOOM_100" xml:space="preserve">
+    <value>Zoom to actual size</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_PREVIOUS" xml:space="preserve">
+    <value>Previous image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ZOOM_IN" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ZOOM_OUT" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_NEXT" xml:space="preserve">
+    <value>Next image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_MENU" xml:space="preserve">
+    <value>Transform image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_CROP" xml:space="preserve">
+    <value>Crop image</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT" xml:space="preserve">
+    <value>Rotate left</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT" xml:space="preserve">
+    <value>Rotate right</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ" xml:space="preserve">
+    <value>Flip horizontal</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT" xml:space="preserve">
+    <value>Flip vertical</value>
+  </data>
+  <data name="TRANSFORM_CROP_TITLE" xml:space="preserve">
+    <value>Crop tool</value>
+  </data>
+  <data name="TRANSFORM_CROP_RATIO" xml:space="preserve">
+    <value>Ratio</value>
+  </data>
+  <data name="TRANSFORM_CROP_FREE" xml:space="preserve">
+    <value>No constraints</value>
+  </data>
+  <data name="TRANSFORM_CROP_SAME" xml:space="preserve">
+    <value>Original proportions</value>
+  </data>
+  <data name="TRANSFORM_CROP_RESET" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="TRANSFORM_CROP_VALIDATE" xml:space="preserve">
+    <value>Validate</value>
+  </data>
+  <data name="ABOUT_LINK_GITHUB_REPOSITORY" xml:space="preserve">
+    <value>GitHub Repository</value>
+  </data>
+  <data name="ABOUT_LINK_LATEST_RELEASE" xml:space="preserve">
+    <value>Latest releases</value>
+  </data>
+  <data name="ABOUT_LABEL_LAST_UPDATE" xml:space="preserve">
+    <value>Last checked: </value>
+  </data>
+  <data name="ABOUT_LABEL_LAST_UPDATE_NEVER" xml:space="preserve">
+    <value>never</value>
+  </data>
+  <data name="ABOUT_BTN_CHECK_UPDATE" xml:space="preserve">
+    <value>Check for update</value>
+  </data>
+  <data name="ABOUT_BTN_DOWNLOAD_UPDATE" xml:space="preserve">
+    <value>Download update</value>
+  </data>
+  <data name="ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING" xml:space="preserve">
+    <value>Downloading...</value>
+  </data>
+  <data name="ABOUT_BTN_DOWNLOAD_UPDATE_RETRY" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="ABOUT_UPDATE_CHECKING" xml:space="preserve">
+    <value>Checking for update...</value>
+  </data>
+  <data name="ABOUT_UPDATE_INFO_UPDATE_LATEST" xml:space="preserve">
+    <value>Image Viewer is up to date.</value>
+  </data>
+  <data name="ABOUT_UPDATE_INFO_UPDATE_AVAILABLE" xml:space="preserve">
+    <value>An update is available.</value>
+  </data>
+  <data name="ABOUT_UPDATE_INFO_ERROR_NO_INTERNET" xml:space="preserve">
+    <value>No internet access.</value>
+  </data>
+</root>

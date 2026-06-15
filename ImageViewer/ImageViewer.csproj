@@ -6,6 +6,7 @@
         <TargetPlatformMinVersion>10.0.22621</TargetPlatformMinVersion>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <RootNamespace>ImageViewer</RootNamespace>
+        <DefaultLanguage>en-US</DefaultLanguage>
         <Platforms>x64</Platforms>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <SelfContained>true</SelfContained>
