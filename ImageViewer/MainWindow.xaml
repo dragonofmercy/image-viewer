@@ -17,6 +17,11 @@
                 <KeyboardAccelerator Key="Home" Invoked="Window_Home" />
                 <KeyboardAccelerator Key="End" Invoked="Window_End" />
                 <KeyboardAccelerator Key="F11" Invoked="Window_FullScreen" />
+                <!-- Navigation lives at the Grid level so it keeps working in fullscreen, where the footer toolbar (and its own accelerators) is collapsed -->
+                <KeyboardAccelerator Key="Left" Invoked="Window_Prev" />
+                <KeyboardAccelerator Key="Down" Invoked="Window_Prev" />
+                <KeyboardAccelerator Key="Right" Invoked="Window_Next" />
+                <KeyboardAccelerator Key="Up" Invoked="Window_Next" />
             </Grid.KeyboardAccelerators>
             <Grid.RowDefinitions>
                 <RowDefinition Height="48" />
@@ -257,12 +262,7 @@
                         </CommandBar.PrimaryCommands>
                     </CommandBar>
                     <StackPanel Grid.Column="1" Padding="4,0" HorizontalAlignment="Center" Orientation="Horizontal">
-                        <AppBarButton x:Name="ButtonImagePrevious" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_PREVIOUS')}" Width="45" IsCompact="false" Icon="Previous" LabelPosition="Collapsed" Click="ButtonPrevFile_Click" IsEnabled="False">
-                            <AppBarButton.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="Left" />
-                                <KeyboardAccelerator Key="Down" />
-                            </AppBarButton.KeyboardAccelerators>
-                        </AppBarButton>
+                        <AppBarButton x:Name="ButtonImagePrevious" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_PREVIOUS')}" Width="45" IsCompact="false" Icon="Previous" LabelPosition="Collapsed" Click="ButtonPrevFile_Click" IsEnabled="False" />
                         <AppBarButton x:Name="ButtonImageZoomIn" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_ZOOM_IN')}" Width="45" IsCompact="false" Icon="ZoomIn" LabelPosition="Collapsed" Click="ButtonZoomIn_Click" IsEnabled="False">
                             <AppBarButton.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="Add" />
@@ -276,12 +276,7 @@
                                 <KeyboardAccelerator Key="Subtract" />
                             </AppBarButton.KeyboardAccelerators>
                         </AppBarButton>
-                        <AppBarButton x:Name="ButtonImageNext" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_NEXT')}" Width="45" IsCompact="false" Icon="Next" LabelPosition="Collapsed" Click="ButtonNextFile_Click" IsEnabled="False">
-                            <AppBarButton.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="Right" />
-                                <KeyboardAccelerator Key="Up" />
-                            </AppBarButton.KeyboardAccelerators>
-                        </AppBarButton>
+                        <AppBarButton x:Name="ButtonImageNext" x:FieldModifier="public" Label="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_IMAGE_NEXT')}" Width="45" IsCompact="false" Icon="Next" LabelPosition="Collapsed" Click="ButtonNextFile_Click" IsEnabled="False" />
                     </StackPanel>
                     <CommandBar Grid.Column="2" DefaultLabelPosition="Right" HorizontalAlignment="Right" IsDynamicOverflowEnabled="false">
                         <CommandBar.PrimaryCommands>

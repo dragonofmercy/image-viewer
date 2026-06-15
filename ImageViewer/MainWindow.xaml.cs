@@ -562,4 +562,16 @@ public sealed partial class MainWindow : Window
         ToggleFullScreen();
         e.Handled = true;
     }
+
+    private void Window_Prev(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        Context.Instance().LoadPrevImage();
+        e.Handled = true;
+    }
+
+    private void Window_Next(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs e)
+    {
+        Context.Instance().LoadNextImage();
+        e.Handled = true;
+    }
 }
