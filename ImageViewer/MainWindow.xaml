@@ -196,12 +196,20 @@
                                                 <KeyboardAccelerator Key="I" Modifiers="Control" />
                                             </MenuFlyoutItem.KeyboardAccelerators>
                                         </MenuFlyoutItem>
-                                        <MenuFlyoutItem x:Name="ButtonFileSave" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_SAVE')}" IsEnabled="False" Click="ButtonFileSave_Click">
+                                        <MenuFlyoutItem x:Name="ButtonFileSaveDirect" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_SAVE')}" IsEnabled="False" Click="ButtonFileSaveDirect_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74E;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="S" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="ButtonFileSave" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_SAVE_AS')}" IsEnabled="False" Click="ButtonFileSave_Click">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xEA35;" />
                                             </MenuFlyoutItem.Icon>
                                             <MenuFlyoutItem.KeyboardAccelerators>
-                                                <KeyboardAccelerator Key="S" Modifiers="Control" />
+                                                <KeyboardAccelerator Key="S" Modifiers="Control,Shift" />
                                             </MenuFlyoutItem.KeyboardAccelerators>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem x:Name="ButtonImageDelete" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_DELETE')}" IsEnabled="False" Click="ButtonDelete_Click">

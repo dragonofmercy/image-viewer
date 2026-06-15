@@ -454,6 +454,21 @@ public sealed partial class MainWindow : Window
         Context.Instance().RotateFlip(RotateMode.None, FlipMode.Horizontal);
     }
 
+    private async void ButtonFileSaveDirect_Click(object sender, RoutedEventArgs e)
+    {
+        if(SavingProcess) return;
+
+        try
+        {
+            SavingProcess = true;
+            await Context.Instance().Save();
+        }
+        finally
+        {
+            SavingProcess = false;
+        }
+    }
+
     private async void ButtonFileSave_Click(object sender, RoutedEventArgs e)
     {
         if(SavingProcess) return;
