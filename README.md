@@ -54,7 +54,14 @@ For deltas across releases, run `vpk download github --repoUrl https://github.co
 Then upload the contents of `Releases\` to a new GitHub Release.
 
 ## Credits
-ImageSharp by SixLabors: https://github.com/SixLabors/ImageSharp
+
+This project stands on the shoulders of these open-source libraries:
+
+- [ImageSharp](https://github.com/SixLabors/ImageSharp) by SixLabors - image decoding, encoding and processing
+- [Windows Community Toolkit](https://github.com/CommunityToolkit/Windows) - the `ImageCropper` control
+- [SVG](https://github.com/svg-net/SVG) - SVG rasterization
+- [Velopack](https://github.com/velopack/velopack) - installer and auto-updates
+- [WinUIEx](https://github.com/dotMorten/WinUIEx) - WinUI window helpers
 
 ## Support
 
