@@ -535,7 +535,9 @@ internal class Context
 
             MainWindow.TextBlockDimensions.Text = CurrentImage.Width + "x" + CurrentImage.Height;
 
-            MainWindow.UpdateTitle(Path.GetFileName(CurrentFilePath ?? Culture.GetString("SYSTEM_PASTED_CONTENT")));
+            string title = Path.GetFileName(CurrentFilePath ?? Culture.GetString("SYSTEM_PASTED_CONTENT"));
+            if (CurrentImage.Modified) title = "● " + title;
+            MainWindow.UpdateTitle(title);
         }
         else
         {
