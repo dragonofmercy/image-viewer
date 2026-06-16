@@ -780,11 +780,10 @@ internal class Context
             return false;
         }
 
-        // Adopt the saved file as the current document when it lands in the folder we are browsing.
-        if (CurrentFilePath != null && string.Equals(Path.GetDirectoryName(outputFile.Path), Path.GetDirectoryName(CurrentFilePath), StringComparison.OrdinalIgnoreCase))
-        {
-            CurrentFilePath = outputFile.Path;
-        }
+        // Adopt the saved file as the current document so the title, folder listing and navigation
+        // follow it - uniform for pasted/memory-only content and real files, same or different folder.
+        CurrentFilePath = outputFile.Path;
+        MemoryOnly = false;
 
         LoadDirectoryFiles();
 
