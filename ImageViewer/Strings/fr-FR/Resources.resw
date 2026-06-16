@@ -93,6 +93,12 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_DELETE" xml:space="preserve">
     <value>Supprimer l'image</value>
   </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_PRINT" xml:space="preserve">
+    <value>Imprimer l'image</value>
+  </data>
+  <data name="SYSTEM_PRINTING_ERROR" xml:space="preserve">
+    <value>Desole, l'image n'a pas pu etre imprimee</value>
+  </data>
   <data name="FOOTER_TOOLBAR_MENU_ABOUT" xml:space="preserve">
     <value>A propos</value>
   </data>

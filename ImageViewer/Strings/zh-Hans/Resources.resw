@@ -93,6 +93,12 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_DELETE" xml:space="preserve">
     <value>删除图像</value>
   </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_PRINT" xml:space="preserve">
+    <value>打印图像</value>
+  </data>
+  <data name="SYSTEM_PRINTING_ERROR" xml:space="preserve">
+    <value>抱歉，无法打印该图像</value>
+  </data>
   <data name="FOOTER_TOOLBAR_MENU_ABOUT" xml:space="preserve">
     <value>关于</value>
   </data>
