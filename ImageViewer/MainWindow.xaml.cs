@@ -484,6 +484,16 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void ButtonPrint_Click(object sender, RoutedEventArgs e)
+    {
+        await Context.Instance().Print();
+    }
+
+    public Panel GetPrintHost()
+    {
+        return PrintHost;
+    }
+
     private async void ButtonAbout_Click(object sender, RoutedEventArgs e)
     {
         ContentDialog dialogAbout = new()

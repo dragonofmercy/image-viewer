@@ -220,6 +220,14 @@
                                                 <KeyboardAccelerator Key="Delete" />
                                             </MenuFlyoutItem.KeyboardAccelerators>
                                         </MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="ButtonPrint" x:FieldModifier="public" Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_FILE_PRINT')}" IsEnabled="False" Click="ButtonPrint_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE749;" />
+                                            </MenuFlyoutItem.Icon>
+                                            <MenuFlyoutItem.KeyboardAccelerators>
+                                                <KeyboardAccelerator Key="P" Modifiers="Control" />
+                                            </MenuFlyoutItem.KeyboardAccelerators>
+                                        </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />
                                         <MenuFlyoutItem Text="{x:Bind helpers:Culture.GetString('FOOTER_TOOLBAR_MENU_ABOUT')}" Click="ButtonAbout_Click">
                                             <MenuFlyoutItem.Icon>
@@ -353,6 +361,7 @@
                     </CommandBar>
                 </Grid>
             </Grid>
+            <Grid x:Name="PrintHost" />
         </Grid>
     </Page>
 </Window>

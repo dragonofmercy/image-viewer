@@ -40,6 +40,7 @@ internal class Context
     private string[] FolderFiles;
     private int CurrentIndex;
     private bool MemoryOnly;
+    private PrintService PrintService;
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
@@ -530,6 +531,7 @@ internal class Context
             MainWindow.ButtonImageDelete.IsEnabled = true;
             MainWindow.ButtonFileSave.IsEnabled = true;
             MainWindow.ButtonFileSaveDirect.IsEnabled = CurrentImage.Modified;
+            MainWindow.ButtonPrint.IsEnabled = true;
 
             MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
 
@@ -552,6 +554,7 @@ internal class Context
             MainWindow.ButtonImageDelete.IsEnabled = false;
             MainWindow.ButtonFileSave.IsEnabled = false;
             MainWindow.ButtonFileSaveDirect.IsEnabled = false;
+            MainWindow.ButtonPrint.IsEnabled = false;
 
             MainWindow.ButtonFileInfo.IsEnabled = false;
 
@@ -592,6 +595,7 @@ internal class Context
             MainWindow.ButtonImageDelete.IsEnabled = false;
             MainWindow.ButtonFileSave.IsEnabled = false;
             MainWindow.ButtonFileSaveDirect.IsEnabled = false;
+            MainWindow.ButtonPrint.IsEnabled = false;
             MainWindow.ButtonFileInfo.IsEnabled = false;
         }
 
@@ -788,6 +792,36 @@ internal class Context
         LoadDirectoryFiles();
 
         return true;
+    }
+
+    /// <summary>
+    /// Print the current image fit-to-page through the native Windows print dialog.
+    /// </summary>
+    public async Task Print()
+    {
+        if(!HasImageLoaded()) return;
+
+        try
+        {
+            WriteableBitmap bitmap = CurrentImage.GetWriteableBitmap();
+            string jobName = CurrentFilePath != null
+                ? Path.GetFileName(CurrentFilePath)
+                : Culture.GetString("SYSTEM_PASTED_CONTENT");
+
+            PrintService ??= new PrintService(MainWindow, MainWindow.GetPrintHost());
+            await PrintService.PrintAsync(bitmap, jobName);
+        }
+        catch(Exception)
+        {
+            Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
+            {
+                XamlRoot = MainWindow.Content.XamlRoot,
+                RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
+                Content = Culture.GetString("SYSTEM_PRINTING_ERROR"),
+                CloseButtonText = Culture.GetString("SYSTEM_OK")
+            };
+            await errorDialog.ShowAsync();
+        }
     }
 
     /// <summary>
