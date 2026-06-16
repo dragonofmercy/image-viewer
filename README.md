@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/dragonofmercy/image-viewer/main/.github/og-image.png" alt="Image Viewer - fast native image viewer for Windows" width="100%">
+</p>
+
 # Image Viewer for Windows
 
 [![Latest release](https://badgen.net/github/release/dragonofmercy/image-viewer/stable?icon=github)](https://github.com/dragonofmercy/image-viewer/releases/latest)
