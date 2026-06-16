@@ -1,5 +1,6 @@
 ﻿using System;
 using ImageViewer.Helpers;
+using ImageViewer.Services;
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
@@ -128,7 +129,7 @@ public partial class App : Application
         mWindow.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
             Context context = Context.Instance();
-            context.NotificationsManger = new NotificationsManger();
+            context.NotificationsService = new NotificationsService();
             context.CheckUpdate();
         });
     }

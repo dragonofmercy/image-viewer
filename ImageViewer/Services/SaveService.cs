@@ -10,9 +10,10 @@ using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
+using ImageViewer.Helpers;
 using ImageViewer.Wrapper;
 
-namespace ImageViewer.Helpers;
+namespace ImageViewer.Services;
 
 /// <summary>
 /// Owns the image persistence mechanics: the Save As file picker, the per-format quality

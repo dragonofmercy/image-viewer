@@ -8,7 +8,9 @@ using Microsoft.Windows.AppNotifications.Builder;
 using Velopack;
 using Velopack.Sources;
 
-namespace ImageViewer.Helpers;
+using ImageViewer.Helpers;
+
+namespace ImageViewer.Services;
 
 /// <summary>
 /// Owns the Velopack update flow: querying the GitHub source, caching the pending update,
@@ -62,7 +64,7 @@ internal sealed class UpdateService
     /// Background update check honoring the UpdateInterval setting. Errors are swallowed.
     /// Shows the "update available" toast through the supplied notifications manager.
     /// </summary>
-    public async void CheckUpdate(NotificationsManger notifications)
+    public async void CheckUpdate(NotificationsService notifications)
     {
         if (!UpdateManager.IsInstalled) return;
 

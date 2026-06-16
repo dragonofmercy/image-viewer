@@ -1,4 +1,4 @@
-using ImageViewer.Helpers;
+using ImageViewer.Services;
 using Xunit;
 
 namespace ImageViewer.Tests;

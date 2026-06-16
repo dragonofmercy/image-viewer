@@ -4,13 +4,15 @@ using System.Threading.Tasks;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 
-namespace ImageViewer.Helpers;
+using ImageViewer.Helpers;
 
-internal class NotificationsManger
+namespace ImageViewer.Services;
+
+internal class NotificationsService
 {
     public readonly AppNotificationManager Runtime;
 
-    public NotificationsManger()
+    public NotificationsService()
     {
         AppNotificationManager notificationManager = AppNotificationManager.Default;
         notificationManager.NotificationInvoked += NotificationManager_NotificationInvoked;

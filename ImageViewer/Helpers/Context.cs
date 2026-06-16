@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.Processing;
 
 using Velopack;
 
+using ImageViewer.Services;
 using ImageViewer.Utilities;
 using ImageViewer.Wrapper;
 
@@ -43,7 +44,7 @@ internal class Context
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
-    public NotificationsManger NotificationsManger;
+    public NotificationsService NotificationsService;
 
     // The update flow (Velopack manager, interval check, toast) lives in UpdateService.
     // Built lazily so the Velopack assemblies are not loaded on the startup path.
@@ -601,7 +602,7 @@ internal class Context
     /// <summary>
     /// Background update check honoring the UpdateInterval setting. Errors are swallowed.
     /// </summary>
-    public void CheckUpdate() => UpdateService.CheckUpdate(NotificationsManger);
+    public void CheckUpdate() => UpdateService.CheckUpdate(NotificationsService);
 
     /// <summary>
     /// Overwrite the current file in place. No-op unless the image was modified.

@@ -15,7 +15,7 @@ using WinRT.Interop;
 
 using XamlImage = Microsoft.UI.Xaml.Controls.Image;
 
-namespace ImageViewer.Helpers;
+namespace ImageViewer.Services;
 
 /// <summary>
 /// Isolates the WinUI 3 print plumbing: prints a single image, fit-to-page, through the

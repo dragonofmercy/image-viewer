@@ -233,7 +233,7 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            await Context.Instance().NotificationsManger.Clear();
+            await Context.Instance().NotificationsService.Clear();
         }
         catch (Exception ex)
         {
