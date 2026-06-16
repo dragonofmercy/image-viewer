@@ -62,6 +62,21 @@
                     ValueChanged="NumOptionsJpegQuality_ValueChanged">
                 </NumberBox>
             </controls:SettingsCard>
+            <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_WEBP_QUALITY')}">
+                <controls:SettingsCard.Icon>
+                    <FontIcon Glyph="&#xE8B9;" />
+                </controls:SettingsCard.Icon>
+                <NumberBox
+                    Name="NumOptionsWebpQuality"
+                    MinWidth="{ StaticResource SettingActionControlMinWidth }"
+                    Minimum="1"
+                    Maximum="100"
+                    SmallChange="1"
+                    LargeChange="10"
+                    SpinButtonPlacementMode="Compact"
+                    ValueChanged="NumOptionsWebpQuality_ValueChanged">
+                </NumberBox>
+            </controls:SettingsCard>
         </controls:SettingsGroup>
     </StackPanel>
 </Page>
