@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 using SixLabors.ImageSharp.Processing;
@@ -146,6 +147,26 @@ public class ImageTests
 
             await image.Save(dir.File("modflag-out.png"), ".png");
             Assert.False(image.Modified);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task Modified_TrueAfterMemoryLoad()
+    {
+        // A memory/clipboard-loaded image has no backing file: it must start modified so the
+        // title shows the unsaved indicator and Save routes to Save As.
+        using TempDir dir = new();
+        string path = FixtureFactory.Save(dir, "mem.png", 4, 2);
+
+        using MemoryStream stream = new(File.ReadAllBytes(path));
+        ViewerImage image = await ImageLoader.LoadAsync(stream.AsInputStream());
+        try
+        {
+            Assert.True(image.Modified);
         }
         finally
         {

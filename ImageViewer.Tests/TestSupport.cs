@@ -109,7 +109,13 @@ public static class FixtureFactory
 // reachable here only through InternalsVisibleTo("ImageViewer.Tests").
 internal static class ImageLoader
 {
-    public static async Task<ViewerImage> LoadAsync(string path, int timeoutMs = 15000)
+    public static Task<ViewerImage> LoadAsync(string path, int timeoutMs = 15000)
+        => LoadAsync(img => img.Load(path), path, timeoutMs);
+
+    public static Task<ViewerImage> LoadAsync(Windows.Storage.Streams.IInputStream stream, int timeoutMs = 15000)
+        => LoadAsync(img => img.Load(stream), "memory stream", timeoutMs);
+
+    private static async Task<ViewerImage> LoadAsync(Action<ViewerImage> load, string what, int timeoutMs)
     {
         ViewerImage image = new();
         TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -123,12 +129,12 @@ internal static class ImageLoader
 
         image.ImageLoaded += OnLoaded;
         image.ImageFailed += OnFailed;
-        image.Load(path);
+        load(image);
 
         Task completed = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
         if (completed != tcs.Task)
         {
-            throw new TimeoutException("Image load timed out: " + path);
+            throw new TimeoutException("Image load timed out: " + what);
         }
 
         await tcs.Task; // surface any load exception

@@ -536,8 +536,8 @@ internal class Context
             MainWindow.TextBlockDimensions.Text = CurrentImage.Width + "x" + CurrentImage.Height;
 
             string title = Path.GetFileName(CurrentFilePath ?? Culture.GetString("SYSTEM_PASTED_CONTENT"));
-            // Indicator only for a real file with unsaved edits; pasted/memory-only content has no file (Save routes to Save As).
-            if (CurrentFilePath != null && CurrentImage.Modified) title = "● " + title;
+            // Unsaved indicator: real files turn dirty on edit, pasted/memory images start dirty (see Image load).
+            if (CurrentImage.Modified) title = "● " + title;
             MainWindow.UpdateTitle(title);
         }
         else

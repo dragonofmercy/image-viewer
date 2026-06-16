@@ -293,6 +293,9 @@ internal partial class Image
             }
 
             WorkingImageLoaded = true;
+            // Memory/clipboard source has no backing file: start dirty so the title shows the
+            // unsaved indicator and Save routes to Save As (cleared by the first Save).
+            Modified = true;
             ImageLoaded?.Invoke(this, EventArgs.Empty);
         }
         catch(Exception e)
