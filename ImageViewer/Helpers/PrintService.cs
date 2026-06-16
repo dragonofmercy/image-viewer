@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Printing;
 
+using Windows.Foundation;
 using Windows.Graphics.Printing;
 
 using WinRT.Interop;
@@ -23,6 +24,9 @@ namespace ImageViewer.Helpers;
 /// </summary>
 internal sealed class PrintService
 {
+    // White margin kept around the image on the page (~0.5 inch at 96 DIP/inch).
+    private const double PageMarginDip = 48;
+
     private readonly IntPtr Hwnd;
 
     private readonly Grid PrintPage;
@@ -38,7 +42,7 @@ internal sealed class PrintService
     {
         Hwnd = WindowNative.GetWindowHandle(window);
 
-        PrintImage = new XamlImage { Stretch = Stretch.Uniform };
+        PrintImage = new XamlImage { Stretch = Stretch.Uniform, Margin = new Thickness(PageMarginDip) };
         PrintPage = new Grid
         {
             Background = new SolidColorBrush(Colors.White)
@@ -82,8 +86,17 @@ internal sealed class PrintService
     {
         // Size the page to the printable area; Stretch.Uniform fits the image inside it.
         PrintPageDescription desc = e.PrintTaskOptions.GetPageDescription(0);
-        PrintPage.Width = desc.ImageableRect.Width;
-        PrintPage.Height = desc.ImageableRect.Height;
+        Size pageSize = new(desc.ImageableRect.Width, desc.ImageableRect.Height);
+
+        PrintPage.Width = pageSize.Width;
+        PrintPage.Height = pageSize.Height;
+
+        // Force the off-screen page to lay out at the printable size now. Without this the
+        // print framework captures the image at its native bitmap size (the host Canvas
+        // measures children unbounded), so it prints cropped instead of fit-to-page.
+        PrintPage.Measure(pageSize);
+        PrintPage.Arrange(new Rect(new Point(0, 0), pageSize));
+        PrintPage.UpdateLayout();
 
         PrintDocument.SetPreviewPageCount(1, PreviewPageCountType.Final);
     }
