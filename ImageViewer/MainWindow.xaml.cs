@@ -22,6 +22,7 @@ using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
 using ImageViewer.Helpers;
+using ImageViewer.Utilities;
 using ImageViewer.Views;
 
 namespace ImageViewer;
@@ -125,7 +126,7 @@ public sealed partial class MainWindow : Window
 
     public void UpdateTitle(string prefix = null)
     {
-        Title = string.IsNullOrEmpty(prefix) ? Context.GetProductName() : string.Concat(prefix, " - ", Context.GetProductName());
+        Title = string.IsNullOrEmpty(prefix) ? AppInfo.ProductName : string.Concat(prefix, " - ", AppInfo.ProductName);
         AppTitleBarText.Text = Title;
     }
 

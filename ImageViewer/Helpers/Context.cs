@@ -342,7 +342,7 @@ internal class Context
         dict[ImageInfos.FileName] = Path.GetFileName(CurrentFilePath);
         dict[ImageInfos.FolderPath] = Path.GetDirectoryName(CurrentFilePath);
         dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString(CultureInfo.CurrentCulture);
-        dict[ImageInfos.ImageSize] = HumanizeBytes(oFileInfo.Length);
+        dict[ImageInfos.ImageSize] = Format.HumanizeBytes(oFileInfo.Length);
         dict[ImageInfos.ImageDimensions] = CurrentImage.GetImageDimensionsAsString();
         dict[ImageInfos.ImageDepth] = CurrentImage.GetDepthAsString();
 
@@ -456,7 +456,7 @@ internal class Context
     /// </summary>
     public void Zoom(double factor)
     {
-        MainWindow.ScrollView.ZoomToFactor(RoundToTen((MainWindow.ScrollView.ZoomFactor + factor) * 100) / 100);
+        MainWindow.ScrollView.ZoomToFactor(Format.RoundToTen((MainWindow.ScrollView.ZoomFactor + factor) * 100) / 100);
     }
 
     /// <summary>
@@ -797,47 +797,6 @@ internal class Context
         if (!ReferenceEquals(sender, CurrentImage)) return;
 
         ReloadImageView();
-    }
-
-    /// <summary>
-    /// Round value to unit 10.
-    /// </summary>
-    public static float RoundToTen(double input)
-    {
-        return (int)(Math.Round(input) / 10.0) * 10;
-    }
-
-    /// <summary>
-    /// Get product name
-    /// </summary>
-    public static string GetProductName()
-    {
-        return FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).ProductName;
-    }
-
-    /// <summary>
-    /// Get product version
-    /// </summary>
-    public static string GetProductVersion()
-    {
-        return FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).ProductVersion;
-    }
-
-    /// <summary>
-    /// Get a human readable byte value.
-    /// </summary>
-    public static string HumanizeBytes(double bytes)
-    {
-        int order = 0;
-        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
-
-        while (bytes >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            bytes /= 1024;
-        }
-
-        return $"{bytes:0.#} {sizes[order]}";
     }
 
     /// <summary>

@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:ImageViewer.Helpers"
     xmlns:controls="using:ImageViewer.Controls"
+    xmlns:utilities="using:ImageViewer.Utilities"
     mc:Ignorable="d"
     Background="{ThemeResource WindowBackgroundBrush}">
     <StackPanel Orientation="Vertical" Padding="{ ThemeResource ContentDialogContentPadding }">
@@ -18,7 +19,7 @@
             </Grid.ColumnDefinitions>
             <ImageIcon Grid.Column="0" Width="96" Height="96" Source="/ImageViewer.ico" />
             <StackPanel Margin="20,0,0,0" Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-                <TextBlock FontSize="16" FontWeight="Bold" Text="{ x:Bind helpers:Context.GetProductName() }" />
+                <TextBlock FontSize="16" FontWeight="Bold" Text="{ x:Bind utilities:AppInfo.ProductName }" />
                 <TextBlock FontSize="12">By DragonOfMercy</TextBlock>
                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                     <HyperlinkButton NavigateUri="https://github.com/dragonofmercy/image-viewer" Margin="-12,0,0,0" FontWeight="bold" FontSize="13" Content="{x:Bind helpers:Culture.GetString('ABOUT_LINK_GITHUB_REPOSITORY')}" />

@@ -18,7 +18,7 @@ public sealed partial class DialogAbout : Page
         InitializeComponent();
         Dialog = e;
 
-        UpdateSettingsCard.Label = string.Concat("v", Context.GetProductVersion());
+        UpdateSettingsCard.Label = string.Concat("v", AppInfo.ProductVersion);
         UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
 
         if(Context.Instance().PendingUpdate != null)
