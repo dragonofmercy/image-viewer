@@ -10,7 +10,7 @@
 Simple image viewer for Windows.  
 Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp and svg
 
-![](/documentation/assets/screen1.jpg)
+![](/.github/screen1.jpg)
 
 ## How to build
 
