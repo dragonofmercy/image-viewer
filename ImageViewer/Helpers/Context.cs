@@ -694,8 +694,14 @@ internal class Context
 
         try
         {
-            // JPEG re-encodes at the quality configured in Settings; other formats ignore the parameter.
-            await CurrentImage.Save(CurrentFilePath, type, type == ".jpg" ? Settings.JpegQuality : null);
+            // JPEG and WebP re-encode at their configured quality; other formats ignore the parameter.
+            int? quality = type switch
+            {
+                ".jpg" => Settings.JpegQuality,
+                ".webp" => Settings.WebpQuality,
+                _ => null
+            };
+            await CurrentImage.Save(CurrentFilePath, type, quality);
         }
         catch (Exception ex)
         {
@@ -743,8 +749,13 @@ internal class Context
 
         if (!Image.SaveFileTypes.Contains(outputFileType)) return false;
 
-        // JPEG re-encodes at the quality configured in Settings; other formats ignore the parameter.
-        int? quality = outputFileType == ".jpg" ? Settings.JpegQuality : null;
+        // JPEG and WebP re-encode at their configured quality; other formats ignore the parameter.
+        int? quality = outputFileType switch
+        {
+            ".jpg" => Settings.JpegQuality,
+            ".webp" => Settings.WebpQuality,
+            _ => null
+        };
 
         try
         {
