@@ -47,6 +47,9 @@
                     SelectionChanged="CboOptionsUpdateInterval_SelectionChanged">
                 </ComboBox>
             </controls:SettingsCard>
+        </controls:SettingsGroup>
+
+        <controls:SettingsGroup Title="{x:Bind helpers:Culture.GetString('SETTINGS_GROUP_SAVE')}">
             <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_JPEG_QUALITY')}">
                 <controls:SettingsCard.Icon>
                     <FontIcon Glyph="&#xE8B9;" />

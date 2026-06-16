@@ -78,6 +78,9 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
     <value>Guardar</value>
   </data>
+  <data name="SETTINGS_GROUP_SAVE" xml:space="preserve">
+    <value>Opciones de guardado</value>
+  </data>
   <data name="SETTINGS_FIELD_JPEG_QUALITY" xml:space="preserve">
     <value>Calidad JPEG</value>
   </data>

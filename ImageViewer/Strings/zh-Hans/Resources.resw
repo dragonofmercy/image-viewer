@@ -78,6 +78,9 @@
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
     <value>保存</value>
   </data>
+  <data name="SETTINGS_GROUP_SAVE" xml:space="preserve">
+    <value>保存选项</value>
+  </data>
   <data name="SETTINGS_FIELD_JPEG_QUALITY" xml:space="preserve">
     <value>JPEG 质量</value>
   </data>
