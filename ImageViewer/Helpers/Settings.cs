@@ -107,25 +107,20 @@ internal class Settings
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_LANGUAGE, value);
     }
 
+    internal static int ClampQuality(object raw, int defaultValue)
+    {
+        return raw != null && int.TryParse(raw.ToString(), out int q) ? System.Math.Clamp(q, 1, 100) : defaultValue;
+    }
+
     public static int JpegQuality
     {
-        get
-        {
-            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, null);
-            return tmp != null && int.TryParse(tmp.ToString(), out int q) ? System.Math.Clamp(q, 1, 100) : JPEG_QUALITY_DEFAULT;
-        }
-
+        get => ClampQuality(Registry.GetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, null), JPEG_QUALITY_DEFAULT);
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, System.Math.Clamp(value, 1, 100));
     }
 
     public static int WebpQuality
     {
-        get
-        {
-            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, null);
-            return tmp != null && int.TryParse(tmp.ToString(), out int q) ? System.Math.Clamp(q, 1, 100) : WEBP_QUALITY_DEFAULT;
-        }
-
+        get => ClampQuality(Registry.GetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, null), WEBP_QUALITY_DEFAULT);
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, System.Math.Clamp(value, 1, 100));
     }
 }
