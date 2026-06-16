@@ -39,6 +39,7 @@ internal class Context
     private int CurrentIndex;
     private bool MemoryOnly;
     private PrintService PrintService;
+    private SaveService _SaveService;
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
@@ -613,39 +614,13 @@ internal class Context
         // Pasted content has no source file: route to Save As.
         if (CurrentFilePath == null) return await SaveAs();
 
-        string type = Path.GetExtension(CurrentFilePath).ToLowerInvariant();
-        if (type == ".jpeg") type = ".jpg";
-        if (type == ".tif") type = ".tiff";
+        string type = SaveService.NormalizeExtension(Path.GetExtension(CurrentFilePath));
 
         // Source format we cannot re-encode (svg/ico): route to Save As.
         if (!Image.SaveFileTypes.Contains(type)) return await SaveAs();
 
-        try
-        {
-            // JPEG and WebP re-encode at their configured quality; other formats ignore the parameter.
-            int? quality = type switch
-            {
-                ".jpg" => Settings.JpegQuality,
-                ".webp" => Settings.WebpQuality,
-                _ => null
-            };
-            await CurrentImage.Save(CurrentFilePath, type, quality);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Save failed: {ex.Message}");
-
-            Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
-            {
-                XamlRoot = MainWindow.Content.XamlRoot,
-                RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
-                Content = Culture.GetString("SYSTEM_SAVING_ERROR"),
-                CloseButtonText = Culture.GetString("SYSTEM_OK")
-            };
-
-            await errorDialog.ShowAsync();
-            return false;
-        }
+        _SaveService ??= new SaveService(MainWindow);
+        if (!await _SaveService.WriteAsync(CurrentImage, CurrentFilePath, type)) return false;
 
         UpdateButtonsAccessiblity();
         return true;
@@ -658,56 +633,18 @@ internal class Context
     {
         if (!HasImageLoaded()) return false;
 
-        FileSavePicker saveFilePicker = new()
-        {
-            SuggestedFileName = CurrentFilePath != null ? Path.GetFileNameWithoutExtension(CurrentFilePath) : DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss")
-        };
+        string suggestedName = CurrentFilePath != null ? Path.GetFileNameWithoutExtension(CurrentFilePath) : DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss");
 
-        foreach (string fileType in Image.SaveFileTypes)
-        {
-            saveFilePicker.FileTypeChoices.Add(Culture.GetString("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT").Replace("{0}", fileType.Remove(0, 1).ToUpper()), new List<string>{ fileType });
-        }
+        _SaveService ??= new SaveService(MainWindow);
+        (string Path, string Type)? target = await _SaveService.PickSaveTargetAsync(suggestedName);
 
-        InitializeWithWindow.Initialize(saveFilePicker, WindowNative.GetWindowHandle(MainWindow));
-        StorageFile outputFile = await saveFilePicker.PickSaveFileAsync();
+        if (target == null) return false;
 
-        if (outputFile == null) return false;
-
-        string outputFileType = outputFile.FileType.ToLowerInvariant();
-
-        if (!Image.SaveFileTypes.Contains(outputFileType)) return false;
-
-        // JPEG and WebP re-encode at their configured quality; other formats ignore the parameter.
-        int? quality = outputFileType switch
-        {
-            ".jpg" => Settings.JpegQuality,
-            ".webp" => Settings.WebpQuality,
-            _ => null
-        };
-
-        try
-        {
-            await CurrentImage.Save(outputFile.Path, outputFileType, quality);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Save failed: {ex.Message}");
-
-            Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
-            {
-                XamlRoot = MainWindow.Content.XamlRoot,
-                RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
-                Content = Culture.GetString("SYSTEM_SAVING_ERROR"),
-                CloseButtonText = Culture.GetString("SYSTEM_OK")
-            };
-
-            await errorDialog.ShowAsync();
-            return false;
-        }
+        if (!await _SaveService.WriteAsync(CurrentImage, target.Value.Path, target.Value.Type)) return false;
 
         // Adopt the saved file as the current document so the title, folder listing and navigation
         // follow it - uniform for pasted/memory-only content and real files, same or different folder.
-        CurrentFilePath = outputFile.Path;
+        CurrentFilePath = target.Value.Path;
         MemoryOnly = false;
 
         LoadDirectoryFiles();
