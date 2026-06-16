@@ -20,6 +20,8 @@ internal class Settings
     internal const string H_VALUE_JPEG_QUALITY = "JpegQuality";
     internal const string UPDATE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     internal const int JPEG_QUALITY_DEFAULT = 100;
+    internal const string H_VALUE_WEBP_QUALITY = "WebpQuality";
+    internal const int WEBP_QUALITY_DEFAULT = 80;
 
     public static ElementTheme Theme
     {
@@ -114,5 +116,16 @@ internal class Settings
         }
 
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, System.Math.Clamp(value, 1, 100));
+    }
+
+    public static int WebpQuality
+    {
+        get
+        {
+            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, null);
+            return tmp != null && int.TryParse(tmp.ToString(), out int q) ? System.Math.Clamp(q, 1, 100) : WEBP_QUALITY_DEFAULT;
+        }
+
+        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, System.Math.Clamp(value, 1, 100));
     }
 }
