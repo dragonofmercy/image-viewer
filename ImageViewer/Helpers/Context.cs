@@ -777,6 +777,12 @@ internal class Context
             return false;
         }
 
+        // Adopt the saved file as the current document when it lands in the folder we are browsing.
+        if (CurrentFilePath != null && string.Equals(Path.GetDirectoryName(outputFile.Path), Path.GetDirectoryName(CurrentFilePath), StringComparison.OrdinalIgnoreCase))
+        {
+            CurrentFilePath = outputFile.Path;
+        }
+
         LoadDirectoryFiles();
 
         return true;
