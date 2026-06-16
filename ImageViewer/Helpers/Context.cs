@@ -41,6 +41,7 @@ internal class Context
     private bool MemoryOnly;
     private PrintService PrintService;
     private SaveService _SaveService;
+    private ClipboardService _ClipboardService;
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
@@ -261,15 +262,8 @@ internal class Context
     {
         if (!HasImageLoaded()) return;
 
-        try
-        {
-            byte[] pixels = CurrentImage.GetBgra32Pixels(out int width, out int height);
-            ClipboardHelper.SetImageAsDib(WindowNative.GetWindowHandle(MainWindow), pixels, width, height);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Copy to clipboard failed: {ex.Message}");
-        }
+        _ClipboardService ??= new ClipboardService(MainWindow);
+        _ClipboardService.CopyImage(CurrentImage);
     }
 
     /// <summary>
