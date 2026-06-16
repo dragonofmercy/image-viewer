@@ -39,9 +39,14 @@ internal class Context
     private string[] FolderFiles;
     private int CurrentIndex;
     private bool MemoryOnly;
-    private PrintService PrintService;
+
+    // Window-bound services, all built lazily on first use through the same backing-field property pattern.
+    private PrintService _PrintService;
+    private PrintService PrintService => _PrintService ??= new PrintService(MainWindow, MainWindow.GetPrintHost());
     private SaveService _SaveService;
+    private SaveService SaveService => _SaveService ??= new SaveService(MainWindow);
     private ClipboardService _ClipboardService;
+    private ClipboardService ClipboardService => _ClipboardService ??= new ClipboardService(MainWindow);
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
@@ -262,8 +267,7 @@ internal class Context
     {
         if (!HasImageLoaded()) return;
 
-        _ClipboardService ??= new ClipboardService(MainWindow);
-        _ClipboardService.CopyImage(CurrentImage);
+        ClipboardService.CopyImage(CurrentImage);
     }
 
     /// <summary>
@@ -614,8 +618,7 @@ internal class Context
         // Source format we cannot re-encode (svg/ico): route to Save As.
         if (!Image.SaveFileTypes.Contains(type)) return await SaveAs();
 
-        _SaveService ??= new SaveService(MainWindow);
-        if (!await _SaveService.WriteAsync(CurrentImage, CurrentFilePath, type)) return false;
+        if (!await SaveService.WriteAsync(CurrentImage, CurrentFilePath, type)) return false;
 
         UpdateButtonsAccessiblity();
         return true;
@@ -630,12 +633,11 @@ internal class Context
 
         string suggestedName = CurrentFilePath != null ? Path.GetFileNameWithoutExtension(CurrentFilePath) : DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss");
 
-        _SaveService ??= new SaveService(MainWindow);
-        (string Path, string Type)? target = await _SaveService.PickSaveTargetAsync(suggestedName);
+        (string Path, string Type)? target = await SaveService.PickSaveTargetAsync(suggestedName);
 
         if (target == null) return false;
 
-        if (!await _SaveService.WriteAsync(CurrentImage, target.Value.Path, target.Value.Type)) return false;
+        if (!await SaveService.WriteAsync(CurrentImage, target.Value.Path, target.Value.Type)) return false;
 
         // Adopt the saved file as the current document so the title, folder listing and navigation
         // follow it - uniform for pasted/memory-only content and real files, same or different folder.
@@ -661,7 +663,6 @@ internal class Context
                 ? Path.GetFileName(CurrentFilePath)
                 : Culture.GetString("SYSTEM_PASTED_CONTENT");
 
-            PrintService ??= new PrintService(MainWindow, MainWindow.GetPrintHost());
             await PrintService.PrintAsync(bitmap, jobName);
         }
         catch(Exception)

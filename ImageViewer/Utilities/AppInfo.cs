@@ -8,7 +8,11 @@ namespace ImageViewer.Utilities;
 /// </summary>
 internal static class AppInfo
 {
-    public static string ProductName => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductName;
+    // The executable's version resource never changes at runtime, so read it once: ProductName
+    // is reached on the navigation hot path through MainWindow.UpdateTitle.
+    private static readonly FileVersionInfo Info = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
 
-    public static string ProductVersion => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
+    public static string ProductName => Info.ProductName;
+
+    public static string ProductVersion => Info.ProductVersion;
 }
