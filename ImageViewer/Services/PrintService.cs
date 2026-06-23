@@ -13,6 +13,8 @@ using Windows.Graphics.Printing;
 
 using WinRT.Interop;
 
+using ImageViewer.Helpers;
+
 using XamlImage = Microsoft.UI.Xaml.Controls.Image;
 
 namespace ImageViewer.Services;
@@ -62,6 +64,9 @@ internal sealed class PrintService
         PrintImage.Source = bitmap;
 
         EnsureRegistered();
+
+        // Let the Ctrl+P accelerator's KeyUp be processed before the modal print UI grabs focus.
+        await UIThread.YieldAsync();
 
         await PrintManagerInterop.ShowPrintUIForWindowAsync(Hwnd);
     }

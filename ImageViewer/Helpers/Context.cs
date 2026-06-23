@@ -248,6 +248,9 @@ internal class Context
             openFilePicker.FileTypeFilter.Add(fileType);
         }
 
+        // Let the Ctrl+O accelerator's KeyUp be processed before the modal picker grabs focus.
+        await UIThread.YieldAsync();
+
         StorageFile selectedFile = await openFilePicker.PickSingleFileAsync();
 
         if (selectedFile == null || !CheckFileExtension(selectedFile.Path)) return;

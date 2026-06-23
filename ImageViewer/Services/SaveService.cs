@@ -76,6 +76,10 @@ internal sealed class SaveService
         }
 
         InitializeWithWindow.Initialize(saveFilePicker, WindowNative.GetWindowHandle(Window));
+
+        // Let the Ctrl+S accelerator's KeyUp be processed before the modal picker grabs focus.
+        await UIThread.YieldAsync();
+
         StorageFile outputFile = await saveFilePicker.PickSaveFileAsync();
 
         if (outputFile == null) return null;
