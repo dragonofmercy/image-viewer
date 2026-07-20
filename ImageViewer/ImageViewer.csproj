@@ -92,7 +92,7 @@
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <ItemGroup>
-            <RemovingFiles Include="$(OutDir)**\*.mui" Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui;$(OutDir)de-DE\*.mui;$(OutDir)de\*.mui;$(OutDir)es-ES\*.mui;$(OutDir)es\*.mui;$(OutDir)it-IT\*.mui;$(OutDir)it\*.mui;$(OutDir)zh-Hans\*.mui;$(OutDir)zh-CN\*.mui" />
+            <RemovingFiles Include="$(OutDir)**\*.mui" Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui;$(OutDir)de-DE\*.mui;$(OutDir)de\*.mui;$(OutDir)es-ES\*.mui;$(OutDir)es\*.mui;$(OutDir)it-IT\*.mui;$(OutDir)it\*.mui;$(OutDir)pt-BR\*.mui;$(OutDir)pt\*.mui;$(OutDir)zh-Hans\*.mui;$(OutDir)zh-CN\*.mui" />
             <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
         </ItemGroup>
         <RemoveDir Directories="@(RemovingFolders)" Condition="'@(RemovingFolders)'!=''" />
@@ -107,7 +107,7 @@
 
     <Target Name="PostPublish" AfterTargets="Publish">
         <ItemGroup>
-            <PublishMuiToRemove Include="$(PublishDir)**\*.mui" Exclude="$(PublishDir)en-us\*.mui;$(PublishDir)fr-FR\*.mui;$(PublishDir)fr\*.mui;$(PublishDir)de-DE\*.mui;$(PublishDir)de\*.mui;$(PublishDir)es-ES\*.mui;$(PublishDir)es\*.mui;$(PublishDir)it-IT\*.mui;$(PublishDir)it\*.mui;$(PublishDir)zh-Hans\*.mui;$(PublishDir)zh-CN\*.mui" />
+            <PublishMuiToRemove Include="$(PublishDir)**\*.mui" Exclude="$(PublishDir)en-us\*.mui;$(PublishDir)fr-FR\*.mui;$(PublishDir)fr\*.mui;$(PublishDir)de-DE\*.mui;$(PublishDir)de\*.mui;$(PublishDir)es-ES\*.mui;$(PublishDir)es\*.mui;$(PublishDir)it-IT\*.mui;$(PublishDir)it\*.mui;$(PublishDir)pt-BR\*.mui;$(PublishDir)pt\*.mui;$(PublishDir)zh-Hans\*.mui;$(PublishDir)zh-CN\*.mui" />
             <PublishMuiFolders Include="@(PublishMuiToRemove->'%(RootDir)%(Directory)')" />
         </ItemGroup>
         <RemoveDir Directories="@(PublishMuiFolders)" Condition="'@(PublishMuiFolders)'!=''" />
