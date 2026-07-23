@@ -10,7 +10,7 @@ internal class Culture
     private static ResourceContext _Context;
 
     // Supported BCP-47 tags; en-US is the default language.
-    private static readonly string[] AvailableLanguages = { "en-US", "fr-FR", "zh-Hans", "de-DE", "es-ES", "it-IT", "pt-BR" };
+    private static readonly string[] AvailableLanguages = { "en-US", "fr-FR", "zh-Hans", "de-DE", "es-ES", "it-IT", "pt-BR", "ru-RU" };
 
     public static void Init()
     {
