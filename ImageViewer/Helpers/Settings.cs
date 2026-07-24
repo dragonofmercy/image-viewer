@@ -22,6 +22,7 @@ internal class Settings
     internal const int JPEG_QUALITY_DEFAULT = 100;
     internal const string H_VALUE_WEBP_QUALITY = "WebpQuality";
     internal const int WEBP_QUALITY_DEFAULT = 80;
+    internal const string H_VALUE_FILE_ASSOC_STAMP = "FileAssocStamp";
 
     public static ElementTheme Theme
     {
@@ -122,5 +123,16 @@ internal class Settings
     {
         get => ClampQuality(Registry.GetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, null), WEBP_QUALITY_DEFAULT);
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, System.Math.Clamp(value, 1, 100));
+    }
+
+    /// <summary>
+    /// Layout version + executable path of the last successful file-association registration.
+    /// Null or empty when the app is not registered: Registry.GetValue returns null when the
+    /// key itself does not exist yet. See Services.FileAssociationService.
+    /// </summary>
+    public static string FileAssocStamp
+    {
+        get => (string)Registry.GetValue(HKEY_APP_PATH, H_VALUE_FILE_ASSOC_STAMP, "");
+        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_FILE_ASSOC_STAMP, value);
     }
 }
