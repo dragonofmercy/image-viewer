@@ -78,7 +78,19 @@ public class FileAssociationPlanTests
         foreach (string extension in Image.SupportedFileTypes)
         {
             string extensionKey = FileAssociationPlan.ExtensionKeyPath(extension);
-            Assert.DoesNotContain(entries, e => e.KeyPath == extensionKey && e.ValueName == null);
+            Assert.DoesNotContain(entries, e => e.KeyPath == extensionKey && string.IsNullOrEmpty(e.ValueName));
+        }
+    }
+
+    // Adding a format to Image.SupportedFileTypes without a matching TypeLabels entry would
+    // silently ship the fallback "Image file" label. Pin completeness the same way CultureTests
+    // pins resource-key parity across languages.
+    [Fact]
+    public void LabelFor_HasARealLabelForEverySupportedExtension()
+    {
+        foreach (string extension in Image.SupportedFileTypes)
+        {
+            Assert.NotEqual("Image file", FileAssociationPlan.LabelFor(extension));
         }
     }
 

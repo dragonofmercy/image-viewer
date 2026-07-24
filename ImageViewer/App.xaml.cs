@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using ImageViewer.Helpers;
 using ImageViewer.Services;
 
@@ -135,8 +136,10 @@ public partial class App : Application
             context.CheckUpdate();
 #if !DEBUG
             // Debug builds never register: ImageViewer.Debug.exe must not show up in the
-            // developer's own "Open with" menu.
-            FileAssociationService.EnsureRegistered();
+            // developer's own "Open with" menu. Registration performs ~58 registry writes plus
+            // a global SHChangeNotify flush - none of it needs the UI thread, so run it off the
+            // dispatcher entirely rather than just deferring it.
+            Task.Run(FileAssociationService.EnsureRegistered);
 #endif
         });
     }

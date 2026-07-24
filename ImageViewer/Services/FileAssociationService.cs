@@ -34,6 +34,12 @@ internal static class FileAssociationService
     {
         try
         {
+            // A null or empty ProcessPath makes FileAssociationPlan.ApplicationKeyPath resolve
+            // to "Software\Classes\Applications\" (Path.GetFileName("") is ""), which .NET
+            // treats as the shared Applications key itself. Writing to it would stamp values
+            // onto every per-user Open With registration on the machine, so bail out instead.
+            if (string.IsNullOrEmpty(Environment.ProcessPath)) return;
+
             FileAssociationPlan plan = BuildPlan();
 
             if (IsRegistered(plan)) return;
@@ -61,6 +67,12 @@ internal static class FileAssociationService
     {
         try
         {
+            // Same guard as EnsureRegistered: an empty ProcessPath would resolve
+            // ApplicationKeyPath to the shared "Software\Classes\Applications\" key, and
+            // deleting that tree would wipe every per-user Open With registration on the
+            // machine, not just ours.
+            if (string.IsNullOrEmpty(Environment.ProcessPath)) return;
+
             FileAssociationPlan plan = BuildPlan();
 
             // Clear the stamp before touching the registry: this whole method is wrapped in a
@@ -86,14 +98,26 @@ internal static class FileAssociationService
                 // ProgIDs the default handler.
                 using (RegistryKey extensionKey = Registry.CurrentUser.OpenSubKey(FileAssociationPlan.ExtensionKeyPath(extension), writable: true))
                 {
-                    if (extensionKey?.GetValue(null) as string == progId)
+                    if (string.Equals(extensionKey?.GetValue(null) as string, progId, StringComparison.OrdinalIgnoreCase))
                     {
                         extensionKey.DeleteValue(string.Empty, throwOnMissingValue: false);
                     }
                 }
             }
 
-            Registry.CurrentUser.DeleteSubKeyTree(plan.ApplicationKeyPath, throwOnMissingSubKey: false);
+            // Software\Classes\Applications\<basename> is a shared namespace keyed only by
+            // executable file name - Windows itself populates it whenever a user picks an app
+            // via "Open with > Choose another app > Browse". A foreign application that
+            // happens to share our exe's basename could have registered there too, so only
+            // delete the tree if its open command still points at our own executable.
+            using (RegistryKey applicationKey = Registry.CurrentUser.OpenSubKey($@"{plan.ApplicationKeyPath}\shell\open\command"))
+            {
+                if (plan.CommandMatchesCurrentExe(applicationKey?.GetValue(null) as string))
+                {
+                    Registry.CurrentUser.DeleteSubKeyTree(plan.ApplicationKeyPath, throwOnMissingSubKey: false);
+                }
+            }
+
             Notify();
         }
         catch (Exception ex)

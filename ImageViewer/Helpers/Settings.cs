@@ -127,7 +127,8 @@ internal class Settings
 
     /// <summary>
     /// Layout version + executable path of the last successful file-association registration.
-    /// Empty when the app is not registered. See Services.FileAssociationService.
+    /// Null or empty when the app is not registered: Registry.GetValue returns null when the
+    /// key itself does not exist yet. See Services.FileAssociationService.
     /// </summary>
     public static string FileAssocStamp
     {
