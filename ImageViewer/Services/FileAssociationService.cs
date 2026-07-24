@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32;
 
+using Velopack.Locators;
+
 using ImageViewer.Helpers;
 using ImageViewer.Wrapper;
 
@@ -13,7 +15,10 @@ namespace ImageViewer.Services;
 /// Registers the app as an "Open with" handler for every supported image type, under
 /// HKEY_CURRENT_USER only (no elevation, no per-machine state). Writes OpenWithProgids and
 /// an Applications block, never the default handler of an extension: Windows keeps asking
-/// the user which application to use.
+/// the user which application to use. Registration only happens for a real Velopack
+/// (Setup.exe) install, because only that install form leaves an uninstaller behind to undo it;
+/// unregistration itself stays unconditional so an install made under an older build can still
+/// be cleaned up.
 ///
 /// Callers: App.OnLaunched (deferred, Release builds only) and the Velopack uninstall hook.
 /// </summary>
@@ -26,9 +31,10 @@ internal static class FileAssociationService
     private static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
 
     /// <summary>
-    /// Write the association keys unless they are already in place for this executable. On
-    /// every launch after the first this costs two registry reads and no write. Never throws:
-    /// a failed association must not break startup.
+    /// Write the association keys unless they are already in place for this executable, and
+    /// only when running from a real Velopack (Setup.exe) install. On every launch after the
+    /// first this costs two registry reads and no write. Never throws: a failed association
+    /// must not break startup.
     /// </summary>
     internal static void EnsureRegistered()
     {
@@ -39,6 +45,17 @@ internal static class FileAssociationService
             // treats as the shared Applications key itself. Writing to it would stamp values
             // onto every per-user Open With registration on the machine, so bail out instead.
             if (string.IsNullOrEmpty(Environment.ProcessPath)) return;
+
+            // Only a Setup.exe install leaves an uninstaller behind that can later run
+            // Unregister() through the OnBeforeUninstallFastCallback hook, so only that install
+            // form is allowed to write these keys. CurrentlyInstalledVersion is null when
+            // Velopack finds no install manifest next to the executable (a raw bin\Release
+            // copy the developer ran directly, never installed at all), and IsPortable is true
+            // for the portable zip (it ships with Update.exe and self-updates but has no
+            // uninstaller entry). Either case would register keys nothing can ever remove.
+            IVelopackLocator locator = VelopackLocator.Current;
+
+            if (locator.CurrentlyInstalledVersion == null || locator.IsPortable) return;
 
             FileAssociationPlan plan = BuildPlan();
 
