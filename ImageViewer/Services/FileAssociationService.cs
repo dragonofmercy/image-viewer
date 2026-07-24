@@ -63,6 +63,12 @@ internal static class FileAssociationService
         {
             FileAssociationPlan plan = BuildPlan();
 
+            // Clear the stamp before touching the registry: this whole method is wrapped in a
+            // catch-all below, so a failure partway through the loop must leave the app looking
+            // unregistered (stamp cleared) rather than fully registered - otherwise a later
+            // EnsureRegistered() would skip the repair and the partial state would stick.
+            Settings.FileAssocStamp = "";
+
             foreach (string extension in Image.SupportedFileTypes)
             {
                 string progId = FileAssociationPlan.ProgIdFor(extension);
@@ -88,7 +94,6 @@ internal static class FileAssociationService
             }
 
             Registry.CurrentUser.DeleteSubKeyTree(plan.ApplicationKeyPath, throwOnMissingSubKey: false);
-            Settings.FileAssocStamp = "";
             Notify();
         }
         catch (Exception ex)

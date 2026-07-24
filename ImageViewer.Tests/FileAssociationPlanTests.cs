@@ -1,5 +1,3 @@
-using System.Linq;
-
 using ImageViewer.Services;
 using ImageViewer.Wrapper;
 
@@ -123,5 +121,14 @@ public class FileAssociationPlanTests
 
         Assert.NotEqual(installed.Stamp, moved.Stamp);
         Assert.Contains(EXE, installed.Stamp);
+    }
+
+    [Fact]
+    public void Stamp_ChangesWithTheExtensionSet()
+    {
+        FileAssociationPlan fewer = new(EXE, [".jpg", ".png"]);
+        FileAssociationPlan more = new(EXE, [".jpg", ".png", ".webp"]);
+
+        Assert.NotEqual(fewer.Stamp, more.Stamp);
     }
 }

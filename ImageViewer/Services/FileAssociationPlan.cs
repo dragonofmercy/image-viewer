@@ -22,8 +22,10 @@ internal readonly record struct RegistryEntry(string KeyPath, string ValueName, 
 /// </summary>
 internal sealed class FileAssociationPlan
 {
-    // Bump whenever the layout below changes (new key, renamed value, added format). The
-    // stamp stored in the settings key stops matching and every install re-registers once.
+    // Bump whenever the shape of the keys themselves changes (new key, renamed value, changed
+    // value format). The stamp stored in the settings key stops matching and every install
+    // re-registers once. Adding or removing a supported extension does NOT need a bump - the
+    // extension set is already part of the stamp (see Stamp below).
     internal const int LAYOUT_VERSION = 1;
 
     private static readonly Dictionary<string, string> TypeLabels = new(StringComparer.OrdinalIgnoreCase)
@@ -56,8 +58,12 @@ internal sealed class FileAssociationPlan
 
     internal string ApplicationKeyPath => $@"Software\Classes\Applications\{Path.GetFileName(ExePath)}";
 
-    /// <summary>Layout version + executable path. EnsureRegistered re-registers when it moves.</summary>
-    internal string Stamp => $"{LAYOUT_VERSION}|{ExePath}";
+    /// <summary>
+    /// Layout version + executable path + extension set. EnsureRegistered re-registers when it
+    /// moves - including when the extension set changes, so a newly supported format gets
+    /// registered even if LAYOUT_VERSION was not bumped.
+    /// </summary>
+    internal string Stamp => $"{LAYOUT_VERSION}|{ExePath}|{string.Join(";", Extensions)}";
 
     internal static string ProgIdFor(string extension) => "ImageViewer" + extension.ToLowerInvariant();
 
