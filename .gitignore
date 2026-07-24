@@ -8,6 +8,7 @@
 *.userosscache
 *.sln.docstates
 *.DotSettings.user
+.superpowers/
 
 # JetBrains Rider / ReSharper
 .idea/
