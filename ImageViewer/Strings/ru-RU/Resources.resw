@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DEFAULT_SYSTEM_LANGUAGE" xml:space="preserve">
+    <value>Язык системы</value>
+  </data>
+  <data name="SYSTEM_PASTED_CONTENT" xml:space="preserve">
+    <value>Вставленное содержимое</value>
+  </data>
+  <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
+    <value>К сожалению, приложение не может открыть этот файл, так как формат не поддерживается или файл повреждён</value>
+  </data>
+  <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
+    <value>К сожалению, приложение не может сохранить изображение в этом расположении</value>
+  </data>
+  <data name="SYSTEM_OK" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="SYSTEM_LOADING" xml:space="preserve">
+    <value>Загрузка</value>
+  </data>
+  <data name="SETTINGS_FIELD_LANGUAGE" xml:space="preserve">
+    <value>Язык</value>
+  </data>
+  <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
+    <value>Чтобы применить этот параметр, необходимо перезапустить приложение.</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
+    <value>Поиск обновлений</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_DAY" xml:space="preserve">
+    <value>Ежедневно</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_WEEK" xml:space="preserve">
+    <value>Еженедельно</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MONTH" xml:space="preserve">
+    <value>Ежемесячно</value>
+  </data>
+  <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL" xml:space="preserve">
+    <value>Вручную</value>
+  </data>
+  <data name="FILE_INFORMATION_TITLE" xml:space="preserve">
+    <value>Сведения о файле</value>
+  </data>
+  <data name="FILE_INFORMATION_DIMENSIONS" xml:space="preserve">
+    <value>Размеры файла</value>
+  </data>
+  <data name="FILE_INFORMATION_FOLDER_PATH" xml:space="preserve">
+    <value>Путь к папке</value>
+  </data>
+  <data name="FILE_INFORMATION_FOLDER_PATH_TIP" xml:space="preserve">
+    <value>Открыть папку в проводнике Windows</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU" xml:space="preserve">
+    <value>Меню</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_OPEN" xml:space="preserve">
+    <value>Открыть изображение</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_INFO" xml:space="preserve">
+    <value>Сведения о файле</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_AS" xml:space="preserve">
+    <value>Сохранить как...</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="SETTINGS_GROUP_SAVE" xml:space="preserve">
+    <value>Параметры сохранения</value>
+  </data>
+  <data name="SETTINGS_FIELD_JPEG_QUALITY" xml:space="preserve">
+    <value>Качество JPEG</value>
+  </data>
+  <data name="SETTINGS_FIELD_WEBP_QUALITY" xml:space="preserve">
+    <value>Качество WebP</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
+    <value>Изображение {0}</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_DELETE" xml:space="preserve">
+    <value>Удалить изображение</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_FILE_PRINT" xml:space="preserve">
+    <value>Печать изображения</value>
+  </data>
+  <data name="SYSTEM_PRINTING_ERROR" xml:space="preserve">
+    <value>К сожалению, не удалось напечатать изображение</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_ABOUT" xml:space="preserve">
+    <value>О программе</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_OPTIONS" xml:space="preserve">
+    <value>Параметры</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_MENU_QUIT" xml:space="preserve">
+    <value>Выход</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ADJUST" xml:space="preserve">
+    <value>По размеру окна</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ZOOM_100" xml:space="preserve">
+    <value>Реальный размер</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_PREVIOUS" xml:space="preserve">
+    <value>Предыдущее изображение</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ZOOM_IN" xml:space="preserve">
+    <value>Увеличить</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_ZOOM_OUT" xml:space="preserve">
+    <value>Уменьшить</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_IMAGE_NEXT" xml:space="preserve">
+    <value>Следующее изображение</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_MENU" xml:space="preserve">
+    <value>Преобразование</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_CROP" xml:space="preserve">
+    <value>Обрезать изображение</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT" xml:space="preserve">
+    <value>Повернуть влево</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT" xml:space="preserve">
+    <value>Повернуть вправо</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ" xml:space="preserve">
+    <value>Отразить по горизонтали</value>
+  </data>
+  <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT" xml:space="preserve">
+    <value>Отразить по вертикали</value>
+  </data>
+  <data name="TRANSFORM_CROP_TITLE" xml:space="preserve">
+    <value>Обрезка</value>
+  </data>
+  <data name="TRANSFORM_CROP_RATIO" xml:space="preserve">
+    <value>Соотношение сторон</value>
+  </data>
+  <data name="TRANSFORM_CROP_FREE" xml:space="preserve">
+    <value>Без ограничений</value>
+  </data>
+  <data name="TRANSFORM_CROP_SAME" xml:space="preserve">
+    <value>Исходные пропорции</value>
+  </data>
+  <data name="TRANSFORM_CROP_RESET" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="TRANSFORM_CROP_VALIDATE" xml:space="preserve">
+    <value>Применить</value>
+  </data>
+  <data name="ABOUT_LINK_GITHUB_REPOSITORY" xml:space="preserve">
+    <value>Репозиторий на GitHub</value>
+  </data>
+  <data name="ABOUT_LINK_LATEST_RELEASE" xml:space="preserve">
+    <value>Последние версии</value>
+  </data>
+  <data name="ABOUT_LABEL_LAST_UPDATE" xml:space="preserve">
+    <value>Последняя проверка: </value>
+  </data>
+  <data name="ABOUT_LABEL_LAST_UPDATE_NEVER" xml:space="preserve">
+    <value>никогда</value>
+  </data>
+  <data name="ABOUT_BTN_CHECK_UPDATE" xml:space="preserve">
+    <value>Проверить обновления</value>
+  </data>
+  <data name="ABOUT_BTN_DOWNLOAD_UPDATE" xml:space="preserve">
+    <value>Скачать обновление</value>
+  </data>
+  <data name="ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING" xml:space="preserve">
+    <value>Загрузка...</value>
+  </data>
+  <data name="ABOUT_BTN_DOWNLOAD_UPDATE_RETRY" xml:space="preserve">
+    <value>Повторить</value>
+  </data>
+  <data name="ABOUT_UPDATE_CHECKING" xml:space="preserve">
+    <value>Поиск обновлений...</value>
+  </data>
+  <data name="ABOUT_UPDATE_INFO_UPDATE_LATEST" xml:space="preserve">
+    <value>Image Viewer обновлён до актуальной версии.</value>
+  </data>
+  <data name="ABOUT_UPDATE_INFO_UPDATE_AVAILABLE" xml:space="preserve">
+    <value>Доступно обновление.</value>
+  </data>
+  <data name="ABOUT_UPDATE_INFO_ERROR_NO_INTERNET" xml:space="preserve">
+    <value>Нет подключения к интернету.</value>
+  </data>
+</root>
