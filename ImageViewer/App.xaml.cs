@@ -24,6 +24,7 @@ public static class Startup
     {
         VelopackApp.Build()
             .OnFirstRun(_ => Helpers.LegacyCleanup.Run())
+            .OnBeforeUninstallFastCallback(_ => Services.FileAssociationService.Unregister())
             .Run();
 
         Context.Instance().LaunchArgs = args;
@@ -131,6 +132,11 @@ public partial class App : Application
             Context context = Context.Instance();
             context.NotificationsService = new NotificationsService();
             context.CheckUpdate();
+#if !DEBUG
+            // Debug builds never register: ImageViewer.Debug.exe must not show up in the
+            // developer's own "Open with" menu.
+            FileAssociationService.EnsureRegistered();
+#endif
         });
     }
 
