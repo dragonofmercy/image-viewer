@@ -126,7 +126,8 @@ public partial class App : Application
         Context.Instance().LoadDefaultImage();
 
         // Defer non-essential startup work (toast registration + update check, which pulls in
-        // the Velopack assemblies) until after the first frame so the window appears sooner.
+        // the Velopack assemblies, and file association registration) until after the first
+        // frame so the window appears sooner.
         mWindow.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
             Context context = Context.Instance();
