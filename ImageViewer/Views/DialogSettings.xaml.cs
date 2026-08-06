@@ -31,7 +31,7 @@ public sealed partial class DialogSettings : Page
         InitializeComponent();
         Dialog = e;
 
-        foreach(string languagesIso in Culture.GetAvailableLanguages()) 
+        foreach(string languagesIso in Culture.AvailableLanguages)
         {
             AvailableLanguages.Add(new CultureInfo(languagesIso).NativeName.UcFirst(), languagesIso);
         }

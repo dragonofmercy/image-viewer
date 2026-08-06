@@ -1,6 +1,5 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors.Transforms;
 
 namespace ImageViewer.Wrapper;
 
@@ -10,13 +9,6 @@ internal partial class Image
     {
         if(!WorkingImageLoaded) return;
         WorkingImage.Mutate(ctx => ctx.RotateFlip(rotateMode, flipMode));
-        Modified = true;
-    }
-
-    public void Resize(int width, int height, IResampler mode)
-    {
-        if(!WorkingImageLoaded) return;
-        WorkingImage.Mutate(ctx => ctx.Resize(width, height, mode));
         Modified = true;
     }
 

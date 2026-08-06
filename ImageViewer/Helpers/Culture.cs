@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace ImageViewer.Helpers;
@@ -9,8 +7,8 @@ internal class Culture
     private static ResourceManager _Manager;
     private static ResourceContext _Context;
 
-    // Supported BCP-47 tags; en-US is the default language.
-    private static readonly string[] AvailableLanguages = { "en-US", "fr-FR", "zh-Hans", "de-DE", "es-ES", "it-IT", "pt-BR", "ru-RU" };
+    // Supported BCP-47 tags; en-US is the default language. Drives the settings language picker.
+    internal static readonly string[] AvailableLanguages = { "en-US", "fr-FR", "zh-Hans", "de-DE", "es-ES", "it-IT", "pt-BR", "ru-RU" };
 
     public static void Init()
     {
@@ -22,11 +20,6 @@ internal class Culture
         {
             _Context.QualifierValues["Language"] = Settings.Language;
         }
-    }
-
-    public static List<string> GetAvailableLanguages()
-    {
-        return new List<string>(AvailableLanguages);
     }
 
     public static string GetString(string key)

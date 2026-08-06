@@ -21,7 +21,7 @@ public sealed partial class DialogAbout : Page
         UpdateSettingsCard.Label = string.Concat("v", AppInfo.ProductVersion);
         UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
 
-        if(Context.Instance().PendingUpdate != null)
+        if(Context.Instance().UpdateService.PendingUpdate != null)
         {
             DisplayUpdateMessage();
         }
@@ -42,7 +42,7 @@ public sealed partial class DialogAbout : Page
 
         try
         {
-            if(await Context.Instance().CheckForUpdateAsync() != null)
+            if(await Context.Instance().UpdateService.CheckForUpdateAsync() != null)
             {
                 DisplayUpdateMessage();
             }
@@ -86,14 +86,14 @@ public sealed partial class DialogAbout : Page
 
     private async void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)
     {
-        if(Context.Instance().PendingUpdate == null) return;
+        if(Context.Instance().UpdateService.PendingUpdate == null) return;
 
         ButtonDownloadUpdate.IsEnabled = false;
         ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
         try
         {
-            await Context.Instance().ApplyPendingUpdateAsync();
+            await Context.Instance().UpdateService.ApplyPendingUpdateAsync();
         }
         catch(Exception ex)
         {

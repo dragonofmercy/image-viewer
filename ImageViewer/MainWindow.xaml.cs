@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -36,14 +37,18 @@ public sealed partial class MainWindow : Window
     private GridLength? OriginalFooterRowHeight;
     private Visibility? OriginalTitleBarVisibility;
 
-    public readonly Dictionary<string, string>CropperAspectRatios = new()
+    // Sentinel ratios: the two entries that cannot be a fixed number.
+    private const double ASPECT_FREE = 0;
+    private const double ASPECT_SAME = -1;
+
+    public readonly Dictionary<string, double>CropperAspectRatios = new()
     {
-        {Culture.GetString("TRANSFORM_CROP_FREE"), "free"},
-        {Culture.GetString("TRANSFORM_CROP_SAME"), "same"},
-        {"1:1", "11"},
-        {"16:9", "169"},
-        {"16:10", "1610"},
-        {"4:3", "43"}
+        {Culture.GetString("TRANSFORM_CROP_FREE"), ASPECT_FREE},
+        {Culture.GetString("TRANSFORM_CROP_SAME"), ASPECT_SAME},
+        {"1:1", 1},
+        {"16:9", 16d / 9d},
+        {"16:10", 16d / 10d},
+        {"4:3", 4d / 3d}
     };
 
     public MainWindow(ElementTheme theme)
@@ -246,29 +251,14 @@ public sealed partial class MainWindow : Window
 
     private void CboCropAspectRatios_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        switch(CboCropAspectRatios.SelectedValue.ToString())
+        double ratio = (double)CboCropAspectRatios.SelectedValue;
+
+        ImageCropper.AspectRatio = ratio switch
         {
-            case "free":
-                ImageCropper.AspectRatio = null;
-                break;
-            case "same":
-                ImageCropper.AspectRatio = Context.Instance().CurrentImage.Width / Context.Instance().CurrentImage.Height;
-                break;
-            case "11":
-                ImageCropper.AspectRatio = 1;
-                break;
-            case "169":
-                ImageCropper.AspectRatio = 16d / 9d;
-                break;
-            case "1610":
-                ImageCropper.AspectRatio = 16d / 10d;
-                break;
-            case "43":
-                ImageCropper.AspectRatio = 4d / 3d;
-                break;
-            default:
-                throw new System.NotImplementedException();
-        }
+            ASPECT_FREE => null,
+            ASPECT_SAME => Context.Instance().CurrentImage.Width / Context.Instance().CurrentImage.Height,
+            _ => ratio
+        };
     }
 
     private void ButtonFileInfo_Click(object sender, RoutedEventArgs e)
@@ -289,7 +279,7 @@ public sealed partial class MainWindow : Window
 
         ImageCropper.Source = Context.Instance().CurrentImage.GetWriteableBitmap();
 
-        CboCropAspectRatios.SelectedValue = "free";
+        CboCropAspectRatios.SelectedValue = ASPECT_FREE;
 
         ImageContainer.Visibility = Visibility.Collapsed;
         ImageCropperContainer.Visibility = Visibility.Visible;
@@ -457,27 +447,26 @@ public sealed partial class MainWindow : Window
 
     private async void ButtonFileSaveDirect_Click(object sender, RoutedEventArgs e)
     {
-        if(SavingProcess) return;
-
-        try
-        {
-            SavingProcess = true;
-            await Context.Instance().Save();
-        }
-        finally
-        {
-            SavingProcess = false;
-        }
+        await RunSave(Context.Instance().Save);
     }
 
     private async void ButtonFileSave_Click(object sender, RoutedEventArgs e)
+    {
+        await RunSave(Context.Instance().SaveAs);
+    }
+
+    /// <summary>
+    /// Run a save through the re-entrancy guard: the accelerator can fire again before the
+    /// modal picker takes focus, which would open a second one.
+    /// </summary>
+    private async Task RunSave(Func<Task<bool>> save)
     {
         if(SavingProcess) return;
 
         try
         {
             SavingProcess = true;
-            await Context.Instance().SaveAs();
+            await save();
         }
         finally
         {
@@ -493,6 +482,22 @@ public sealed partial class MainWindow : Window
     public Panel GetPrintHost()
     {
         return PrintHost;
+    }
+
+    /// <summary>
+    /// Modal error dialog with a single OK button, themed like the window.
+    /// </summary>
+    public async Task ShowErrorAsync(string messageKey)
+    {
+        ContentDialog errorDialog = new()
+        {
+            XamlRoot = Content.XamlRoot,
+            RequestedTheme = MainPage.ActualTheme,
+            Content = Culture.GetString(messageKey),
+            CloseButtonText = Culture.GetString("SYSTEM_OK")
+        };
+
+        await errorDialog.ShowAsync();
     }
 
     private async void ButtonAbout_Click(object sender, RoutedEventArgs e)

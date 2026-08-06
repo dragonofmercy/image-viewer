@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Globalization;
@@ -15,38 +14,23 @@ using Windows.Storage.Streams;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Processing;
 
-using Velopack;
-
 using ImageViewer.Services;
 using ImageViewer.Utilities;
 using ImageViewer.Wrapper;
 
 namespace ImageViewer.Helpers;
 
-internal enum ImageInfos
-{
-    FileName,
-    FileDate,
-    ImageDimensions,
-    ImageSize,
-    ImageDepth,
-    FolderPath
-}
-
 internal class Context
 {
     private static Context _Instance;
     private string[] FolderFiles;
     private int CurrentIndex;
-    private bool MemoryOnly;
 
     // Window-bound services, all built lazily on first use through the same backing-field property pattern.
     private PrintService _PrintService;
     private PrintService PrintService => _PrintService ??= new PrintService(MainWindow, MainWindow.GetPrintHost());
     private SaveService _SaveService;
     private SaveService SaveService => _SaveService ??= new SaveService(MainWindow);
-    private ClipboardService _ClipboardService;
-    private ClipboardService ClipboardService => _ClipboardService ??= new ClipboardService(MainWindow);
 
     public string[] LaunchArgs;
     public MainWindow MainWindow;
@@ -55,13 +39,7 @@ internal class Context
     // The update flow (Velopack manager, interval check, toast) lives in UpdateService.
     // Built lazily so the Velopack assemblies are not loaded on the startup path.
     private UpdateService _UpdateService;
-    private UpdateService UpdateService => _UpdateService ??= new UpdateService();
-
-    public UpdateInfo PendingUpdate => UpdateService.PendingUpdate;
-
-    public Task<UpdateInfo> CheckForUpdateAsync() => UpdateService.CheckForUpdateAsync();
-
-    public Task ApplyPendingUpdateAsync() => UpdateService.ApplyPendingUpdateAsync();
+    public UpdateService UpdateService => _UpdateService ??= new UpdateService();
 
     public Image CurrentImage { get; protected set; }
     public string CurrentFilePath { get; protected set; }
@@ -257,8 +235,6 @@ internal class Context
 
         CurrentFilePath = selectedFile.Path;
 
-        MemoryOnly = false;
-
         OpenImage();
         LoadDirectoryFiles();
     }
@@ -270,7 +246,15 @@ internal class Context
     {
         if (!HasImageLoaded()) return;
 
-        ClipboardService.CopyImage(CurrentImage);
+        try
+        {
+            byte[] pixels = CurrentImage.GetBgra32Pixels(out int width, out int height);
+            ClipboardHelper.SetImageAsDib(WindowNative.GetWindowHandle(MainWindow), pixels, width, height);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Copy to clipboard failed: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -279,7 +263,6 @@ internal class Context
     public async void LoadImageFromBuffer(RandomAccessStreamReference clipboard)
     {
         CurrentFilePath = null;
-        MemoryOnly = true;
 
         MainWindow.SplitViewContainer.IsPaneOpen = false;
         OpenImage(await clipboard.OpenReadAsync());
@@ -294,7 +277,6 @@ internal class Context
 
         // Normalize relative launch arguments so directory enumeration and index lookups match
         CurrentFilePath = Path.GetFullPath(imagePath);
-        MemoryOnly = false;
 
         OpenImage();
 
@@ -307,47 +289,19 @@ internal class Context
     }
 
     /// <summary>
-    /// Update file infos.
+    /// Fill the info pane from the current file. Every field is blanked for a pasted image,
+    /// which has no file on disk to describe.
     /// </summary>
     public void UpdateFileInfo()
     {
-        Dictionary<ImageInfos, string> data = GetFileInfos();
+        bool hasFile = HasImageLoaded() && CurrentFilePath != null;
 
-        MainWindow.TextBlockInfoFilename.Text = data[ImageInfos.FileName];
-        MainWindow.TextBlockInfoDate.Text = data[ImageInfos.FileDate];
-        MainWindow.TextBlockInfoDimensions.Text = data[ImageInfos.ImageDimensions];
-        MainWindow.TextBlockInfoSize.Text = data[ImageInfos.ImageSize];
-        MainWindow.TextBlockInfoDepth.Text = data[ImageInfos.ImageDepth];
-        MainWindow.TextBlockInfoFolder.Text = data[ImageInfos.FolderPath];
-    }
-
-    /// <summary>
-    /// Load image infos from file.
-    /// </summary>
-    public Dictionary<ImageInfos, string> GetFileInfos()
-    {
-        Dictionary<ImageInfos, string> dict = new()
-        {
-            { ImageInfos.FileName, "" },
-            { ImageInfos.FileDate, "" },
-            { ImageInfos.ImageDimensions, "" },
-            { ImageInfos.ImageSize, "" },
-            { ImageInfos.ImageDepth, "" },
-            { ImageInfos.FolderPath, "" }
-        };
-
-        if (!HasImageLoaded()) return dict;
-
-        FileInfo oFileInfo = new(CurrentFilePath);
-
-        dict[ImageInfos.FileName] = Path.GetFileName(CurrentFilePath);
-        dict[ImageInfos.FolderPath] = Path.GetDirectoryName(CurrentFilePath);
-        dict[ImageInfos.FileDate] = File.GetLastWriteTime(CurrentFilePath).ToString(CultureInfo.CurrentCulture);
-        dict[ImageInfos.ImageSize] = Format.HumanizeBytes(oFileInfo.Length);
-        dict[ImageInfos.ImageDimensions] = CurrentImage.GetImageDimensionsAsString();
-        dict[ImageInfos.ImageDepth] = CurrentImage.GetDepthAsString();
-
-        return dict;
+        MainWindow.TextBlockInfoFilename.Text = hasFile ? Path.GetFileName(CurrentFilePath) : "";
+        MainWindow.TextBlockInfoFolder.Text = hasFile ? Path.GetDirectoryName(CurrentFilePath) : "";
+        MainWindow.TextBlockInfoDate.Text = hasFile ? File.GetLastWriteTime(CurrentFilePath).ToString(CultureInfo.CurrentCulture) : "";
+        MainWindow.TextBlockInfoSize.Text = hasFile ? Format.HumanizeBytes(new FileInfo(CurrentFilePath).Length) : "";
+        MainWindow.TextBlockInfoDimensions.Text = hasFile ? CurrentImage.GetImageDimensionsAsString() : "";
+        MainWindow.TextBlockInfoDepth.Text = hasFile ? CurrentImage.GetDepthAsString() : "";
     }
 
     /// <summary>
@@ -443,10 +397,7 @@ internal class Context
 
         if (CurrentImage.Height > MainWindow.ImageContainer.ActualHeight || CurrentImage.Width > MainWindow.ImageContainer.ActualWidth)
         {
-            double zoomFactorH = MainWindow.ImageContainer.ActualHeight / CurrentImage.Height;
-            double zoomFactorW = MainWindow.ImageContainer.ActualWidth / CurrentImage.Width;
-
-            zoomFactor = (float)(zoomFactorH < zoomFactorW ? zoomFactorH : zoomFactorW);
+            zoomFactor = (float)Math.Min(MainWindow.ImageContainer.ActualHeight / CurrentImage.Height, MainWindow.ImageContainer.ActualWidth / CurrentImage.Width);
         }
 
         return zoomFactor;
@@ -482,98 +433,54 @@ internal class Context
     }
 
     /// <summary>
-    /// Update interface buttons.
+    /// Update interface buttons. The open cropper owns the whole surface: while it is up every
+    /// image command is off, whatever the image state.
     /// </summary>
     public void UpdateButtonsAccessiblity()
     {
         if (MainWindow == null) return;
 
-        if (HasImageLoaded())
-        {
-            MainWindow.ButtonImageZoomIn.IsEnabled = true;
-            MainWindow.ButtonImageZoomOut.IsEnabled = true;
+        bool loaded = HasImageLoaded();
+        bool cropping = MainWindow.ImageCropperContainer.Visibility == Visibility.Visible;
+        bool enabled = loaded && !cropping;
+        bool canNavigate = !cropping && FolderFiles is { Length: > 1 };
 
-            MainWindow.ButtonImageAdjust.IsEnabled = true;
-            MainWindow.ButtonImageZoomFull.IsEnabled = true;
+        MainWindow.ButtonImageZoomIn.IsEnabled = enabled;
+        MainWindow.ButtonImageZoomOut.IsEnabled = enabled;
+        MainWindow.ButtonImageAdjust.IsEnabled = enabled;
+        MainWindow.ButtonImageZoomFull.IsEnabled = enabled;
+        MainWindow.ButtonImageDelete.IsEnabled = enabled;
+        MainWindow.ButtonFileSave.IsEnabled = enabled;
+        MainWindow.ButtonPrint.IsEnabled = enabled;
+        MainWindow.ButtonFileSaveDirect.IsEnabled = enabled && CurrentImage.Modified;
+        MainWindow.ButtonFileInfo.IsEnabled = enabled && CurrentFilePath != null;
 
-            MainWindow.ButtonImageTransform.IsEnabled = MemoryOnly || CurrentFilePath != null;
+        MainWindow.ButtonImagePrevious.IsEnabled = canNavigate;
+        MainWindow.ButtonImageNext.IsEnabled = canNavigate;
 
-            MainWindow.ButtonImageDelete.IsEnabled = true;
-            MainWindow.ButtonFileSave.IsEnabled = true;
-            MainWindow.ButtonFileSaveDirect.IsEnabled = CurrentImage.Modified;
-            MainWindow.ButtonPrint.IsEnabled = true;
+        MainWindow.ButtonImageTransform.IsEnabled = enabled;
+        MainWindow.ButtonImageTransformFlipHorizontal.IsEnabled = enabled;
+        MainWindow.ButtonImageTransformFlipVertical.IsEnabled = enabled;
+        MainWindow.ButtonImageTransformRotateLeft.IsEnabled = enabled;
+        MainWindow.ButtonImageTransformRotateRight.IsEnabled = enabled;
+        MainWindow.ButtonImageTransformCrop.IsEnabled = enabled;
 
-            MainWindow.ButtonFileInfo.IsEnabled = CurrentFilePath != null;
+        MainWindow.TextBlockDimensions.Text = loaded ? CurrentImage.Width + "x" + CurrentImage.Height : "";
 
-            MainWindow.TextBlockDimensions.Text = CurrentImage.Width + "x" + CurrentImage.Height;
-
-            string title = Path.GetFileName(CurrentFilePath ?? Culture.GetString("SYSTEM_PASTED_CONTENT"));
-            // Unsaved indicator: real files turn dirty on edit, pasted/memory images start dirty (see Image load).
-            if (CurrentImage.Modified) title = "● " + title;
-            MainWindow.UpdateTitle(title);
-        }
-        else
-        {
-            MainWindow.ButtonImageZoomIn.IsEnabled = false;
-            MainWindow.ButtonImageZoomOut.IsEnabled = false;
-
-            MainWindow.ButtonImageAdjust.IsEnabled = false;
-            MainWindow.ButtonImageZoomFull.IsEnabled = false;
-            MainWindow.ButtonImageTransform.IsEnabled = false;
-
-            MainWindow.ButtonImageDelete.IsEnabled = false;
-            MainWindow.ButtonFileSave.IsEnabled = false;
-            MainWindow.ButtonFileSaveDirect.IsEnabled = false;
-            MainWindow.ButtonPrint.IsEnabled = false;
-
-            MainWindow.ButtonFileInfo.IsEnabled = false;
-
-            MainWindow.TextBlockDimensions.Text = "";
-
-            MainWindow.UpdateTitle();
-        }
-
-        if(MainWindow.ImageLoadingIndicator.IsActive)
+        if (MainWindow.ImageLoadingIndicator.IsActive)
         {
             MainWindow.UpdateTitle(Culture.GetString("SYSTEM_LOADING"));
         }
-
-        if (FolderFiles is { Length: > 1 })
+        else if (loaded)
         {
-            MainWindow.ButtonImagePrevious.IsEnabled = true;
-            MainWindow.ButtonImageNext.IsEnabled = true;
+            string title = Path.GetFileName(CurrentFilePath ?? Culture.GetString("SYSTEM_PASTED_CONTENT"));
+            // Unsaved indicator: real files turn dirty on edit, pasted/memory images start dirty (see Image load).
+            MainWindow.UpdateTitle(CurrentImage.Modified ? "● " + title : title);
         }
         else
         {
-            MainWindow.ButtonImagePrevious.IsEnabled = false;
-            MainWindow.ButtonImageNext.IsEnabled = false;
+            MainWindow.UpdateTitle();
         }
-
-        if(MainWindow.ImageCropperContainer.Visibility == Visibility.Visible)
-        {
-            MainWindow.ButtonImageTransform.IsEnabled = false;
-            MainWindow.ButtonImagePrevious.IsEnabled = false;
-            MainWindow.ButtonImageNext.IsEnabled = false;
-
-            MainWindow.ButtonImageZoomIn.IsEnabled = false;
-            MainWindow.ButtonImageZoomOut.IsEnabled = false;
-
-            MainWindow.ButtonImageAdjust.IsEnabled = false;
-            MainWindow.ButtonImageZoomFull.IsEnabled = false;
-            MainWindow.ButtonImageTransform.IsEnabled = false;
-
-            MainWindow.ButtonImageDelete.IsEnabled = false;
-            MainWindow.ButtonFileSave.IsEnabled = false;
-            MainWindow.ButtonFileSaveDirect.IsEnabled = false;
-            MainWindow.ButtonPrint.IsEnabled = false;
-            MainWindow.ButtonFileInfo.IsEnabled = false;
-        }
-
-        MainWindow.ButtonImageTransformFlipHorizontal.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
-        MainWindow.ButtonImageTransformFlipVertical.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
-        MainWindow.ButtonImageTransformRotateLeft.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
-        MainWindow.ButtonImageTransformRotateRight.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
-        MainWindow.ButtonImageTransformCrop.IsEnabled = MainWindow.ButtonImageTransform.IsEnabled;
     }
 
     /// <summary>
@@ -599,11 +506,6 @@ internal class Context
         UpdateButtonsAccessiblity();
         MainWindow.ScrollView.Focus(FocusState.Programmatic);
     }
-
-    /// <summary>
-    /// Background update check honoring the UpdateInterval setting. Errors are swallowed.
-    /// </summary>
-    public void CheckUpdate() => UpdateService.CheckUpdate(NotificationsService);
 
     /// <summary>
     /// Overwrite the current file in place. No-op unless the image was modified.
@@ -645,7 +547,6 @@ internal class Context
         // Adopt the saved file as the current document so the title, folder listing and navigation
         // follow it - uniform for pasted/memory-only content and real files, same or different folder.
         CurrentFilePath = target.Value.Path;
-        MemoryOnly = false;
 
         LoadDirectoryFiles();
 
@@ -670,14 +571,7 @@ internal class Context
         }
         catch(Exception)
         {
-            Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
-            {
-                XamlRoot = MainWindow.Content.XamlRoot,
-                RequestedTheme = ((FrameworkElement)MainWindow.Content).ActualTheme,
-                Content = Culture.GetString("SYSTEM_PRINTING_ERROR"),
-                CloseButtonText = Culture.GetString("SYSTEM_OK")
-            };
-            await errorDialog.ShowAsync();
+            await MainWindow.ShowErrorAsync("SYSTEM_PRINTING_ERROR");
         }
     }
 

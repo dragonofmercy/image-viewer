@@ -18,9 +18,7 @@ public static class Extensions
     public static T[] RemoveAtIndex<T>(this T[] original, int index)
     {
         if (index < 0 || index >= original.Length) return original;
-        List<T> tmp = [..original];
-        tmp.RemoveAt(index);
-        return tmp.ToArray();
+        return [..original[..index], ..original[(index + 1)..]];
     }
 
     public static SvgDocument AdjustSize(this SvgDocument original, uint maxWidth, uint maxHeight)

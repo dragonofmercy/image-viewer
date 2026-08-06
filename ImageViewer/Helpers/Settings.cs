@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.Win32;
 using WinUIEx;
@@ -35,47 +36,37 @@ internal class Settings
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_THEME, (int)value);
     }
 
+    /// <summary>
+    /// Read a number stored as a string value. Returns null when missing or unparseable:
+    /// a corrupt geometry value must fall back to the default, never crash startup.
+    /// </summary>
+    private static T? GetNumber<T>(string name) where T : struct, IParsable<T>
+    {
+        object raw = Registry.GetValue(HKEY_APP_PATH, name, null);
+        return raw != null && T.TryParse(raw.ToString(), CultureInfo.InvariantCulture, out T value) ? value : null;
+    }
+
     public static int? AppPositionX
     {
-        get
-        {
-            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_X, null);
-            return tmp != null ? int.Parse(tmp.ToString()) : null;
-        }
-
+        get => GetNumber<int>(H_VALUE_APP_POSITION_X);
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_X, value.ToString());
     }
 
     public static int? AppPositionY
     {
-        get
-        {
-            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_Y, null);
-            return tmp != null ? int.Parse(tmp.ToString()) : null;
-        }
-
+        get => GetNumber<int>(H_VALUE_APP_POSITION_Y);
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_POSITION_Y, value.ToString());
     }
 
     public static uint AppSizeW
     {
-        get
-        {
-            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_W, null);
-            return tmp != null ? uint.Parse(tmp.ToString()) : 1280;
-        }
-
+        get => GetNumber<uint>(H_VALUE_APP_SIZE_W) ?? 1280;
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_W, value.ToString());
     }
 
     public static uint AppSizeH
     {
-        get
-        {
-            object tmp = Registry.GetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_H, null);
-            return tmp != null ? uint.Parse(tmp.ToString()) : 768;
-        }
-
+        get => GetNumber<uint>(H_VALUE_APP_SIZE_H) ?? 768;
         set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_APP_SIZE_H, value.ToString());
     }
 
@@ -93,7 +84,7 @@ internal class Settings
 
     public static void TouchLastUpdateCheck()
     {
-        LastUpdateCheck = System.DateTime.Now.ToString(UPDATE_DATE_FORMAT, CultureInfo.InvariantCulture);
+        LastUpdateCheck = DateTime.Now.ToString(UPDATE_DATE_FORMAT, CultureInfo.InvariantCulture);
     }
 
     public static string UpdateInterval
@@ -110,19 +101,19 @@ internal class Settings
 
     internal static int ClampQuality(object raw, int defaultValue)
     {
-        return raw != null && int.TryParse(raw.ToString(), out int q) ? System.Math.Clamp(q, 1, 100) : defaultValue;
+        return raw != null && int.TryParse(raw.ToString(), out int q) ? Math.Clamp(q, 1, 100) : defaultValue;
     }
 
     public static int JpegQuality
     {
         get => ClampQuality(Registry.GetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, null), JPEG_QUALITY_DEFAULT);
-        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, System.Math.Clamp(value, 1, 100));
+        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_JPEG_QUALITY, Math.Clamp(value, 1, 100));
     }
 
     public static int WebpQuality
     {
         get => ClampQuality(Registry.GetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, null), WEBP_QUALITY_DEFAULT);
-        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, System.Math.Clamp(value, 1, 100));
+        set => Registry.SetValue(HKEY_APP_PATH, H_VALUE_WEBP_QUALITY, Math.Clamp(value, 1, 100));
     }
 
     /// <summary>

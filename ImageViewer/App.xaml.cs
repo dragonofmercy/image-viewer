@@ -133,7 +133,7 @@ public partial class App : Application
         {
             Context context = Context.Instance();
             context.NotificationsService = new NotificationsService();
-            context.CheckUpdate();
+            context.UpdateService.CheckUpdate(context.NotificationsService);
 #if !DEBUG
             // Debug builds never register: ImageViewer.Debug.exe must not show up in the
             // developer's own "Open with" menu. Registration performs ~58 registry writes plus

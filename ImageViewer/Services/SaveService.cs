@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.UI.Xaml;
-
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -54,7 +52,7 @@ internal sealed class SaveService
         catch (Exception ex)
         {
             Debug.WriteLine($"Save failed: {ex.Message}");
-            await ShowSaveErrorAsync();
+            await Window.ShowErrorAsync("SYSTEM_SAVING_ERROR");
             return false;
         }
     }
@@ -99,18 +97,5 @@ internal sealed class SaveService
             ".webp" => Settings.WebpQuality,
             _ => null
         };
-    }
-
-    private async Task ShowSaveErrorAsync()
-    {
-        Microsoft.UI.Xaml.Controls.ContentDialog errorDialog = new()
-        {
-            XamlRoot = Window.Content.XamlRoot,
-            RequestedTheme = ((FrameworkElement)Window.Content).ActualTheme,
-            Content = Culture.GetString("SYSTEM_SAVING_ERROR"),
-            CloseButtonText = Culture.GetString("SYSTEM_OK")
-        };
-
-        await errorDialog.ShowAsync();
     }
 }

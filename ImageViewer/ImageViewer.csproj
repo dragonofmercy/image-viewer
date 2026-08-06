@@ -90,34 +90,31 @@
         <InternalsVisibleTo Include="ImageViewer.Tests" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- Localized .mui folders to keep; every other language is pruned from build and publish
+             output. Adding a supported language means adding its folder(s) here. -->
+        <MuiKeep Include="en-us;fr-FR;fr;de-DE;de;es-ES;es;it-IT;it;pt-BR;pt;zh-Hans;zh-CN;ru-RU;ru" />
+    </ItemGroup>
+
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <ItemGroup>
-            <RemovingFiles Include="$(OutDir)**\*.mui" Exclude="$(OutDir)en-us\*.mui;$(OutDir)fr-FR\*.mui;$(OutDir)fr\*.mui;$(OutDir)de-DE\*.mui;$(OutDir)de\*.mui;$(OutDir)es-ES\*.mui;$(OutDir)es\*.mui;$(OutDir)it-IT\*.mui;$(OutDir)it\*.mui;$(OutDir)pt-BR\*.mui;$(OutDir)pt\*.mui;$(OutDir)zh-Hans\*.mui;$(OutDir)zh-CN\*.mui;$(OutDir)ru-RU\*.mui;$(OutDir)ru\*.mui" />
+            <RemovingFiles Include="$(OutDir)**\*.mui" Exclude="@(MuiKeep->'$(OutDir)%(Identity)\*.mui')" />
             <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
+            <!-- Release ships only the app's own symbols and docs, not every dependency's. -->
+            <ThirdPartyFilesToRemove Condition="'$(Configuration)'=='Release'" Include="$(OutDir)*.pdb;$(OutDir)*.xml" Exclude="$(OutDir)$(AssemblyName).pdb;$(OutDir)$(AssemblyName).xml" />
         </ItemGroup>
         <RemoveDir Directories="@(RemovingFolders)" Condition="'@(RemovingFolders)'!=''" />
-
-        <ItemGroup Condition="'$(Configuration)'=='Release'">
-            <PdbFilesToRemove Include="$(OutDir)*.pdb" Exclude="$(OutDir)$(AssemblyName).pdb" />
-            <XmlDocsToRemove Include="$(OutDir)*.xml" Exclude="$(OutDir)$(AssemblyName).xml" />
-        </ItemGroup>
-        <Delete Files="@(PdbFilesToRemove)" Condition="'$(Configuration)'=='Release' And '@(PdbFilesToRemove)'!=''" ContinueOnError="true" />
-        <Delete Files="@(XmlDocsToRemove)" Condition="'$(Configuration)'=='Release' And '@(XmlDocsToRemove)'!=''" ContinueOnError="true" />
+        <Delete Files="@(ThirdPartyFilesToRemove)" ContinueOnError="true" />
     </Target>
 
     <Target Name="PostPublish" AfterTargets="Publish">
         <ItemGroup>
-            <PublishMuiToRemove Include="$(PublishDir)**\*.mui" Exclude="$(PublishDir)en-us\*.mui;$(PublishDir)fr-FR\*.mui;$(PublishDir)fr\*.mui;$(PublishDir)de-DE\*.mui;$(PublishDir)de\*.mui;$(PublishDir)es-ES\*.mui;$(PublishDir)es\*.mui;$(PublishDir)it-IT\*.mui;$(PublishDir)it\*.mui;$(PublishDir)pt-BR\*.mui;$(PublishDir)pt\*.mui;$(PublishDir)zh-Hans\*.mui;$(PublishDir)zh-CN\*.mui;$(PublishDir)ru-RU\*.mui;$(PublishDir)ru\*.mui" />
+            <PublishMuiToRemove Include="$(PublishDir)**\*.mui" Exclude="@(MuiKeep->'$(PublishDir)%(Identity)\*.mui')" />
             <PublishMuiFolders Include="@(PublishMuiToRemove->'%(RootDir)%(Directory)')" />
+            <PublishFilesToRemove Condition="'$(Configuration)'=='Release'" Include="$(PublishDir)*.pdb;$(PublishDir)*.xml" Exclude="$(PublishDir)$(AssemblyName).pdb;$(PublishDir)$(AssemblyName).xml" />
         </ItemGroup>
         <RemoveDir Directories="@(PublishMuiFolders)" Condition="'@(PublishMuiFolders)'!=''" />
-
-        <ItemGroup Condition="'$(Configuration)'=='Release'">
-            <PublishPdbToRemove Include="$(PublishDir)*.pdb" Exclude="$(PublishDir)$(AssemblyName).pdb" />
-            <PublishXmlToRemove Include="$(PublishDir)*.xml" Exclude="$(PublishDir)$(AssemblyName).xml" />
-        </ItemGroup>
-        <Delete Files="@(PublishPdbToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishPdbToRemove)'!=''" ContinueOnError="true" />
-        <Delete Files="@(PublishXmlToRemove)" Condition="'$(Configuration)'=='Release' And '@(PublishXmlToRemove)'!=''" ContinueOnError="true" />
+        <Delete Files="@(PublishFilesToRemove)" ContinueOnError="true" />
     </Target>
 
 </Project>

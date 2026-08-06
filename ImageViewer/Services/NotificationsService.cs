@@ -38,13 +38,15 @@ internal class NotificationsService
             case "doUpdate":
                 try
                 {
+                    UpdateService updates = Context.Instance().UpdateService;
+
                     // The toast can outlive the process: a fresh instance must re-resolve the update first
-                    if (Context.Instance().PendingUpdate == null)
+                    if (updates.PendingUpdate == null)
                     {
-                        await Context.Instance().CheckForUpdateAsync();
+                        await updates.CheckForUpdateAsync();
                     }
 
-                    await Context.Instance().ApplyPendingUpdateAsync();
+                    await updates.ApplyPendingUpdateAsync();
                 }
                 catch (Exception ex)
                 {

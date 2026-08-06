@@ -110,13 +110,7 @@ internal partial class Image
     {
         if(WorkingImage == null) return null;
 
-        WriteableBitmap bitmap = new(WorkingImage.Width, WorkingImage.Height);
-        byte[] pixels = new byte[WorkingImage.Width * WorkingImage.Height * 4];
-
-        using(SixLabors.ImageSharp.Image<Bgra32> converted = WorkingImage.CloneAs<Bgra32>())
-        {
-            converted.CopyPixelDataTo(pixels);
-        }
+        byte[] pixels = GetBgra32Pixels(out int width, out int height);
 
         // XAML composition expects premultiplied alpha
         for(int i = 0; i < pixels.Length; i += 4)
@@ -129,6 +123,8 @@ internal partial class Image
             pixels[i + 1] = (byte)(pixels[i + 1] * alpha / 255);
             pixels[i + 2] = (byte)(pixels[i + 2] * alpha / 255);
         }
+
+        WriteableBitmap bitmap = new(width, height);
 
         using(Stream buffer = bitmap.PixelBuffer.AsStream())
         {
