@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -8,6 +7,7 @@ using System.Threading.Tasks;
 
 using Microsoft.UI.Xaml.Media.Imaging;
 
+using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
 using SixLabors.ImageSharp;
@@ -19,11 +19,11 @@ using SixLabors.ImageSharp.Formats.Tga;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Svg;
+
+using SkiaSharp;
+using Svg.Skia;
 
 using ImageSharpImage = SixLabors.ImageSharp.Image;
-
-using ImageViewer.Utilities;
 
 namespace ImageViewer.Wrapper;
 
@@ -33,6 +33,10 @@ internal partial class Image
     public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga"];
 
     private readonly string[] NativeExtensions = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp"];
+
+    // Longest edge an SVG is rasterized to. Vector input has no natural pixel size; this caps
+    // the decode cost while staying above any realistic window size.
+    private const float SVG_MAX_RASTER_SIZE = 1024;
 
     public event EventHandler ImageLoaded;
     public event EventHandler ImageFailed;
@@ -209,43 +213,11 @@ internal partial class Image
             }
             else
             {
-                // Handle SVG and ICO formats
-                // NOTE: Both Svg library and ICO loading still require System.Drawing.Common
-                // This is kept minimal and isolated to this fallback path only
-                if(extension == ".svg")
-                {
-                    // Convert SVG to PNG using Svg library (requires System.Drawing)
-                    SvgDocument svgDocument = SvgDocument.Open(path);
-                    svgDocument.ShapeRendering = SvgShapeRendering.Auto;
+                // Formats ImageSharp cannot decode. Both paths rasterize to BGRA pixels and hand
+                // them to ImageSharp directly, so the rest of the class sees a normal image.
+                WorkingImage = extension == ".svg" ? RasterizeSvg(path) : await DecodeWithWicAsync(path);
 
-                    using MemoryStream svgMemoryStream = new();
-                    using (Bitmap svgBitmap = svgDocument.AdjustSize(1024, 1024).Draw())
-                    {
-                        svgBitmap.Save(svgMemoryStream, System.Drawing.Imaging.ImageFormat.Png);
-                    }
-
-                    svgMemoryStream.Position = 0;
-                    WorkingImage = await ImageSharpImage.LoadAsync<Rgba32>(svgMemoryStream);
-
-                    Encoder = new PngEncoder();
-                }
-                else
-                {
-                    // For ICO and other legacy formats (requires System.Drawing)
-                    byte[] fileBytes = await File.ReadAllBytesAsync(path);
-                    using MemoryStream inputStream = new(fileBytes);
-                    using MemoryStream pngStream = new();
-
-                    using (System.Drawing.Image drawingImage = System.Drawing.Image.FromStream(inputStream))
-                    {
-                        drawingImage.Save(pngStream, System.Drawing.Imaging.ImageFormat.Png);
-                    }
-
-                    pngStream.Position = 0;
-                    WorkingImage = await ImageSharpImage.LoadAsync<Rgba32>(pngStream);
-
-                    Encoder = new PngEncoder();
-                }
+                Encoder = new PngEncoder();
             }
 
             // Load completed after Dispose (user navigated away): drop the decoded image silently
@@ -271,6 +243,69 @@ internal partial class Image
 
             ImageFailed?.Invoke(this, args);
         }
+    }
+
+    /// <summary>
+    /// Rasterize an SVG through Skia. Scaled down to fit <see cref="SVG_MAX_RASTER_SIZE"/> on both
+    /// edges, never up: a vector file smaller than the cap keeps its authored pixel size.
+    /// </summary>
+    private static ImageSharpImage RasterizeSvg(string path)
+    {
+        using SKSvg svg = new();
+
+        if(svg.Load(path) == null) throw new InvalidOperationException($"Cannot parse SVG: {path}");
+
+        SKRect bounds = svg.Picture.CullRect;
+
+        if(bounds.Width <= 0 || bounds.Height <= 0) throw new InvalidOperationException($"SVG has no drawable area: {path}");
+
+        float scale = Math.Min(1f, Math.Min(SVG_MAX_RASTER_SIZE / bounds.Width, SVG_MAX_RASTER_SIZE / bounds.Height));
+        int width = Math.Max(1, (int)(bounds.Width * scale));
+        int height = Math.Max(1, (int)(bounds.Height * scale));
+
+        // Unpremultiplied BGRA is exactly ImageSharp's Bgra32 layout, so the pixels transfer as-is.
+        using SKBitmap bitmap = new(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul));
+
+        using(SKCanvas canvas = new(bitmap))
+        {
+            canvas.Clear(SKColors.Transparent);
+            canvas.Scale(scale);
+            // CullRect is not always anchored at the origin: shift it there before drawing.
+            canvas.Translate(-bounds.Left, -bounds.Top);
+            canvas.DrawPicture(svg.Picture);
+        }
+
+        return ImageSharpImage.LoadPixelData<Bgra32>(bitmap.GetPixelSpan(), width, height);
+    }
+
+    /// <summary>
+    /// Decode through WIC, the codec set Explorer itself uses. This covers ICO, which ImageSharp
+    /// 3.x has no decoder for, without any third-party imaging dependency.
+    /// </summary>
+    private static async Task<ImageSharpImage> DecodeWithWicAsync(string path)
+    {
+        using MemoryStream source = new(await File.ReadAllBytesAsync(path));
+
+        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(source.AsRandomAccessStream());
+
+        // An .ico packs several sizes in one file. Show the biggest, not whichever the container
+        // happens to list first, otherwise a 16x16 entry can win over a 256x256 one.
+        BitmapFrame frame = await decoder.GetFrameAsync(0);
+
+        for(uint i = 1; i < decoder.FrameCount; i++)
+        {
+            BitmapFrame candidate = await decoder.GetFrameAsync(i);
+            if(candidate.PixelWidth > frame.PixelWidth) frame = candidate;
+        }
+
+        PixelDataProvider pixels = await frame.GetPixelDataAsync(
+            BitmapPixelFormat.Bgra8,
+            BitmapAlphaMode.Straight,
+            new BitmapTransform(),
+            ExifOrientationMode.IgnoreExifOrientation,
+            ColorManagementMode.DoNotColorManage);
+
+        return ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.PixelWidth, (int)frame.PixelHeight);
     }
 
     private async void LoadImageFromMemory(IInputStream stream)

@@ -3,13 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
-using Svg;
 using ImageViewer.Helpers;
-
-// NOTE: System.Drawing is required here because the Svg library (3.4.7) depends on it
-// SvgDocument.GetDimensions() returns System.Drawing.SizeF
-// To eliminate this dependency, replace "Svg" package with "Svg.Skia" (see migration guide)
-using System.Drawing;
 
 namespace ImageViewer.Utilities;
 
@@ -19,34 +13,6 @@ public static class Extensions
     {
         if (index < 0 || index >= original.Length) return original;
         return [..original[..index], ..original[(index + 1)..]];
-    }
-
-    public static SvgDocument AdjustSize(this SvgDocument original, uint maxWidth, uint maxHeight)
-    {
-        // GetDimensions() returns System.Drawing.SizeF from Svg library
-        System.Drawing.SizeF svgSize = original.GetDimensions();
-
-        float width = svgSize.Width;
-        float height = svgSize.Height;
-
-        if (width > maxWidth)
-        {
-            float ratio = width / maxWidth;
-            height /= ratio;
-            width = maxWidth;
-        }
-
-        if (height > maxHeight)
-        {
-            float ratio = height / maxHeight;
-            width /= ratio;
-            height = maxHeight;
-        }
-
-        original.Width = width;
-        original.Height = height;
-
-        return original;
     }
 
     public static string UcFirst(this string original)

@@ -37,17 +37,24 @@ public class ImageTests
         }
     }
 
-    [Fact]
-    public async Task Load_Svg_Succeeds()
+    [Theory]
+    // Below the 1024 raster cap: authored size is kept, never upscaled.
+    [InlineData(32, 32, 32, 32)]
+    [InlineData(800, 600, 800, 600)]
+    // Above the cap: scaled down on the long edge, aspect ratio preserved.
+    [InlineData(4096, 2048, 1024, 512)]
+    [InlineData(1000, 4000, 256, 1024)]
+    public async Task Load_Svg_RastersWithinTheSizeCap(int svgWidth, int svgHeight, int expectedWidth, int expectedHeight)
     {
         using TempDir dir = new();
-        string path = FixtureFactory.SaveSvg(dir, "sample.svg", 32, 32);
+        string path = FixtureFactory.SaveSvg(dir, "sample.svg", svgWidth, svgHeight);
 
         ViewerImage image = await ImageLoader.LoadAsync(path);
         try
         {
             Assert.True(image.Loaded);
-            Assert.True(image.Width > 0 && image.Height > 0);
+            Assert.Equal(expectedWidth, (int)image.Width);
+            Assert.Equal(expectedHeight, (int)image.Height);
         }
         finally
         {
@@ -59,13 +66,33 @@ public class ImageTests
     public async Task Load_Ico_Succeeds()
     {
         using TempDir dir = new();
-        string path = FixtureFactory.SaveIco(dir, "sample.ico");
+        string path = FixtureFactory.SaveIco(dir, "sample.ico", 32);
 
         ViewerImage image = await ImageLoader.LoadAsync(path);
         try
         {
             Assert.True(image.Loaded);
-            Assert.True(image.Width > 0 && image.Height > 0);
+            Assert.Equal(32, (int)image.Width);
+            Assert.Equal(32, (int)image.Height);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task Load_Ico_PicksLargestFrame_NotTheFirstOne()
+    {
+        using TempDir dir = new();
+        // Smallest entry written first: taking frame 0 would show a 16x16 icon instead of the 256x256 one.
+        string path = FixtureFactory.SaveIco(dir, "multi.ico", 16, 256, 48);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            Assert.Equal(256, (int)image.Width);
+            Assert.Equal(256, (int)image.Height);
         }
         finally
         {

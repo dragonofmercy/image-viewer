@@ -76,10 +76,9 @@
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-        <PackageReference Include="Svg" Version="3.4.7" />
-        <!-- Out-of-band package (not in the framework); kept for the SVG rasterization fallback
-             and the ICO/legacy load path. Aligned to 10.0.x to match the net10 framework. -->
-        <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
+        <!-- SVG rasterization. Renders to a Skia surface, so nothing here needs GDI+ /
+             System.Drawing.Common (see Wrapper/Image.cs). ICO goes through WIC instead. -->
+        <PackageReference Include="Svg.Skia" Version="5.2.0" />
         <PackageReference Include="Velopack" Version="1.2.0" />
         <PackageReference Include="WinUIEx" Version="2.9.1" />
         <Manifest Include="$(ApplicationManifest)" />

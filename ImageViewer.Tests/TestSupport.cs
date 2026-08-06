@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 using SixLabors.ImageSharp;
@@ -85,21 +86,54 @@ public static class FixtureFactory
         return path;
     }
 
-    public static string SaveIco(TempDir dir, string fileName)
+    /// <summary>
+    /// Write a multi-size .ico. ImageSharp 3.x cannot encode ICO and the app no longer depends on
+    /// System.Drawing, so the container is emitted by hand: ICONDIR, one ICONDIRENTRY per size,
+    /// then PNG payloads (WIC decodes PNG-compressed icon entries).
+    /// Sizes are written in the given order so tests can check the decoder does not just take
+    /// the first frame.
+    /// </summary>
+    public static string SaveIco(TempDir dir, string fileName, params int[] sizes)
     {
-        // ImageSharp cannot write ICO; use System.Drawing to emit a valid icon the app's
-        // System.Drawing-based ICO load path can read back.
         string path = dir.File(fileName);
-        using System.Drawing.Bitmap bitmap = new(16, 16);
-        using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap))
+
+        byte[][] frames = sizes.Select(size =>
         {
-            graphics.Clear(System.Drawing.Color.Red);
+            using Image<Rgba32> image = new(size, size);
+            using MemoryStream png = new();
+            image.SaveAsPng(png);
+            return png.ToArray();
+        }).ToArray();
+
+        using FileStream stream = System.IO.File.Create(path);
+        using BinaryWriter writer = new(stream);
+
+        writer.Write((ushort)0);                // reserved
+        writer.Write((ushort)1);                // type: icon
+        writer.Write((ushort)frames.Length);
+
+        int offset = 6 + 16 * frames.Length;    // header + directory
+
+        for (int i = 0; i < frames.Length; i++)
+        {
+            byte dimension = (byte)(sizes[i] >= 256 ? 0 : sizes[i]); // 0 encodes 256
+            writer.Write(dimension);            // width
+            writer.Write(dimension);            // height
+            writer.Write((byte)0);              // palette size
+            writer.Write((byte)0);              // reserved
+            writer.Write((ushort)1);            // colour planes
+            writer.Write((ushort)32);           // bits per pixel
+            writer.Write(frames[i].Length);
+            writer.Write(offset);
+
+            offset += frames[i].Length;
         }
 
-        IntPtr hIcon = bitmap.GetHicon();
-        using System.Drawing.Icon icon = System.Drawing.Icon.FromHandle(hIcon);
-        using FileStream stream = System.IO.File.Create(path);
-        icon.Save(stream);
+        foreach (byte[] frame in frames)
+        {
+            writer.Write(frame);
+        }
+
         return path;
     }
 }
