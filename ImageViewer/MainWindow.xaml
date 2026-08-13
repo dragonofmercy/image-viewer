@@ -147,6 +147,11 @@
                                 </Button>
                                 <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="0" SelectionChanged="IconSizeStrip_SelectionChanged"
                                           ScrollViewer.HorizontalScrollMode="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                    <ListView.Resources>
+                                        <!-- ListViewItemPresenter reads this resource instead of template-binding the item's CornerRadius,
+                                             so a Setter on ListViewItem does nothing. Point it at the buttons' own radius. -->
+                                        <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="ControlCornerRadius" />
+                                    </ListView.Resources>
                                     <ListView.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <ItemsStackPanel Orientation="Horizontal" />
@@ -157,8 +162,6 @@
                                             <Setter Property="Padding" Value="6,2" />
                                             <Setter Property="MinWidth" Value="0" />
                                             <Setter Property="MinHeight" Value="0" />
-                                            <!-- Same rounding as the two step buttons sitting either side -->
-                                            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                     <ListView.ItemTemplate>
