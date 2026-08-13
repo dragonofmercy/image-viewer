@@ -124,8 +124,8 @@
                         <Border x:Name="IconSizeBar" x:FieldModifier="public" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16" MaxWidth="640"
                                 CornerRadius="8" Padding="4" Background="{ThemeResource AppBarBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppBarBorderBrush}">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button x:Name="ButtonIconSizeLarger" x:FieldModifier="public" Click="ButtonIconSizeLarger_Click" Width="32" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
-                                        ToolTipService.ToolTip="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}" AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}">
+                                <Button x:Name="ButtonIconSizeLarger" x:FieldModifier="public" Click="ButtonIconSizeLarger_Click" Width="22" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
+                                        AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}">
                                     <FontIcon FontSize="14" Glyph="&#xE76B;" />
                                 </Button>
                                 <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="0" SelectionChanged="IconSizeStrip_SelectionChanged"
@@ -155,8 +155,8 @@
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                 </ListView>
-                                <Button x:Name="ButtonIconSizeSmaller" x:FieldModifier="public" Click="ButtonIconSizeSmaller_Click" Width="32" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
-                                        ToolTipService.ToolTip="{x:Bind helpers:Culture.GetString('ICON_SIZE_SMALLER')}" AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_SMALLER')}">
+                                <Button x:Name="ButtonIconSizeSmaller" x:FieldModifier="public" Click="ButtonIconSizeSmaller_Click" Width="22" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
+                                        AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_SMALLER')}">
                                     <FontIcon FontSize="14" Glyph="&#xE76C;" />
                                 </Button>
                             </StackPanel>
