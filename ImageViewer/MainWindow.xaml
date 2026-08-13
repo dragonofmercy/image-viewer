@@ -122,7 +122,7 @@
                         </ScrollViewer>
                         <!-- Icon size picker: floats over the image, 16px clear of the footer, so it costs no layout height -->
                         <Border x:Name="IconSizeBar" x:FieldModifier="public" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16" MaxWidth="640"
-                                CornerRadius="8" Padding="4" Background="{ThemeResource AppBarBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppBarBorderBrush}">
+                                CornerRadius="8" Padding="4" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppBarBorderBrush}">
                             <Border.Resources>
                                 <!-- The stock Button hover/pressed fills are opaque and read as a white blob on the panel in light theme.
                                      Remap them to the subtle fills the footer AppBarButtons use. Theme dictionaries, not a plain alias,
@@ -141,7 +141,7 @@
                                 </ResourceDictionary>
                             </Border.Resources>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button x:Name="ButtonIconSizeLarger" x:FieldModifier="public" Click="ButtonIconSizeLarger_Click" Width="22" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
+                                <Button x:Name="ButtonIconSizeLarger" x:FieldModifier="public" Click="ButtonIconSizeLarger_Click" Width="22" Height="52" Padding="0" Background="Transparent" BorderThickness="0"
                                         AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}">
                                     <FontIcon FontSize="14" Glyph="&#xE76B;" />
                                 </Button>
@@ -158,7 +158,7 @@
                                             <Setter Property="MinWidth" Value="0" />
                                             <Setter Property="MinHeight" Value="0" />
                                             <!-- Same height as the step buttons, and 2px each side so items never touch each other or the buttons -->
-                                            <Setter Property="Height" Value="48" />
+                                            <Setter Property="Height" Value="52" />
                                             <Setter Property="Margin" Value="2,0" />
                                             <Setter Property="UseSystemFocusVisuals" Value="True" />
                                             <Setter Property="Template">
@@ -209,17 +209,17 @@
                                         <DataTemplate x:DataType="helpers:IconSizeItem">
                                             <StackPanel Orientation="Vertical" MinWidth="40" ToolTipService.ToolTip="{x:Bind Tooltip}">
                                                 <!-- Fixed-height box so every thumbnail sits on the same baseline. Uniform stretch with a
-                                                     28px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size;
-                                                     28 + the label fits the 48px item height the step buttons set. -->
-                                                <Grid Height="28">
-                                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="28" MaxHeight="28" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                     32px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size;
+                                                     32 + the label is what sets the 52px height shared with the step buttons. -->
+                                                <Grid Height="32">
+                                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="32" MaxHeight="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Grid>
                                                 <TextBlock Text="{x:Bind Label}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondary}" HorizontalAlignment="Center" />
                                             </StackPanel>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                 </ListView>
-                                <Button x:Name="ButtonIconSizeSmaller" x:FieldModifier="public" Click="ButtonIconSizeSmaller_Click" Width="22" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
+                                <Button x:Name="ButtonIconSizeSmaller" x:FieldModifier="public" Click="ButtonIconSizeSmaller_Click" Width="22" Height="52" Padding="0" Background="Transparent" BorderThickness="0"
                                         AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_SMALLER')}">
                                     <FontIcon FontSize="14" Glyph="&#xE76C;" />
                                 </Button>
