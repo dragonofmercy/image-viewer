@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 using Windows.Storage;
@@ -43,6 +44,9 @@ internal class Context
 
     public Image CurrentImage { get; protected set; }
     public string CurrentFilePath { get; protected set; }
+
+    // Set while the size strip is being filled, so restoring its selection is not mistaken for a user click
+    private bool PopulatingIconSizes;
 
     public void ChangeTheme(ElementTheme theme)
     {
@@ -305,6 +309,53 @@ internal class Context
     }
 
     /// <summary>
+    /// Rebuild the icon size strip from the current image. Called once per opened file: the
+    /// thumbnails are decoded pixels, not something to rebuild on every layout pass.
+    /// </summary>
+    public void PopulateIconSizes()
+    {
+        PopulatingIconSizes = true;
+
+        try
+        {
+            MainWindow.IconSizeStrip.Items.Clear();
+
+            if (!HasImageLoaded() || !CurrentImage.HasIconSizes) return;
+
+            for (int i = 0; i < CurrentImage.IconSizeCount; i++)
+            {
+                (int width, int height) = CurrentImage.GetIconSize(i);
+
+                MainWindow.IconSizeStrip.Items.Add(new IconSizeItem
+                {
+                    Thumbnail = CurrentImage.GetIconSizeThumbnail(i),
+                    Label = width.ToString(CultureInfo.InvariantCulture),
+                    Tooltip = width + " x " + height
+                });
+            }
+
+            MainWindow.IconSizeStrip.SelectedIndex = CurrentImage.IconSizeIndex;
+        }
+        finally
+        {
+            PopulatingIconSizes = false;
+        }
+    }
+
+    /// <summary>
+    /// Show another size of the current icon. The frames are already decoded, so no reload happens.
+    /// </summary>
+    public void SelectIconSize(int index)
+    {
+        if (PopulatingIconSizes || index < 0) return;
+        if (!HasImageLoaded() || !CurrentImage.HasIconSizes) return;
+        if (index == CurrentImage.IconSizeIndex) return;
+
+        CurrentImage.SelectIconSize(index);
+        ReloadImageView();
+    }
+
+    /// <summary>
     /// Delete current image.
     /// </summary>
     public void DeleteImage()
@@ -466,6 +517,9 @@ internal class Context
         MainWindow.ButtonImageTransformCrop.IsEnabled = enabled;
 
         MainWindow.TextBlockDimensions.Text = loaded ? CurrentImage.Width + "x" + CurrentImage.Height : "";
+
+        // Cheap visibility toggle only: the strip contents are built by PopulateIconSizes on load.
+        MainWindow.IconSizeBar.Visibility = enabled && !App.IsFullScreen && CurrentImage.HasIconSizes ? Visibility.Visible : Visibility.Collapsed;
 
         if (MainWindow.ImageLoadingIndicator.IsActive)
         {
@@ -688,6 +742,9 @@ internal class Context
     {
         if (!ReferenceEquals(sender, CurrentImage)) return;
 
+        // Fill the strip before the view reloads: it changes the layout height, and AdjustImage
+        // (fired at the end of ReloadImageView) must fit the image to the space that remains.
+        PopulateIconSizes();
         ReloadImageView();
     }
 
@@ -700,4 +757,14 @@ internal class Context
 
         return _Instance;
     }
+}
+
+/// <summary>
+/// One entry of the icon size strip. Public because the DataTemplate in MainWindow.xaml binds to it.
+/// </summary>
+public class IconSizeItem
+{
+    public ImageSource Thumbnail { get; init; }
+    public string Label { get; init; }
+    public string Tooltip { get; init; }
 }

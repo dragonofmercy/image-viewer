@@ -41,6 +41,9 @@ public sealed partial class MainWindow : Window
     private const double ASPECT_FREE = 0;
     private const double ASPECT_SAME = -1;
 
+    // Fullscreen collapses the footer row by index: keep it here so inserting a row above it is a one-line change.
+    private const int FOOTER_ROW = 4;
+
     public readonly Dictionary<string, double>CropperAspectRatios = new()
     {
         {Culture.GetString("TRANSFORM_CROP_FREE"), ASPECT_FREE},
@@ -154,7 +157,7 @@ public sealed partial class MainWindow : Window
         // Capture the windowed layout once so it restores correctly (row 0 may be Auto when
         // the custom title bar is unsupported)
         OriginalTitleBarRowHeight ??= MainLayout.RowDefinitions[0].Height;
-        OriginalFooterRowHeight ??= MainLayout.RowDefinitions[3].Height;
+        OriginalFooterRowHeight ??= MainLayout.RowDefinitions[FOOTER_ROW].Height;
         OriginalTitleBarVisibility ??= AppTitleBar.Visibility;
 
         if(enabled)
@@ -168,8 +171,9 @@ public sealed partial class MainWindow : Window
 
             AppTitleBar.Visibility = Visibility.Collapsed;
             FooterToolbar.Visibility = Visibility.Collapsed;
+            IconSizeBar.Visibility = Visibility.Collapsed;
             MainLayout.RowDefinitions[0].Height = new GridLength(0);
-            MainLayout.RowDefinitions[3].Height = new GridLength(0);
+            MainLayout.RowDefinitions[FOOTER_ROW].Height = new GridLength(0);
         }
         else
         {
@@ -178,13 +182,16 @@ public sealed partial class MainWindow : Window
             AppTitleBar.Visibility = OriginalTitleBarVisibility.Value;
             FooterToolbar.Visibility = Visibility.Visible;
             MainLayout.RowDefinitions[0].Height = OriginalTitleBarRowHeight.Value;
-            MainLayout.RowDefinitions[3].Height = OriginalFooterRowHeight.Value;
+            MainLayout.RowDefinitions[FOOTER_ROW].Height = OriginalFooterRowHeight.Value;
 
             RedrawTitleBar();
 
             // Lower the guard only after the presenter is restored, so the transition's
             // size/position change back to the windowed bounds is not recorded mid-flight
             App.IsFullScreen = false;
+
+            // The size strip is only shown for icons: let the context decide whether it comes back
+            Context.Instance().UpdateButtonsAccessiblity();
         }
     }
 
@@ -423,6 +430,11 @@ public sealed partial class MainWindow : Window
     private void Grid_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         Context.Instance().UpdateButtonsAccessiblity();
+    }
+
+    private void IconSizeStrip_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        Context.Instance().SelectIconSize(IconSizeStrip.SelectedIndex);
     }
 
     private void ButtonImageRotateLeft_Click(object sender, RoutedEventArgs e)

@@ -101,6 +101,101 @@ public class ImageTests
     }
 
     [Fact]
+    public async Task Load_Ico_ExposesEverySizeLargestFirst()
+    {
+        using TempDir dir = new();
+        string path = FixtureFactory.SaveIco(dir, "sizes.ico", 16, 256, 48);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            Assert.True(image.HasIconSizes);
+            Assert.Equal(3, image.IconSizeCount);
+            Assert.Equal(0, image.IconSizeIndex);
+
+            // File order is 16/256/48: the strip must list them 256/48/16, whatever the container says.
+            Assert.Equal((256, 256), image.GetIconSize(0));
+            Assert.Equal((48, 48), image.GetIconSize(1));
+            Assert.Equal((16, 16), image.GetIconSize(2));
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SelectIconSize_SwapsTheDisplayedFrame()
+    {
+        using TempDir dir = new();
+        string path = FixtureFactory.SaveIco(dir, "select.ico", 16, 256, 48);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            image.SelectIconSize(2);
+
+            Assert.Equal(2, image.IconSizeIndex);
+            Assert.Equal(16, (int)image.Width);
+            Assert.Equal(16, (int)image.Height);
+
+            image.SelectIconSize(0);
+
+            Assert.Equal(256, (int)image.Width);
+            Assert.Equal(256, (int)image.Height);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SelectIconSize_KeepsTransformsOnTheFrameTheyWereAppliedTo()
+    {
+        using TempDir dir = new();
+        string path = FixtureFactory.SaveIco(dir, "transform.ico", 256, 16);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            image.Crop(0, 0, 100, 40);
+            Assert.Equal(100, (int)image.Width);
+
+            image.SelectIconSize(1);
+            Assert.Equal(16, (int)image.Width);
+
+            // Back to the cropped one: it stayed cropped, it was not silently reloaded.
+            image.SelectIconSize(0);
+            Assert.Equal(100, (int)image.Width);
+            Assert.Equal(40, (int)image.Height);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("single.ico")]
+    [InlineData("single.png")]
+    public async Task HasIconSizes_FalseWithoutSizeVariants(string fileName)
+    {
+        using TempDir dir = new();
+        string path = fileName.EndsWith(".ico") ? FixtureFactory.SaveIco(dir, fileName, 32) : FixtureFactory.Save(dir, fileName, 32, 32);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            Assert.False(image.HasIconSizes);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Fact]
     public async Task Load_AppliesExifOrientation_SwappingWidthAndHeight()
     {
         using TempDir dir = new();

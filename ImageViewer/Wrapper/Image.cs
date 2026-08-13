@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -46,6 +47,12 @@ internal partial class Image
     protected ImageSharpImage WorkingImage;
     protected IImageEncoder Encoder = new JpegEncoder { Quality = 100 };
 
+    // Every size packed in the current .ico, largest first. Null for any other format.
+    // An icon frame tops out at 256x256 (256 KB of pixels), so holding them all costs
+    // well under 2 MB even for a fully populated icon - cheap enough to make switching
+    // sizes instant instead of re-reading the file.
+    protected ImageSharpImage[] IconFrames;
+
     public void Load(string path)
     {
         LoadImageFromPath(path);
@@ -62,11 +69,55 @@ internal partial class Image
     public bool IsAnimated => WorkingImage is { Frames.Count: > 1 };
     public bool Modified { get; private set; }
 
+    /// <summary>An .ico holding more than one size: the only case where the size strip is shown.</summary>
+    public bool HasIconSizes => IconFrames is { Length: > 1 };
+    public int IconSizeCount => IconFrames?.Length ?? 0;
+    public int IconSizeIndex { get; private set; }
+
+    public (int Width, int Height) GetIconSize(int index) => (IconFrames[index].Width, IconFrames[index].Height);
+
+    /// <summary>
+    /// Display another size of the current icon. The frames are already decoded, so this is a
+    /// reference swap: any transform applied to a frame stays on that frame.
+    /// </summary>
+    public void SelectIconSize(int index)
+    {
+        if(IconFrames == null || index < 0 || index >= IconFrames.Length) return;
+
+        IconSizeIndex = index;
+        WorkingImage = IconFrames[index];
+    }
+
+    public WriteableBitmap GetIconSizeThumbnail(int index) => ToWriteableBitmap(IconFrames[index]);
+
     public void Dispose()
     {
         Disposed = true;
-        WorkingImage?.Dispose();
+        DisposeWorkingImages();
         WorkingImageLoaded = false;
+    }
+
+    /// <summary>
+    /// Release the decoded pixels. WorkingImage is one of <see cref="IconFrames"/> when an icon is
+    /// open, so the frames own the disposal in that case.
+    /// </summary>
+    private void DisposeWorkingImages()
+    {
+        if(IconFrames != null)
+        {
+            foreach(ImageSharpImage frame in IconFrames)
+            {
+                frame.Dispose();
+            }
+
+            IconFrames = null;
+        }
+        else
+        {
+            WorkingImage?.Dispose();
+        }
+
+        WorkingImage = null;
     }
     
     public string GetImageDimensionsAsString()
@@ -95,14 +146,16 @@ internal partial class Image
     /// <summary>
     /// Copy the working image as top-down BGRA32 pixels, the order the clipboard DIB path expects.
     /// </summary>
-    public byte[] GetBgra32Pixels(out int width, out int height)
+    public byte[] GetBgra32Pixels(out int width, out int height) => GetBgra32Pixels(WorkingImage, out width, out height);
+
+    private static byte[] GetBgra32Pixels(ImageSharpImage source, out int width, out int height)
     {
-        width = WorkingImage.Width;
-        height = WorkingImage.Height;
+        width = source.Width;
+        height = source.Height;
 
         byte[] pixels = new byte[width * height * 4];
 
-        using(SixLabors.ImageSharp.Image<Bgra32> converted = WorkingImage.CloneAs<Bgra32>())
+        using(SixLabors.ImageSharp.Image<Bgra32> converted = source.CloneAs<Bgra32>())
         {
             converted.CopyPixelDataTo(pixels);
         }
@@ -110,11 +163,13 @@ internal partial class Image
         return pixels;
     }
 
-    public WriteableBitmap GetWriteableBitmap()
-    {
-        if(WorkingImage == null) return null;
+    public WriteableBitmap GetWriteableBitmap() => ToWriteableBitmap(WorkingImage);
 
-        byte[] pixels = GetBgra32Pixels(out int width, out int height);
+    private static WriteableBitmap ToWriteableBitmap(ImageSharpImage source)
+    {
+        if(source == null) return null;
+
+        byte[] pixels = GetBgra32Pixels(source, out int width, out int height);
 
         // XAML composition expects premultiplied alpha
         for(int i = 0; i < pixels.Length; i += 4)
@@ -211,20 +266,25 @@ internal partial class Image
                         break;
                 }
             }
-            else
+            else if(extension == ".svg")
             {
                 // Formats ImageSharp cannot decode. Both paths rasterize to BGRA pixels and hand
                 // them to ImageSharp directly, so the rest of the class sees a normal image.
-                WorkingImage = extension == ".svg" ? RasterizeSvg(path) : await DecodeWithWicAsync(path);
-
+                WorkingImage = RasterizeSvg(path);
+                Encoder = new PngEncoder();
+            }
+            else
+            {
+                IconFrames = await DecodeIconFramesAsync(path);
+                IconSizeIndex = 0;
+                WorkingImage = IconFrames[0];
                 Encoder = new PngEncoder();
             }
 
             // Load completed after Dispose (user navigated away): drop the decoded image silently
             if(Disposed)
             {
-                WorkingImage?.Dispose();
-                WorkingImage = null;
+                DisposeWorkingImages();
                 return;
             }
 
@@ -280,32 +340,38 @@ internal partial class Image
 
     /// <summary>
     /// Decode through WIC, the codec set Explorer itself uses. This covers ICO, which ImageSharp
-    /// 3.x has no decoder for, without any third-party imaging dependency.
+    /// 3.x has no decoder for, without any third-party imaging dependency. An .ico packs several
+    /// sizes in one file, in no guaranteed order: every one is decoded and the list is sorted
+    /// largest first, so the biggest opens by default (a container listing 16x16 first must not
+    /// win over a 256x256 entry) and the size strip reads top-down.
     /// </summary>
-    private static async Task<ImageSharpImage> DecodeWithWicAsync(string path)
+    private static async Task<ImageSharpImage[]> DecodeIconFramesAsync(string path)
     {
         using MemoryStream source = new(await File.ReadAllBytesAsync(path));
 
         BitmapDecoder decoder = await BitmapDecoder.CreateAsync(source.AsRandomAccessStream());
 
-        // An .ico packs several sizes in one file. Show the biggest, not whichever the container
-        // happens to list first, otherwise a 16x16 entry can win over a 256x256 one.
-        BitmapFrame frame = await decoder.GetFrameAsync(0);
+        if(decoder.FrameCount == 0) throw new InvalidOperationException($"No decodable frame in: {path}");
 
-        for(uint i = 1; i < decoder.FrameCount; i++)
+        List<ImageSharpImage> frames = new((int)decoder.FrameCount);
+
+        for(uint i = 0; i < decoder.FrameCount; i++)
         {
-            BitmapFrame candidate = await decoder.GetFrameAsync(i);
-            if(candidate.PixelWidth > frame.PixelWidth) frame = candidate;
+            BitmapFrame frame = await decoder.GetFrameAsync(i);
+
+            PixelDataProvider pixels = await frame.GetPixelDataAsync(
+                BitmapPixelFormat.Bgra8,
+                BitmapAlphaMode.Straight,
+                new BitmapTransform(),
+                ExifOrientationMode.IgnoreExifOrientation,
+                ColorManagementMode.DoNotColorManage);
+
+            frames.Add(ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.PixelWidth, (int)frame.PixelHeight));
         }
 
-        PixelDataProvider pixels = await frame.GetPixelDataAsync(
-            BitmapPixelFormat.Bgra8,
-            BitmapAlphaMode.Straight,
-            new BitmapTransform(),
-            ExifOrientationMode.IgnoreExifOrientation,
-            ColorManagementMode.DoNotColorManage);
-
-        return ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.PixelWidth, (int)frame.PixelHeight);
+        // OrderByDescending is stable, so two entries of the same size (an icon can hold 32x32 in
+        // both 8-bit and 32-bit) keep their file order instead of being shuffled.
+        return [.. frames.OrderByDescending(frame => (long)frame.Width * frame.Height)];
     }
 
     private async void LoadImageFromMemory(IInputStream stream)
@@ -318,8 +384,7 @@ internal partial class Image
             // Load completed after Dispose (user navigated away): drop the decoded image silently
             if(Disposed)
             {
-                WorkingImage?.Dispose();
-                WorkingImage = null;
+                DisposeWorkingImages();
                 return;
             }
 

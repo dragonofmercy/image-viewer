@@ -27,6 +27,8 @@
                 <RowDefinition Height="48" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
+                <!-- Icon size strip: Auto, so it takes no room at all while collapsed -->
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="48" />
             </Grid.RowDefinitions>
             <Grid x:Name="AppTitleBar" x:FieldModifier="public" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AppBarBackgroundBrush}">
@@ -167,7 +169,36 @@
                     </SplitView>
                 </Grid>
             </SplitView>
-            <Grid Grid.Row="3" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
+            <Border Grid.Row="3" x:Name="IconSizeBar" x:FieldModifier="public" Visibility="Collapsed" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
+                <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="8,4" HorizontalAlignment="Center" SelectionChanged="IconSizeStrip_SelectionChanged"
+                          ScrollViewer.HorizontalScrollMode="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsStackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="6,4" />
+                            <Setter Property="MinWidth" Value="0" />
+                            <Setter Property="MinHeight" Value="0" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="helpers:IconSizeItem">
+                            <StackPanel Orientation="Vertical" MinWidth="48" ToolTipService.ToolTip="{x:Bind Tooltip}">
+                                <!-- Fixed-height box so every thumbnail sits on the same baseline. Uniform stretch with a
+                                     32px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size. -->
+                                <Grid Height="36">
+                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="32" MaxHeight="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock Text="{x:Bind Label}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondary}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+            <Grid Grid.Row="4" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
