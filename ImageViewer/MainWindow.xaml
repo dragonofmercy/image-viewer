@@ -147,11 +147,6 @@
                                 </Button>
                                 <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="0" SelectionChanged="IconSizeStrip_SelectionChanged"
                                           ScrollViewer.HorizontalScrollMode="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                    <ListView.Resources>
-                                        <!-- ListViewItemPresenter reads this resource instead of template-binding the item's CornerRadius,
-                                             so a Setter on ListViewItem does nothing. Point it at the buttons' own radius. -->
-                                        <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="ControlCornerRadius" />
-                                    </ListView.Resources>
                                     <ListView.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <ItemsStackPanel Orientation="Horizontal" />
@@ -162,6 +157,49 @@
                                             <Setter Property="Padding" Value="6,2" />
                                             <Setter Property="MinWidth" Value="0" />
                                             <Setter Property="MinHeight" Value="0" />
+                                            <Setter Property="UseSystemFocusVisuals" Value="True" />
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <!-- Hand-rolled chrome: the stock template hands everything to a ListViewItemPresenter,
+                                                         which paints a square fill and ignores both ListViewItem.CornerRadius and the
+                                                         ListViewItemCornerRadius resource. A plain Border rounds like the step buttons. -->
+                                                    <ControlTemplate TargetType="ListViewItem">
+                                                        <Border x:Name="Root" Control.IsTemplateFocusTarget="True" Background="Transparent" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="{TemplateBinding Padding}">
+                                                            <VisualStateManager.VisualStateGroups>
+                                                                <VisualStateGroup x:Name="CommonStates">
+                                                                    <VisualState x:Name="Normal" />
+                                                                    <VisualState x:Name="PointerOver">
+                                                                        <VisualState.Setters>
+                                                                            <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                                                        </VisualState.Setters>
+                                                                    </VisualState>
+                                                                    <VisualState x:Name="Pressed">
+                                                                        <VisualState.Setters>
+                                                                            <Setter Target="Root.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                                                        </VisualState.Setters>
+                                                                    </VisualState>
+                                                                    <VisualState x:Name="Selected">
+                                                                        <VisualState.Setters>
+                                                                            <Setter Target="Root.Background" Value="{ThemeResource ListViewItemBackgroundSelected}" />
+                                                                        </VisualState.Setters>
+                                                                    </VisualState>
+                                                                    <VisualState x:Name="PointerOverSelected">
+                                                                        <VisualState.Setters>
+                                                                            <Setter Target="Root.Background" Value="{ThemeResource ListViewItemBackgroundSelectedPointerOver}" />
+                                                                        </VisualState.Setters>
+                                                                    </VisualState>
+                                                                    <VisualState x:Name="PressedSelected">
+                                                                        <VisualState.Setters>
+                                                                            <Setter Target="Root.Background" Value="{ThemeResource ListViewItemBackgroundSelectedPressed}" />
+                                                                        </VisualState.Setters>
+                                                                    </VisualState>
+                                                                </VisualStateGroup>
+                                                            </VisualStateManager.VisualStateGroups>
+                                                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                     <ListView.ItemTemplate>
