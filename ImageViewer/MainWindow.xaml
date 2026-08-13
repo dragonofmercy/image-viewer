@@ -38,9 +38,11 @@
                 <Image Grid.Column="0" Source="ImageViewer.ico" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16" Margin="16,0" />
                 <TextBlock Grid.Column="1" x:Name="AppTitleBarText" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
             </Grid>
-            <SplitView Grid.Row="2" BorderThickness="0" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Overlay" LightDismissOverlayMode="Off" PanePlacement="Right" PaneOpening="SplitViewContainer_PaneOpening">
+            <!-- PaneBackground must be transparent: the SplitView would otherwise paint an opaque layer behind the pane,
+                 and the acrylic would sample that instead of the image it slides over -->
+            <SplitView Grid.Row="2" BorderThickness="0" x:Name="SplitViewContainer" x:FieldModifier="public" DisplayMode="Overlay" LightDismissOverlayMode="Off" PanePlacement="Right" PaneBackground="Transparent" PaneOpening="SplitViewContainer_PaneOpening">
                 <SplitView.Pane>
-                    <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource ContextBackgroundBrush}">
+                    <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
                         <StackPanel Orientation="Vertical" Padding="16">
                             <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
@@ -226,9 +228,12 @@
                             </StackPanel>
                         </Border>
                     </controls:CursorGrid>
-                    <SplitView BorderThickness="0" x:Name="ImageCropperContainer" x:FieldModifier="public" Visibility="Collapsed" PanePlacement="Right" DisplayMode="Inline">
+                    <SplitView BorderThickness="0" x:Name="ImageCropperContainer" x:FieldModifier="public" Visibility="Collapsed" PanePlacement="Right" DisplayMode="Inline" PaneBackground="Transparent">
                         <SplitView.Pane>
-                            <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource ContextBackgroundBrush}">
+                            <!-- Acrylic here is a tint, not a blur: an inline pane pushes the cropper aside instead of
+                                 covering it, so all it has behind it is the flat view background. Kept for consistency
+                                 with the info pane and the size picker. -->
+                            <Border BorderThickness="1,0,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
                                 <StackPanel Orientation="Vertical" Padding="16" HorizontalAlignment="Stretch">
                                     <Grid Margin="0,0,0,24">
                                         <Grid.ColumnDefinitions>
