@@ -198,4 +198,10 @@
   <data name="ABOUT_UPDATE_INFO_ERROR_NO_INTERNET" xml:space="preserve">
     <value>无法访问互联网。</value>
   </data>
+  <data name="ICON_SIZE_LARGER" xml:space="preserve">
+    <value>更大尺寸</value>
+  </data>
+  <data name="ICON_SIZE_SMALLER" xml:space="preserve">
+    <value>更小尺寸</value>
+  </data>
 </root>

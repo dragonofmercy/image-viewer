@@ -339,6 +339,7 @@ internal class Context
         finally
         {
             PopulatingIconSizes = false;
+            UpdateIconSizeButtons();
         }
     }
 
@@ -352,7 +353,27 @@ internal class Context
         if (index == CurrentImage.IconSizeIndex) return;
 
         CurrentImage.SelectIconSize(index);
+        UpdateIconSizeButtons();
         ReloadImageView();
+    }
+
+    /// <summary>
+    /// Move by one entry in the size strip. Clamped, not wrapping: the arrows disable at both ends.
+    /// </summary>
+    public void StepIconSize(int delta)
+    {
+        if (!HasImageLoaded() || !CurrentImage.HasIconSizes) return;
+
+        // Driving the selection keeps the strip highlight and the displayed frame in sync
+        MainWindow.IconSizeStrip.SelectedIndex = Math.Clamp(CurrentImage.IconSizeIndex + delta, 0, CurrentImage.IconSizeCount - 1);
+    }
+
+    private void UpdateIconSizeButtons()
+    {
+        bool stepable = HasImageLoaded() && CurrentImage.HasIconSizes;
+
+        MainWindow.ButtonIconSizeLarger.IsEnabled = stepable && CurrentImage.IconSizeIndex > 0;
+        MainWindow.ButtonIconSizeSmaller.IsEnabled = stepable && CurrentImage.IconSizeIndex < CurrentImage.IconSizeCount - 1;
     }
 
     /// <summary>

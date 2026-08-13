@@ -42,7 +42,7 @@ public sealed partial class MainWindow : Window
     private const double ASPECT_SAME = -1;
 
     // Fullscreen collapses the footer row by index: keep it here so inserting a row above it is a one-line change.
-    private const int FOOTER_ROW = 4;
+    private const int FOOTER_ROW = 3;
 
     public readonly Dictionary<string, double>CropperAspectRatios = new()
     {
@@ -435,6 +435,17 @@ public sealed partial class MainWindow : Window
     private void IconSizeStrip_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         Context.Instance().SelectIconSize(IconSizeStrip.SelectedIndex);
+    }
+
+    private void ButtonIconSizeLarger_Click(object sender, RoutedEventArgs e)
+    {
+        // Sizes are listed largest first, so stepping left grows the icon
+        Context.Instance().StepIconSize(-1);
+    }
+
+    private void ButtonIconSizeSmaller_Click(object sender, RoutedEventArgs e)
+    {
+        Context.Instance().StepIconSize(1);
     }
 
     private void ButtonImageRotateLeft_Click(object sender, RoutedEventArgs e)

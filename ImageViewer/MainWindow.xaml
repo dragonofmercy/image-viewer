@@ -27,8 +27,6 @@
                 <RowDefinition Height="48" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
-                <!-- Icon size strip: Auto, so it takes no room at all while collapsed -->
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="48" />
             </Grid.RowDefinitions>
             <Grid x:Name="AppTitleBar" x:FieldModifier="public" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AppBarBackgroundBrush}">
@@ -122,6 +120,47 @@
                                 VerticalContentAlignment="Center">
                             <Image x:Name="ImageView" Stretch="None" x:FieldModifier="public" />
                         </ScrollViewer>
+                        <!-- Icon size picker: floats over the image, 16px clear of the footer, so it costs no layout height -->
+                        <Border x:Name="IconSizeBar" x:FieldModifier="public" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16" MaxWidth="640"
+                                CornerRadius="8" Padding="4" Background="{ThemeResource AppBarBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppBarBorderBrush}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="ButtonIconSizeLarger" x:FieldModifier="public" Click="ButtonIconSizeLarger_Click" Width="32" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
+                                        ToolTipService.ToolTip="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}" AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}">
+                                    <FontIcon FontSize="14" Glyph="&#xE76B;" />
+                                </Button>
+                                <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="0" SelectionChanged="IconSizeStrip_SelectionChanged"
+                                          ScrollViewer.HorizontalScrollMode="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                    <ListView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <ItemsStackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ListView.ItemsPanel>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="Padding" Value="6,2" />
+                                            <Setter Property="MinWidth" Value="0" />
+                                            <Setter Property="MinHeight" Value="0" />
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="helpers:IconSizeItem">
+                                            <StackPanel Orientation="Vertical" MinWidth="40" ToolTipService.ToolTip="{x:Bind Tooltip}">
+                                                <!-- Fixed-height box so every thumbnail sits on the same baseline. Uniform stretch with a
+                                                     32px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size. -->
+                                                <Grid Height="32">
+                                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="32" MaxHeight="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <TextBlock Text="{x:Bind Label}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondary}" HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                                <Button x:Name="ButtonIconSizeSmaller" x:FieldModifier="public" Click="ButtonIconSizeSmaller_Click" Width="32" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
+                                        ToolTipService.ToolTip="{x:Bind helpers:Culture.GetString('ICON_SIZE_SMALLER')}" AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_SMALLER')}">
+                                    <FontIcon FontSize="14" Glyph="&#xE76C;" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
                     </controls:CursorGrid>
                     <SplitView BorderThickness="0" x:Name="ImageCropperContainer" x:FieldModifier="public" Visibility="Collapsed" PanePlacement="Right" DisplayMode="Inline">
                         <SplitView.Pane>
@@ -169,36 +208,7 @@
                     </SplitView>
                 </Grid>
             </SplitView>
-            <Border Grid.Row="3" x:Name="IconSizeBar" x:FieldModifier="public" Visibility="Collapsed" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
-                <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="8,4" HorizontalAlignment="Center" SelectionChanged="IconSizeStrip_SelectionChanged"
-                          ScrollViewer.HorizontalScrollMode="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsStackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="Padding" Value="6,4" />
-                            <Setter Property="MinWidth" Value="0" />
-                            <Setter Property="MinHeight" Value="0" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="helpers:IconSizeItem">
-                            <StackPanel Orientation="Vertical" MinWidth="48" ToolTipService.ToolTip="{x:Bind Tooltip}">
-                                <!-- Fixed-height box so every thumbnail sits on the same baseline. Uniform stretch with a
-                                     32px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size. -->
-                                <Grid Height="36">
-                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="32" MaxHeight="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Grid>
-                                <TextBlock Text="{x:Bind Label}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondary}" HorizontalAlignment="Center" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Border>
-            <Grid Grid.Row="4" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
+            <Grid Grid.Row="3" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

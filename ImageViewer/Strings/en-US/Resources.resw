@@ -198,4 +198,10 @@
   <data name="ABOUT_UPDATE_INFO_ERROR_NO_INTERNET" xml:space="preserve">
     <value>No internet access.</value>
   </data>
+  <data name="ICON_SIZE_LARGER" xml:space="preserve">
+    <value>Larger size</value>
+  </data>
+  <data name="ICON_SIZE_SMALLER" xml:space="preserve">
+    <value>Smaller size</value>
+  </data>
 </root>
