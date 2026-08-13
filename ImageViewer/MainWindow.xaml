@@ -123,6 +123,23 @@
                         <!-- Icon size picker: floats over the image, 16px clear of the footer, so it costs no layout height -->
                         <Border x:Name="IconSizeBar" x:FieldModifier="public" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16" MaxWidth="640"
                                 CornerRadius="8" Padding="4" Background="{ThemeResource AppBarBackgroundBrush}" BorderThickness="1" BorderBrush="{ThemeResource AppBarBorderBrush}">
+                            <Border.Resources>
+                                <!-- The stock Button hover/pressed fills are opaque and read as a white blob on the panel in light theme.
+                                     Remap them to the subtle fills the footer AppBarButtons use. Theme dictionaries, not a plain alias,
+                                     so the brushes still follow a runtime theme switch. -->
+                                <ResourceDictionary>
+                                    <ResourceDictionary.ThemeDictionaries>
+                                        <ResourceDictionary x:Key="Default">
+                                            <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SubtleFillColorSecondaryBrush" />
+                                            <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="Light">
+                                            <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SubtleFillColorSecondaryBrush" />
+                                            <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
+                                        </ResourceDictionary>
+                                    </ResourceDictionary.ThemeDictionaries>
+                                </ResourceDictionary>
+                            </Border.Resources>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button x:Name="ButtonIconSizeLarger" x:FieldModifier="public" Click="ButtonIconSizeLarger_Click" Width="22" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
                                         AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}">
@@ -140,6 +157,8 @@
                                             <Setter Property="Padding" Value="6,2" />
                                             <Setter Property="MinWidth" Value="0" />
                                             <Setter Property="MinHeight" Value="0" />
+                                            <!-- Same rounding as the two step buttons sitting either side -->
+                                            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                     <ListView.ItemTemplate>
