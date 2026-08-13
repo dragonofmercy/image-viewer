@@ -145,7 +145,7 @@
                                         AutomationProperties.Name="{x:Bind helpers:Culture.GetString('ICON_SIZE_LARGER')}">
                                     <FontIcon FontSize="14" Glyph="&#xE76B;" />
                                 </Button>
-                                <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="0" SelectionChanged="IconSizeStrip_SelectionChanged"
+                                <ListView x:Name="IconSizeStrip" x:FieldModifier="public" SelectionMode="Single" Padding="0" Margin="2,0" SelectionChanged="IconSizeStrip_SelectionChanged"
                                           ScrollViewer.HorizontalScrollMode="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                                     <ListView.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -157,6 +157,9 @@
                                             <Setter Property="Padding" Value="6,2" />
                                             <Setter Property="MinWidth" Value="0" />
                                             <Setter Property="MinHeight" Value="0" />
+                                            <!-- Same height as the step buttons, and 2px each side so items never touch each other or the buttons -->
+                                            <Setter Property="Height" Value="48" />
+                                            <Setter Property="Margin" Value="2,0" />
                                             <Setter Property="UseSystemFocusVisuals" Value="True" />
                                             <Setter Property="Template">
                                                 <Setter.Value>
@@ -206,9 +209,10 @@
                                         <DataTemplate x:DataType="helpers:IconSizeItem">
                                             <StackPanel Orientation="Vertical" MinWidth="40" ToolTipService.ToolTip="{x:Bind Tooltip}">
                                                 <!-- Fixed-height box so every thumbnail sits on the same baseline. Uniform stretch with a
-                                                     32px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size. -->
-                                                <Grid Height="32">
-                                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="32" MaxHeight="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                     28px cap shrinks a 256x256 frame but leaves a 16x16 one at its true pixel size;
+                                                     28 + the label fits the 48px item height the step buttons set. -->
+                                                <Grid Height="28">
+                                                    <Image Source="{x:Bind Thumbnail}" MaxWidth="28" MaxHeight="28" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Grid>
                                                 <TextBlock Text="{x:Bind Label}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondary}" HorizontalAlignment="Center" />
                                             </StackPanel>
