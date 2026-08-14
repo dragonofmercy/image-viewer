@@ -525,11 +525,28 @@ public sealed partial class MainWindow : Window
 
     private async void ButtonAbout_Click(object sender, RoutedEventArgs e)
     {
+        await ShowAbout();
+    }
+
+    /// <summary>
+    /// Show the about dialog, bringing the window forward first: the update toast can be clicked
+    /// while the window is minimized or behind another app, and a dialog nobody can see reads as
+    /// "the button did nothing".
+    /// </summary>
+    public async Task ShowAbout(bool startUpdate = false)
+    {
+        if(AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+        {
+            presenter.Restore();
+        }
+
+        Activate();
+
         ContentDialog dialogAbout = new()
         {
             XamlRoot = Content.XamlRoot
         };
-        dialogAbout.Content = new DialogAbout(dialogAbout);
+        dialogAbout.Content = new DialogAbout(dialogAbout, startUpdate);
         dialogAbout.RequestedTheme = MainPage.ActualTheme;
         await dialogAbout.ShowAsync();
     }

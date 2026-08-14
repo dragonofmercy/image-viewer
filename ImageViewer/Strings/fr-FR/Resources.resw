@@ -178,10 +178,10 @@
     <value>Vérifier les mises à jour</value>
   </data>
   <data name="ABOUT_BTN_DOWNLOAD_UPDATE" xml:space="preserve">
-    <value>Télecharger la mise à jour</value>
+    <value>Télécharger la mise à jour</value>
   </data>
   <data name="ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING" xml:space="preserve">
-    <value>Télechargement en cours...</value>
+    <value>Téléchargement en cours...</value>
   </data>
   <data name="ABOUT_BTN_DOWNLOAD_UPDATE_RETRY" xml:space="preserve">
     <value>Réessayer</value>

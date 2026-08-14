@@ -28,34 +28,29 @@ internal class NotificationsService
 
     private void NotificationManager_NotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
-        _ = HandleNotificationAsync(args);
-    }
+        // Fires on a COM background thread. The argument map is EMPTY when the toast body is
+        // clicked instead of one of its buttons, so never index into it - a KeyNotFoundException
+        // here is invisible and looks exactly like a dead notification.
+        args.Arguments.TryGetValue("action", out string action);
 
-    private async Task HandleNotificationAsync(AppNotificationActivatedEventArgs args)
-    {
-        switch (args.Arguments["action"])
+        MainWindow window = Context.Instance().MainWindow;
+        if (window == null) return;
+
+        // Never run the update silently in the background: the about dialog is where the download
+        // has a progress readout, an error banner and a retry button.
+        window.DispatcherQueue.TryEnqueue(async () =>
         {
-            case "doUpdate":
-                try
-                {
-                    UpdateService updates = Context.Instance().UpdateService;
+            try
+            {
+                await window.ShowAbout(action == "doUpdate");
+            }
+            catch (Exception ex)
+            {
+                AppNotificationBuilder builder = new AppNotificationBuilder()
+                    .AddText(ex.Message);
 
-                    // The toast can outlive the process: a fresh instance must re-resolve the update first
-                    if (updates.PendingUpdate == null)
-                    {
-                        await updates.CheckForUpdateAsync();
-                    }
-
-                    await updates.ApplyPendingUpdateAsync();
-                }
-                catch (Exception ex)
-                {
-                    AppNotificationBuilder builder = new AppNotificationBuilder()
-                        .AddText(ex.Message);
-
-                    Runtime.Show(builder.BuildNotification());
-                }
-                break;
-        }
+                Runtime.Show(builder.BuildNotification());
+            }
+        });
     }
 }

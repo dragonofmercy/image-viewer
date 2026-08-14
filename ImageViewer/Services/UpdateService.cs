@@ -50,13 +50,15 @@ internal sealed class UpdateService
 
     /// <summary>
     /// Download <see cref="PendingUpdate"/> and restart into the new version.
-    /// No-op when there is no pending update.
+    /// No-op when there is no pending update. The optional progress callback fires on a
+    /// background thread with a 0-100 percentage - the package is ~120 MB, so a caller
+    /// without any progress readout looks frozen for minutes.
     /// </summary>
-    public async Task ApplyPendingUpdateAsync()
+    public async Task ApplyPendingUpdateAsync(Action<int> progress = null)
     {
         if (PendingUpdate == null) return;
 
-        await UpdateManager.DownloadUpdatesAsync(PendingUpdate);
+        await UpdateManager.DownloadUpdatesAsync(PendingUpdate, progress);
         UpdateManager.ApplyUpdatesAndRestart(PendingUpdate);
     }
 

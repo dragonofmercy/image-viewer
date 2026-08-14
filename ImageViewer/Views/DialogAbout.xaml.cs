@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 using ImageViewer.Helpers;
 using ImageViewer.Utilities;
@@ -13,7 +14,7 @@ public sealed partial class DialogAbout : Page
 {
     private readonly ContentDialog Dialog;
 
-    public DialogAbout(ContentDialog e)
+    public DialogAbout(ContentDialog e, bool startUpdate = false)
     {
         InitializeComponent();
         Dialog = e;
@@ -21,7 +22,13 @@ public sealed partial class DialogAbout : Page
         UpdateSettingsCard.Label = string.Concat("v", AppInfo.ProductVersion);
         UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
 
-        if(Context.Instance().UpdateService.PendingUpdate != null)
+        // startUpdate comes from the update toast: the user already asked for the update, so run it
+        // straight away rather than making them click the same thing twice.
+        if(startUpdate)
+        {
+            _ = DownloadUpdate();
+        }
+        else if(Context.Instance().UpdateService.PendingUpdate != null)
         {
             DisplayUpdateMessage();
         }
@@ -86,14 +93,36 @@ public sealed partial class DialogAbout : Page
 
     private async void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)
     {
-        if(Context.Instance().UpdateService.PendingUpdate == null) return;
+        await DownloadUpdate();
+    }
+
+    /// <summary>
+    /// Download the pending update and restart into it, reporting the percentage on the button.
+    /// Re-resolves the update when nothing is pending: the toast can outlive the process that
+    /// raised it, so an instance started by the click has an empty cache.
+    /// </summary>
+    private async Task DownloadUpdate()
+    {
+        string downloading = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
         ButtonDownloadUpdate.IsEnabled = false;
-        ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
+        ButtonDownloadUpdate.Visibility = Visibility.Visible;
+        ButtonDownloadUpdate.Content = downloading;
 
         try
         {
-            await Context.Instance().UpdateService.ApplyPendingUpdateAsync();
+            if(Context.Instance().UpdateService.PendingUpdate == null && await Context.Instance().UpdateService.CheckForUpdateAsync() == null)
+            {
+                UpdateStatusInfo.Severity = InfoBarSeverity.Success;
+                UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST");
+                UpdateStatusInfo.IsOpen = true;
+                ButtonDownloadUpdate.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            DisplayUpdateMessage();
+
+            await Context.Instance().UpdateService.ApplyPendingUpdateAsync(percent => DispatcherQueue.TryEnqueue(() => ButtonDownloadUpdate.Content = string.Concat(downloading, " ", percent, "%")));
         }
         catch(Exception ex)
         {
