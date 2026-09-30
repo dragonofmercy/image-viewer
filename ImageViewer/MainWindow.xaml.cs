@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.UI;
 using Microsoft.UI.Input;
@@ -30,7 +31,16 @@ namespace ImageViewer;
 
 public sealed partial class MainWindow : Window
 {
+    private const int SW_RESTORE = 9;
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
     private bool SavingProcess = false;
+    private ContentDialog OpenDialog;
     private Point LastMousePoint;
     private bool ScrollViewMouseDrag;
     private GridLength? OriginalTitleBarRowHeight;
@@ -242,16 +252,7 @@ public sealed partial class MainWindow : Window
 
     private async void Window_Closed(object sender, WindowEventArgs args)
     {
-        App.SaveWindowGeometry();
-
-        try
-        {
-            await Context.Instance().NotificationsService.Clear();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Notification cleanup failed: {ex.Message}");
-        }
+        await Context.Instance().PrepareExitAsync();
 
         Environment.Exit(0);
     }
@@ -512,20 +513,38 @@ public sealed partial class MainWindow : Window
     /// </summary>
     public async Task ShowErrorAsync(string messageKey)
     {
-        ContentDialog errorDialog = new()
+        await ShowDialogAsync(new ContentDialog
         {
-            XamlRoot = Content.XamlRoot,
-            RequestedTheme = MainPage.ActualTheme,
             Content = Culture.GetString(messageKey),
             CloseButtonText = Culture.GetString("SYSTEM_OK")
-        };
-
-        await errorDialog.ShowAsync();
+        });
     }
 
-    private async void ButtonAbout_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Show a dialog themed like the window. WinUI throws when a second ContentDialog opens while
+    /// one is showing, so every dialog goes through here and is dropped if another is already up.
+    /// </summary>
+    private async Task ShowDialogAsync(ContentDialog dialog)
     {
-        await ShowAbout();
+        if(OpenDialog != null) return;
+
+        OpenDialog = dialog;
+        dialog.XamlRoot = Content.XamlRoot;
+        dialog.RequestedTheme = MainPage.ActualTheme;
+
+        try
+        {
+            await dialog.ShowAsync();
+        }
+        finally
+        {
+            OpenDialog = null;
+        }
+    }
+
+    private void ButtonAbout_Click(object sender, RoutedEventArgs e)
+    {
+        Context.Instance().ShowAbout();
     }
 
     /// <summary>
@@ -535,31 +554,32 @@ public sealed partial class MainWindow : Window
     /// </summary>
     public async Task ShowAbout(bool startUpdate = false)
     {
-        if(AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+        // Win32 rather than the presenter: a fullscreen window minimized by Win+D has no OverlappedPresenter
+        IntPtr hwnd = WindowNative.GetWindowHandle(this);
+        if(IsIconic(hwnd))
         {
-            presenter.Restore();
+            ShowWindow(hwnd, SW_RESTORE);
         }
 
         Activate();
 
-        ContentDialog dialogAbout = new()
+        // Toast clicked with the about dialog already up: run the update there instead of stacking a second one
+        if(OpenDialog?.Content is DialogAbout openAbout)
         {
-            XamlRoot = Content.XamlRoot
-        };
+            if(startUpdate) openAbout.StartUpdate();
+            return;
+        }
+
+        ContentDialog dialogAbout = new();
         dialogAbout.Content = new DialogAbout(dialogAbout, startUpdate);
-        dialogAbout.RequestedTheme = MainPage.ActualTheme;
-        await dialogAbout.ShowAsync();
+        await ShowDialogAsync(dialogAbout);
     }
 
     private async void ButtonSettings_Click(object sender, RoutedEventArgs e)
     {
-        ContentDialog dialogSettings = new()
-        {
-            XamlRoot = Content.XamlRoot
-        };
+        ContentDialog dialogSettings = new();
         dialogSettings.Content = new DialogSettings(dialogSettings);
-        dialogSettings.RequestedTheme = MainPage.ActualTheme;
-        await dialogSettings.ShowAsync();
+        await ShowDialogAsync(dialogSettings);
     }
 
     private void ButtonSwitchThemeDark_Click(object sender, RoutedEventArgs e)

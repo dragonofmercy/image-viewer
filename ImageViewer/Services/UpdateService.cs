@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Windows.AppNotifications.Builder;
@@ -50,16 +51,22 @@ internal sealed class UpdateService
 
     /// <summary>
     /// Download <see cref="PendingUpdate"/> and restart into the new version.
-    /// No-op when there is no pending update. The optional progress callback fires on a
-    /// background thread with a 0-100 percentage - the package is ~120 MB, so a caller
-    /// without any progress readout looks frozen for minutes.
+    /// No-op when there is no pending update. The progress callback fires on a background
+    /// thread with a 0-100 percentage - the package is ~120 MB, so a caller without any
+    /// progress readout looks frozen for minutes. Cancelling the token aborts the download.
     /// </summary>
-    public async Task ApplyPendingUpdateAsync(Action<int> progress = null)
+    public async Task DownloadAndRestartAsync(Action<int> progress, CancellationToken cancel)
     {
-        if (PendingUpdate == null) return;
+        // Captured once: a check completing during the download would swap PendingUpdate,
+        // and the apply step must target the package that was actually downloaded.
+        UpdateInfo update = PendingUpdate;
+        if (update == null) return;
 
-        await UpdateManager.DownloadUpdatesAsync(PendingUpdate, progress);
-        UpdateManager.ApplyUpdatesAndRestart(PendingUpdate);
+        await UpdateManager.DownloadUpdatesAsync(update, progress, cancel);
+
+        // ApplyUpdatesAndRestart exits the process without closing the window
+        await Context.Instance().PrepareExitAsync();
+        UpdateManager.ApplyUpdatesAndRestart(update);
     }
 
     /// <summary>

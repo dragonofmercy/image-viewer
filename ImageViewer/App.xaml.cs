@@ -167,6 +167,20 @@ public partial class App : Application
 
     private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
     {
+        // Restores that bypass WM_SYSCOMMAND (ShowWindow from the update toast) never reach the handler
+        // above, and SC_RESTORE from minimized can land on maximized: the presenter has the real state.
+        if(((Window)sender).AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            WindowState state = presenter.State switch
+            {
+                OverlappedPresenterState.Maximized => WindowState.Maximized,
+                OverlappedPresenterState.Minimized => WindowState.Minimized,
+                _ => WindowState.Normal
+            };
+
+            if(state != TrackedWindowState) Settings.WindowState = TrackedWindowState = state;
+        }
+
         if(IsFullScreen) return;
         if(TrackedWindowState != WindowState.Normal) return;
 

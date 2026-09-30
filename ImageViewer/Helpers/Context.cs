@@ -48,6 +48,46 @@ internal class Context
     // Set while the size strip is being filled, so restoring its selection is not mistaken for a user click
     private bool PopulatingIconSizes;
 
+    /// <summary>
+    /// Show the about dialog; startUpdate runs the update in it straight away. Safe to call from
+    /// any thread: the update toast raises it from a COM background thread.
+    /// </summary>
+    public void ShowAbout(bool startUpdate = false)
+    {
+        MainWindow?.DispatcherQueue.TryEnqueue(async () =>
+        {
+            // Async void lambda: an exception escaping here would take the process down
+            try
+            {
+                await MainWindow.ShowAbout(startUpdate);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"About dialog failed: {ex.Message}");
+            }
+        });
+    }
+
+    /// <summary>
+    /// Flush what must survive the process: shared by a normal close and the update restart,
+    /// which exits without ever closing the window.
+    /// </summary>
+    public async Task PrepareExitAsync()
+    {
+        App.SaveWindowGeometry();
+
+        if (NotificationsService == null) return;
+
+        try
+        {
+            await NotificationsService.Clear();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Notification cleanup failed: {ex.Message}");
+        }
+    }
+
     public void ChangeTheme(ElementTheme theme)
     {
         MainWindow.UpdateTheme(theme);

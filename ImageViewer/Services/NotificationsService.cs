@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 
 using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.AppNotifications.Builder;
 
 using ImageViewer.Helpers;
 
@@ -33,24 +32,8 @@ internal class NotificationsService
         // here is invisible and looks exactly like a dead notification.
         args.Arguments.TryGetValue("action", out string action);
 
-        MainWindow window = Context.Instance().MainWindow;
-        if (window == null) return;
-
         // Never run the update silently in the background: the about dialog is where the download
         // has a progress readout, an error banner and a retry button.
-        window.DispatcherQueue.TryEnqueue(async () =>
-        {
-            try
-            {
-                await window.ShowAbout(action == "doUpdate");
-            }
-            catch (Exception ex)
-            {
-                AppNotificationBuilder builder = new AppNotificationBuilder()
-                    .AddText(ex.Message);
-
-                Runtime.Show(builder.BuildNotification());
-            }
-        });
+        Context.Instance().ShowAbout(action == "doUpdate");
     }
 }

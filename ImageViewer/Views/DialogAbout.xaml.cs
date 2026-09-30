@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 using ImageViewer.Helpers;
@@ -14,23 +15,40 @@ public sealed partial class DialogAbout : Page
 {
     private readonly ContentDialog Dialog;
 
+    // Non-null while an update runs (check then download): guards against a second start and lets closing the dialog abort it
+    private CancellationTokenSource Updating;
+
     public DialogAbout(ContentDialog e, bool startUpdate = false)
     {
         InitializeComponent();
         Dialog = e;
 
         UpdateSettingsCard.Label = string.Concat("v", AppInfo.ProductVersion);
-        UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
+        RefreshLastUpdateCheck();
 
-        // startUpdate comes from the update toast: the user already asked for the update, so run it
-        // straight away rather than making them click the same thing twice.
+        // startUpdate comes from the update toast: the user already asked for the update, so run it straight away.
+        // Wait for Opened: a dialog that never makes it on screen must not leave an invisible download behind.
         if(startUpdate)
         {
-            _ = DownloadUpdate();
+            Dialog.Opened += (_, _) => StartUpdate();
         }
         else if(Context.Instance().UpdateService.PendingUpdate != null)
         {
             DisplayUpdateMessage();
+        }
+
+        // The dialog is the only place showing the download's progress and errors, so it must not outlive it
+        Dialog.Closed += (_, _) => Updating?.Cancel();
+    }
+
+    /// <summary>
+    /// Start the update unless one is already running in this dialog.
+    /// </summary>
+    public void StartUpdate()
+    {
+        if(Updating == null)
+        {
+            _ = DownloadUpdate();
         }
     }
 
@@ -41,59 +59,48 @@ public sealed partial class DialogAbout : Page
 
     private async void ButtonCheckUpdate_Click(object sender, RoutedEventArgs e)
     {
+        await CheckForUpdate();
+    }
+
+    private void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        StartUpdate();
+    }
+
+    /// <summary>
+    /// Query the update source and show the outcome. Returns true when an update is available.
+    /// </summary>
+    private async Task<bool> CheckForUpdate()
+    {
         UpdateStatusInfo.IsOpen = false;
+        ButtonDownloadUpdate.Visibility = Visibility.Collapsed;
         UpdateCheckingProgress.IsActive = true;
         ButtonCheckUpdate.Visibility = Visibility.Collapsed;
         UpdateCheckingText.Visibility = Visibility.Visible;
-        ButtonDownloadUpdate.Visibility = Visibility.Collapsed;
 
         try
         {
             if(await Context.Instance().UpdateService.CheckForUpdateAsync() != null)
             {
                 DisplayUpdateMessage();
-            }
-            else
-            {
-                UpdateStatusInfo.Severity = InfoBarSeverity.Success;
-                UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST");
-                UpdateStatusInfo.IsOpen = true;
+                return true;
             }
 
-            UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
-        }
-        catch(HttpRequestException)
-        {
-            UpdateStatusInfo.Severity = InfoBarSeverity.Error;
-            UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_ERROR_NO_INTERNET");
-            UpdateStatusInfo.IsOpen = true;
+            DisplayStatus(InfoBarSeverity.Success, Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST"));
+            return false;
         }
         catch(Exception ex)
         {
-            UpdateStatusInfo.Severity = InfoBarSeverity.Error;
-            UpdateStatusInfo.Title = ex.Message;
-            UpdateStatusInfo.IsOpen = true;
+            DisplayError(ex);
+            return false;
         }
         finally
         {
             UpdateCheckingProgress.IsActive = false;
             ButtonCheckUpdate.Visibility = Visibility.Visible;
             UpdateCheckingText.Visibility = Visibility.Collapsed;
+            RefreshLastUpdateCheck();
         }
-    }
-
-    private void DisplayUpdateMessage()
-    {
-        UpdateStatusInfo.Severity = InfoBarSeverity.Warning;
-        UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE");
-        UpdateStatusInfo.IsOpen = true;
-
-        ButtonDownloadUpdate.Visibility = Visibility.Visible;
-    }
-
-    private async void ButtonDownloadUpdate_Click(object sender, RoutedEventArgs e)
-    {
-        await DownloadUpdate();
     }
 
     /// <summary>
@@ -103,35 +110,66 @@ public sealed partial class DialogAbout : Page
     /// </summary>
     private async Task DownloadUpdate()
     {
-        string downloading = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
+        CancellationTokenSource updating = Updating = new CancellationTokenSource();
 
-        ButtonDownloadUpdate.IsEnabled = false;
-        ButtonDownloadUpdate.Visibility = Visibility.Visible;
-        ButtonDownloadUpdate.Content = downloading;
+        // A check running under the download would hide its progress and swap the pending update
+        ButtonCheckUpdate.IsEnabled = false;
 
         try
         {
-            if(Context.Instance().UpdateService.PendingUpdate == null && await Context.Instance().UpdateService.CheckForUpdateAsync() == null)
+            if(Context.Instance().UpdateService.PendingUpdate == null && !await CheckForUpdate())
             {
-                UpdateStatusInfo.Severity = InfoBarSeverity.Success;
-                UpdateStatusInfo.Title = Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_LATEST");
-                UpdateStatusInfo.IsOpen = true;
-                ButtonDownloadUpdate.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            DisplayUpdateMessage();
+            string downloading = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING");
 
-            await Context.Instance().UpdateService.ApplyPendingUpdateAsync(percent => DispatcherQueue.TryEnqueue(() => ButtonDownloadUpdate.Content = string.Concat(downloading, " ", percent, "%")));
+            DisplayUpdateMessage();
+            ButtonDownloadUpdate.IsEnabled = false;
+            ButtonDownloadUpdate.Content = downloading;
+
+            await Context.Instance().UpdateService.DownloadAndRestartAsync(percent => DispatcherQueue.TryEnqueue(() => ButtonDownloadUpdate.Content = string.Concat(downloading, " ", percent, "%")), updating.Token);
+        }
+        catch(OperationCanceledException)
+        {
+            // The dialog was closed: nobody is left to read a status
         }
         catch(Exception ex)
         {
-            UpdateStatusInfo.Severity = InfoBarSeverity.Error;
-            UpdateStatusInfo.Title = ex.Message;
-            UpdateStatusInfo.IsOpen = true;
-
-            ButtonDownloadUpdate.IsEnabled = true;
+            DisplayError(ex);
             ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE_RETRY");
         }
+        finally
+        {
+            Updating = null;
+            updating.Dispose();
+            ButtonDownloadUpdate.IsEnabled = true;
+            ButtonCheckUpdate.IsEnabled = true;
+        }
+    }
+
+    private void DisplayUpdateMessage()
+    {
+        DisplayStatus(InfoBarSeverity.Warning, Culture.GetString("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"));
+
+        ButtonDownloadUpdate.Content = Culture.GetString("ABOUT_BTN_DOWNLOAD_UPDATE");
+        ButtonDownloadUpdate.Visibility = Visibility.Visible;
+    }
+
+    private void DisplayError(Exception ex)
+    {
+        DisplayStatus(InfoBarSeverity.Error, ex is HttpRequestException ? Culture.GetString("ABOUT_UPDATE_INFO_ERROR_NO_INTERNET") : ex.Message);
+    }
+
+    private void DisplayStatus(InfoBarSeverity severity, string title)
+    {
+        UpdateStatusInfo.Severity = severity;
+        UpdateStatusInfo.Title = title;
+        UpdateStatusInfo.IsOpen = true;
+    }
+
+    private void RefreshLastUpdateCheck()
+    {
+        UpdateSettingsCard.Description = string.Concat(Culture.GetString("ABOUT_LABEL_LAST_UPDATE"), Settings.LastUpdateCheck.ToUpdateDate());
     }
 }
