@@ -113,6 +113,14 @@ public sealed partial class MainWindow : Window
         windowTitleBar.ButtonHoverBackgroundColor = (resourceTheme["TitleBarButtonHoverBackground"] as SolidColorBrush).Color;
         windowTitleBar.ButtonHoverForegroundColor = (resourceTheme["TitleBarButtonHoverForeground"] as SolidColorBrush).Color;
 
+        // Over acrylic the theme hover color blends into the blurred backdrop and minimize/maximize show
+        // no feedback at all (close keeps its system red), so use a fixed mid grey that reads on both themes
+        if(SystemBackdrop is DesktopAcrylicBackdrop)
+        {
+            windowTitleBar.ButtonHoverBackgroundColor = ColorHelper.FromArgb(255, 0x54, 0x54, 0x54);
+            windowTitleBar.ButtonHoverForegroundColor = Colors.White;
+        }
+
         windowTitleBar.ButtonPressedBackgroundColor = (resourceTheme["TitleBarButtonPressedBackground"] as SolidColorBrush).Color;
         windowTitleBar.ButtonPressedForegroundColor = (resourceTheme["TitleBarButtonPressedForeground"] as SolidColorBrush).Color;
 
@@ -162,6 +170,7 @@ public sealed partial class MainWindow : Window
 
         Settings.Backdrop = backdrop;
 
+        RedrawTitleBar();
         PaintSurfaces();
     }
 
