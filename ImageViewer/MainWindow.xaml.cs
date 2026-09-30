@@ -171,6 +171,9 @@ public sealed partial class MainWindow : Window
 
         AppTitleBar.Background = FooterToolbar.Background = Pick("AppBarBackgroundBrush");
         ImageContainer.Background = ImageCropper.Background = Pick("ImageViewContainerBackground");
+
+        // Acrylic reads as one continuous pane: the separator lines would cut it in three
+        AppTitleBar.BorderBrush = FooterToolbar.BorderBrush = SystemBackdrop is DesktopAcrylicBackdrop ? new SolidColorBrush(Colors.Transparent) : (Brush)colors["AppBarBorderBrush"];
     }
 
     public void UpdateTitle(string prefix = null)
