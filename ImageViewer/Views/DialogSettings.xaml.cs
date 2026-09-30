@@ -30,6 +30,7 @@ public sealed partial class DialogSettings : Page
         { Culture.GetString("SETTINGS_FIELD_THEME_LIGHT"), ElementTheme.Light },
         { Culture.GetString("SETTINGS_FIELD_THEME_DARK"), ElementTheme.Dark },
     };
+    // The combo carries the value as int: a C# enum does not cross into WinRT, so SelectedValue would never match
     private readonly Dictionary<string, Backdrop> Backdrops = new()
     {
         { Culture.GetString("SETTINGS_FIELD_BACKDROP_BASIC"), Backdrop.Basic },
@@ -50,7 +51,7 @@ public sealed partial class DialogSettings : Page
 
         CboOptionsLanguage.ItemsSource = AvailableLanguages.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
         CboOptionsTheme.ItemsSource = Themes.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
-        CboOptionsBackdrop.ItemsSource = Backdrops.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
+        CboOptionsBackdrop.ItemsSource = Backdrops.Select(kv => new { Key = kv.Key, Value = (int)kv.Value }).ToList();
         CboOptionsUpdateInterval.ItemsSource = UpdatesIntervals.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
     }
 
@@ -58,7 +59,7 @@ public sealed partial class DialogSettings : Page
     {
         CboOptionsLanguage.SelectedValue = Settings.Language;
         CboOptionsTheme.SelectedValue = Settings.Theme;
-        CboOptionsBackdrop.SelectedValue = Settings.Backdrop;
+        CboOptionsBackdrop.SelectedValue = (int)Settings.Backdrop;
         CboOptionsUpdateInterval.SelectedValue = Settings.UpdateInterval;
         NumOptionsJpegQuality.Value = Settings.JpegQuality;
         NumOptionsWebpQuality.Value = Settings.WebpQuality;
@@ -87,7 +88,7 @@ public sealed partial class DialogSettings : Page
 
     private void CboOptionsBackdrop_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        Backdrop backdrop = (Backdrop)CboOptionsBackdrop.SelectedValue;
+        Backdrop backdrop = (Backdrop)(int)CboOptionsBackdrop.SelectedValue;
         if(backdrop == Settings.Backdrop) return;
 
         Context.Instance().ChangeBackdrop(backdrop);
