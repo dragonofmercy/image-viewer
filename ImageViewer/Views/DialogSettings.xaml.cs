@@ -5,6 +5,7 @@ using System.Linq;
 using ImageViewer.Helpers;
 using ImageViewer.Utilities;
 
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -51,6 +52,11 @@ public sealed partial class DialogSettings : Page
 
         CboOptionsLanguage.ItemsSource = AvailableLanguages.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
         CboOptionsTheme.ItemsSource = Themes.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
+        if(!MicaController.IsSupported())
+        {
+            Backdrops.Remove(Culture.GetString("SETTINGS_FIELD_BACKDROP_MICA"));
+        }
+
         CboOptionsBackdrop.ItemsSource = Backdrops.Select(kv => new { Key = kv.Key, Value = (int)kv.Value }).ToList();
         CboOptionsUpdateInterval.ItemsSource = UpdatesIntervals.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
     }

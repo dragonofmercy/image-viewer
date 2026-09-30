@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Composition.SystemBackdrops;
 
 using Windows.UI.Core;
 using Windows.Foundation;
@@ -146,6 +147,12 @@ public sealed partial class MainWindow : Window
 
     internal void UpdateBackdrop(Backdrop backdrop)
     {
+        // Mica is Windows 11 only: on Windows 10 it would paint a flat fallback color, so run as Basic instead
+        if(backdrop == Backdrop.Mica && !MicaController.IsSupported())
+        {
+            backdrop = Backdrop.Basic;
+        }
+
         SystemBackdrop = backdrop switch
         {
             Backdrop.Mica => new MicaBackdrop(),
