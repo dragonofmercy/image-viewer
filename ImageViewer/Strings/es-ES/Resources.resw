@@ -36,6 +36,18 @@
   <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
     <value>Debe reiniciar la aplicación para aplicar este ajuste.</value>
   </data>
+  <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_SYSTEM" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_LIGHT" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
+    <value>Oscuro</value>
+  </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Buscar actualizaciones</value>
   </data>

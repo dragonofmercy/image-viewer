@@ -24,6 +24,12 @@ public sealed partial class DialogSettings : Page
         { Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_MONTH"), "month" },
         { Culture.GetString("SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL"), "" },
     };
+    private readonly Dictionary<string, ElementTheme> Themes = new()
+    {
+        { Culture.GetString("SETTINGS_FIELD_THEME_SYSTEM"), ElementTheme.Default },
+        { Culture.GetString("SETTINGS_FIELD_THEME_LIGHT"), ElementTheme.Light },
+        { Culture.GetString("SETTINGS_FIELD_THEME_DARK"), ElementTheme.Dark },
+    };
     private readonly ContentDialog Dialog;
 
     public DialogSettings(ContentDialog e)
@@ -37,12 +43,14 @@ public sealed partial class DialogSettings : Page
         }
 
         CboOptionsLanguage.ItemsSource = AvailableLanguages.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
+        CboOptionsTheme.ItemsSource = Themes.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
         CboOptionsUpdateInterval.ItemsSource = UpdatesIntervals.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         CboOptionsLanguage.SelectedValue = Settings.Language;
+        CboOptionsTheme.SelectedValue = Settings.Theme;
         CboOptionsUpdateInterval.SelectedValue = Settings.UpdateInterval;
         NumOptionsJpegQuality.Value = Settings.JpegQuality;
         NumOptionsWebpQuality.Value = Settings.WebpQuality;
@@ -56,6 +64,17 @@ public sealed partial class DialogSettings : Page
     private void CboOptionsLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         Settings.Language = CboOptionsLanguage.SelectedValue.ToString();
+    }
+
+    private void CboOptionsTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ElementTheme theme = (ElementTheme)CboOptionsTheme.SelectedValue;
+        if(theme == Settings.Theme) return;
+
+        Context.Instance().ChangeTheme(theme);
+
+        // The dialog was themed when it opened; Default here follows the OS, same as the window
+        Dialog.RequestedTheme = theme;
     }
 
     private void CboOptionsUpdateInterval_SelectionChanged(object sender, SelectionChangedEventArgs e)

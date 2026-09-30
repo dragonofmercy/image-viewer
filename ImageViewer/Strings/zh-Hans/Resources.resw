@@ -36,6 +36,18 @@
   <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
     <value>需要重新启动应用程序才能应用此设置。</value>
   </data>
+  <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_SYSTEM" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_LIGHT" xml:space="preserve">
+    <value>浅色</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
+    <value>深色</value>
+  </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>检查更新</value>
   </data>

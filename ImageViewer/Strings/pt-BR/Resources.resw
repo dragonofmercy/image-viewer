@@ -141,6 +141,18 @@
   <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
     <value>Você precisa reiniciar o aplicativo para aplicar essa configuração.</value>
   </data>
+  <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_SYSTEM" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_LIGHT" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
+    <value>Escuro</value>
+  </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Buscar atualizações</value>
   </data>

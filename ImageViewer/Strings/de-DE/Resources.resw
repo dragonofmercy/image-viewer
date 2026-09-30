@@ -36,6 +36,18 @@
   <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
     <value>Sie müssen die Anwendung neu starten, um diese Einstellung anzuwenden.</value>
   </data>
+  <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
+    <value>Design</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_SYSTEM" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_LIGHT" xml:space="preserve">
+    <value>Hell</value>
+  </data>
+  <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
+    <value>Dunkel</value>
+  </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Nach Updates suchen</value>
   </data>

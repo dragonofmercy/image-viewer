@@ -35,6 +35,18 @@
                     SelectionChanged="CboOptionsLanguage_SelectionChanged">
                 </ComboBox>
             </controls:SettingsCard>
+            <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_THEME')}">
+                <controls:SettingsCard.Icon>
+                    <FontIcon Glyph="&#xE790;" />
+                </controls:SettingsCard.Icon>
+                <ComboBox
+                    Name="CboOptionsTheme"
+                    MinWidth="{ StaticResource SettingActionControlMinWidth }"
+                    DisplayMemberPath="Key"
+                    SelectedValuePath="Value"
+                    SelectionChanged="CboOptionsTheme_SelectionChanged">
+                </ComboBox>
+            </controls:SettingsCard>
             <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}">
                 <controls:SettingsCard.Icon>
                     <SymbolIcon Symbol="Sync" />
