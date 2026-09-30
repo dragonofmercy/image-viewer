@@ -48,6 +48,18 @@
   <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
     <value>深色</value>
   </data>
+  <data name="SETTINGS_FIELD_BACKDROP" xml:space="preserve">
+    <value>渲染模式</value>
+  </data>
+  <data name="SETTINGS_FIELD_BACKDROP_BASIC" xml:space="preserve">
+    <value>基本</value>
+  </data>
+  <data name="SETTINGS_FIELD_BACKDROP_MICA" xml:space="preserve">
+    <value>云母</value>
+  </data>
+  <data name="SETTINGS_FIELD_BACKDROP_ACRYLIC" xml:space="preserve">
+    <value>亚克力</value>
+  </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>检查更新</value>
   </data>

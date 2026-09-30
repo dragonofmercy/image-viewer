@@ -30,6 +30,12 @@ public sealed partial class DialogSettings : Page
         { Culture.GetString("SETTINGS_FIELD_THEME_LIGHT"), ElementTheme.Light },
         { Culture.GetString("SETTINGS_FIELD_THEME_DARK"), ElementTheme.Dark },
     };
+    private readonly Dictionary<string, Backdrop> Backdrops = new()
+    {
+        { Culture.GetString("SETTINGS_FIELD_BACKDROP_BASIC"), Backdrop.Basic },
+        { Culture.GetString("SETTINGS_FIELD_BACKDROP_MICA"), Backdrop.Mica },
+        { Culture.GetString("SETTINGS_FIELD_BACKDROP_ACRYLIC"), Backdrop.Acrylic },
+    };
     private readonly ContentDialog Dialog;
 
     public DialogSettings(ContentDialog e)
@@ -44,6 +50,7 @@ public sealed partial class DialogSettings : Page
 
         CboOptionsLanguage.ItemsSource = AvailableLanguages.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
         CboOptionsTheme.ItemsSource = Themes.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
+        CboOptionsBackdrop.ItemsSource = Backdrops.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
         CboOptionsUpdateInterval.ItemsSource = UpdatesIntervals.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
     }
 
@@ -51,6 +58,7 @@ public sealed partial class DialogSettings : Page
     {
         CboOptionsLanguage.SelectedValue = Settings.Language;
         CboOptionsTheme.SelectedValue = Settings.Theme;
+        CboOptionsBackdrop.SelectedValue = Settings.Backdrop;
         CboOptionsUpdateInterval.SelectedValue = Settings.UpdateInterval;
         NumOptionsJpegQuality.Value = Settings.JpegQuality;
         NumOptionsWebpQuality.Value = Settings.WebpQuality;
@@ -75,6 +83,14 @@ public sealed partial class DialogSettings : Page
 
         // The dialog was themed when it opened; Default here follows the OS, same as the window
         Dialog.RequestedTheme = theme;
+    }
+
+    private void CboOptionsBackdrop_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        Backdrop backdrop = (Backdrop)CboOptionsBackdrop.SelectedValue;
+        if(backdrop == Settings.Backdrop) return;
+
+        Context.Instance().ChangeBackdrop(backdrop);
     }
 
     private void CboOptionsUpdateInterval_SelectionChanged(object sender, SelectionChangedEventArgs e)

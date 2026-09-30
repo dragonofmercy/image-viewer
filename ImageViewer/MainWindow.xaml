@@ -29,7 +29,7 @@
                 <RowDefinition />
                 <RowDefinition Height="48" />
             </Grid.RowDefinitions>
-            <Grid x:Name="AppTitleBar" x:FieldModifier="public" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource AppBarBorderBrush}" Background="{ThemeResource AppBarBackgroundBrush}">
+            <Grid x:Name="AppTitleBar" x:FieldModifier="public" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="*" />
@@ -95,7 +95,7 @@
                     </Border>
                 </SplitView.Pane>
                 <Grid>
-                    <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True" Background="{ThemeResource ImageViewContainerBackground }">
+                    <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True">
                         <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
                         <StackPanel Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="40" x:Name="GlobalErrorMessage" x:FieldModifier="public">
                             <FontIcon Glyph="&#xe91B;" FontSize="128" Foreground="{ ThemeResource TextFillColorDisabled }" Margin="0,0,0,10"></FontIcon>
@@ -277,7 +277,7 @@
                     </SplitView>
                 </Grid>
             </SplitView>
-            <Grid Grid.Row="3" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" Background="{ThemeResource AppBarBackgroundBrush}" BorderBrush="{ThemeResource AppBarBorderBrush}">
+            <Grid Grid.Row="3" x:Name="FooterToolbar" x:FieldModifier="public" BorderThickness="0,1,0,0" BorderBrush="{ThemeResource AppBarBorderBrush}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

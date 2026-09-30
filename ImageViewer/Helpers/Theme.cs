@@ -5,6 +5,16 @@ using Microsoft.UI.Xaml;
 
 namespace ImageViewer.Helpers;
 
+/// <summary>
+/// Window background material. Anything but Basic makes the app surfaces transparent so the material shows through.
+/// </summary>
+internal enum Backdrop
+{
+    Basic,
+    Mica,
+    Acrylic
+}
+
 public static class Theme
 {
     [DllImport("dwmapi.dll")]

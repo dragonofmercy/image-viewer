@@ -48,6 +48,18 @@
   <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
     <value>Sombre</value>
   </data>
+  <data name="SETTINGS_FIELD_BACKDROP" xml:space="preserve">
+    <value>Mode de rendu</value>
+  </data>
+  <data name="SETTINGS_FIELD_BACKDROP_BASIC" xml:space="preserve">
+    <value>Basique</value>
+  </data>
+  <data name="SETTINGS_FIELD_BACKDROP_MICA" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="SETTINGS_FIELD_BACKDROP_ACRYLIC" xml:space="preserve">
+    <value>Acrylique</value>
+  </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Rechercher les mises à jour</value>
   </data>

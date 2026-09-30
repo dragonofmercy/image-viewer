@@ -73,6 +73,7 @@ public sealed partial class MainWindow : Window
         MainPage.ActualThemeChanged += (_, _) => ApplyResolvedTheme();
 
         UpdateTheme(theme);
+        UpdateBackdrop(Settings.Backdrop);
         UpdateTitle();
 
         CboCropAspectRatios.ItemsSource = CropperAspectRatios.Select(kv => new { Key = kv.Key, Value = kv.Value }).ToList();
@@ -140,6 +141,36 @@ public sealed partial class MainWindow : Window
         ButtonSwitchThemeLight.Visibility = isDark ? Visibility.Visible : Visibility.Collapsed;
 
         RedrawTitleBar();
+        PaintSurfaces();
+    }
+
+    internal void UpdateBackdrop(Backdrop backdrop)
+    {
+        SystemBackdrop = backdrop switch
+        {
+            Backdrop.Mica => new MicaBackdrop(),
+            Backdrop.Acrylic => new DesktopAcrylicBackdrop(),
+            _ => null
+        };
+
+        Settings.Backdrop = backdrop;
+
+        PaintSurfaces();
+    }
+
+    /// <summary>
+    /// Opaque theme colors in Basic mode, transparent over a backdrop so the material shows through.
+    /// Painted from code rather than {ThemeResource} because the brush depends on the backdrop too;
+    /// ApplyResolvedTheme calls this on every theme switch. Transparent, never null: the image area
+    /// must stay hit-testable for drag and drop and the pointer handlers.
+    /// </summary>
+    private void PaintSurfaces()
+    {
+        ResourceDictionary colors = Theme.GetThemeResourceDictionary(MainPage.ActualTheme == ElementTheme.Dark ? "Dark" : "Light");
+        Brush Pick(string key) => SystemBackdrop != null ? new SolidColorBrush(Colors.Transparent) : (Brush)colors[key];
+
+        AppTitleBar.Background = FooterToolbar.Background = Pick("AppBarBackgroundBrush");
+        ImageContainer.Background = ImageCropper.Background = Pick("ImageViewContainerBackground");
     }
 
     public void UpdateTitle(string prefix = null)

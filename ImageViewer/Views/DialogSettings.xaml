@@ -47,6 +47,18 @@
                     SelectionChanged="CboOptionsTheme_SelectionChanged">
                 </ComboBox>
             </controls:SettingsCard>
+            <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_BACKDROP')}">
+                <controls:SettingsCard.Icon>
+                    <FontIcon Glyph="&#xE771;" />
+                </controls:SettingsCard.Icon>
+                <ComboBox
+                    Name="CboOptionsBackdrop"
+                    MinWidth="{ StaticResource SettingActionControlMinWidth }"
+                    DisplayMemberPath="Key"
+                    SelectedValuePath="Value"
+                    SelectionChanged="CboOptionsBackdrop_SelectionChanged">
+                </ComboBox>
+            </controls:SettingsCard>
             <controls:SettingsCard Label="{x:Bind helpers:Culture.GetString('SETTINGS_FIELD_UPDATE_INTERVAL')}">
                 <controls:SettingsCard.Icon>
                     <SymbolIcon Symbol="Sync" />

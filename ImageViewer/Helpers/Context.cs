@@ -93,6 +93,11 @@ internal class Context
         MainWindow.UpdateTheme(theme);
     }
 
+    public void ChangeBackdrop(Backdrop backdrop)
+    {
+        MainWindow.UpdateBackdrop(backdrop);
+    }
+
     /// <summary>
     /// Check if file can be open.
     /// </summary>
