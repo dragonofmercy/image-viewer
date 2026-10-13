@@ -20,6 +20,8 @@ Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp 
 
 **Requirements**: Windows 10 22H2 / Windows 11, [.NET 10 SDK](https://dotnet.microsoft.com/download), and the Windows App SDK build tools ([Microsoft docs](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment)).
 
+**Six Labors license**: ImageSharp 4 checks for a license at build time, and the key is not part of this repository. Get your own from [Six Labors](https://sixlabors.com/pricing/) (free Community license for open source) and save it as `sixlabors.lic` in the folder **above** the repository clone, or pass `-p:SixLaborsLicenseFile=<path>` to `dotnet build`.
+
 ```pwsh
 dotnet build ImageViewer.sln -c Release
 ```
