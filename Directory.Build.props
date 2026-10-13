@@ -1,0 +1,7 @@
+<Project>
+  <!-- ImageSharp 4.x validates a Six Labors license at build time. The key is a secret, never committed:
+       drop your own sixlabors.lic next to this repo's folder (one level above it), or pass -p:SixLaborsLicenseFile=<path>. -->
+  <PropertyGroup Condition="'$(SixLaborsLicenseFile)' == '' and '$(SixLaborsLicenseKey)' == ''">
+    <SixLaborsLicenseFile>$(MSBuildThisFileDirectory)..\sixlabors.lic</SixLaborsLicenseFile>
+  </PropertyGroup>
+</Project>

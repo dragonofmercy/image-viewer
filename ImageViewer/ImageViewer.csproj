@@ -75,7 +75,7 @@
         <PackageReference Include="CommunityToolkit.WinUI.Controls.ImageCropper" Version="8.2.251219" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="4.1.3" />
         <!-- SVG rasterization. Renders to a Skia surface, so nothing here needs GDI+ /
              System.Drawing.Common (see Wrapper/Image.cs). ICO goes through WIC instead. -->
         <PackageReference Include="Svg.Skia" Version="5.2.0" />
