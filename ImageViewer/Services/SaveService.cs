@@ -68,9 +68,11 @@ internal sealed class SaveService
             SuggestedFileName = suggestedName
         };
 
+        bool canSaveJxl = await Image.CanSaveJxlAsync();
+
         foreach (string fileType in Image.SaveFileTypes)
         {
-            if (fileType == ".jxl" && !Image.CanSaveJxl) continue;
+            if (fileType == ".jxl" && !canSaveJxl) continue;
 
             saveFilePicker.FileTypeChoices.Add(Culture.GetString("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT").Replace("{0}", fileType.Remove(0, 1).ToUpper()), new List<string>{ fileType });
         }

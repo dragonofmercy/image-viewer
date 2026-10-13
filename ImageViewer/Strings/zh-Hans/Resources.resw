@@ -21,6 +21,12 @@
   <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
     <value>抱歉，应用程序无法打开此文件，因为该格式当前不受支持或文件已损坏</value>
   </data>
+  <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
+    <value>打开 JPEG XL 文件需要 Microsoft 的免费 JPEG XL Image Extension（Windows 11 24H2 或更高版本）</value>
+  </data>
+  <data name="SYSTEM_LOADING_ERROR_JXL_STORE" xml:space="preserve">
+    <value>从 Microsoft Store 获取</value>
+  </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
     <value>抱歉，应用程序无法将图像保存到此位置</value>
   </data>

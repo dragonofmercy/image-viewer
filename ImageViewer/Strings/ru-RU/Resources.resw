@@ -21,6 +21,12 @@
   <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
     <value>К сожалению, приложение не может открыть этот файл, так как формат не поддерживается или файл повреждён</value>
   </data>
+  <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
+    <value>Для открытия файлов JPEG XL требуется бесплатное расширение JPEG XL Image Extension от Microsoft (Windows 11 24H2 или новее)</value>
+  </data>
+  <data name="SYSTEM_LOADING_ERROR_JXL_STORE" xml:space="preserve">
+    <value>Получить в Microsoft Store</value>
+  </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
     <value>К сожалению, приложение не может сохранить изображение в этом расположении</value>
   </data>

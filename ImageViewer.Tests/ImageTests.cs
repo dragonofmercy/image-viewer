@@ -340,7 +340,7 @@ public class ImageTests
     public async Task Save_Jxl_RoundTripsThroughWic()
     {
         // Needs Microsoft's Store "JPEG XL Image Extension"; nothing to check on a machine without it.
-        if (!ViewerImage.CanSaveJxl) return;
+        if (!await ViewerImage.CanSaveJxlAsync()) return;
 
         using TempDir dir = new();
         string path = FixtureFactory.Save(dir, "src.png", 4, 2);

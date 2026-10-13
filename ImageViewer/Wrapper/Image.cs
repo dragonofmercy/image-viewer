@@ -35,10 +35,14 @@ internal partial class Image
     public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga", ".jxl"];
 
     // JPEG XL is encoded by the WIC codec of Microsoft's Store "JPEG XL Image Extension", when installed.
-    private static readonly Lazy<Guid?> JxlEncoderId = new(() => BitmapEncoder.GetEncoderInformationEnumerator()
-        .FirstOrDefault(codec => codec.FileExtensions.Contains(".jxl", StringComparer.OrdinalIgnoreCase))?.CodecId);
+    private static readonly Lazy<Task<Guid?>> JxlEncoderId = new(FindJxlEncoderAsync);
 
-    public static bool CanSaveJxl => JxlEncoderId.Value != null;
+    // WIC errors meaning "no usable codec": none registered, or registered but its package is gone
+    // (an uninstalled Store extension stays listed until the next reboot).
+    private const int WINCODEC_ERR_COMPONENTNOTFOUND = unchecked((int)0x88982F50);
+    private const int WINCODEC_ERR_COMPONENTINITIALIZEFAILURE = unchecked((int)0x88982F8B);
+
+    public static async Task<bool> CanSaveJxlAsync() => await JxlEncoderId.Value != null;
 
     private readonly string[] NativeExtensions = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp"];
 
@@ -234,7 +238,7 @@ internal partial class Image
                 break;
 
             case ".jxl":
-                await EncodeWicAsync(path, JxlEncoderId.Value ?? throw new NotSupportedException("JPEG XL encoder not installed"));
+                await EncodeWicAsync(path, await JxlEncoderId.Value ?? throw new NotSupportedException("JPEG XL encoder not installed"));
                 break;
 
             default:
@@ -319,7 +323,8 @@ internal partial class Image
             ImageFailedEventArgs args = new()
             {
                 Message = e.Message,
-                Path = path
+                Path = path,
+                CodecMissing = e.HResult is WINCODEC_ERR_COMPONENTNOTFOUND or WINCODEC_ERR_COMPONENTINITIALIZEFAILURE
             };
 
             ImageFailed?.Invoke(this, args);
@@ -410,6 +415,29 @@ internal partial class Image
         return ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.OrientedPixelWidth, (int)frame.OrientedPixelHeight);
     }
 
+    /// <summary>
+    /// The codec list is not enough: an uninstalled Store extension stays registered until the next
+    /// reboot, so only a real instantiation tells whether the encoder works.
+    /// </summary>
+    private static async Task<Guid?> FindJxlEncoderAsync()
+    {
+        BitmapCodecInformation codec = BitmapEncoder.GetEncoderInformationEnumerator()
+            .FirstOrDefault(c => c.FileExtensions.Contains(".jxl", StringComparer.OrdinalIgnoreCase));
+
+        if(codec == null) return null;
+
+        try
+        {
+            using InMemoryRandomAccessStream probe = new();
+            await BitmapEncoder.CreateAsync(codec.CodecId, probe);
+            return codec.CodecId;
+        }
+        catch(Exception)
+        {
+            return null;
+        }
+    }
+
     private async Task EncodeWicAsync(string path, Guid encoderId)
     {
         byte[] pixels = GetBgra32Pixels(out int width, out int height);
@@ -458,4 +486,5 @@ public class ImageFailedEventArgs : EventArgs
 {
     public string Message { get; set; }
     public string Path { get; init; }
+    public bool CodecMissing { get; init; }
 }

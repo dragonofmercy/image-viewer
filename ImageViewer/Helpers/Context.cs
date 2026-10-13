@@ -788,7 +788,13 @@ internal class Context
         MainWindow.ImageLoadingIndicator.IsActive = false;
         MainWindow.GlobalErrorMessage.Visibility = Visibility.Visible;
 
-        MainWindow.GlobalErrorMessageFileName.Text = ((ImageFailedEventArgs)e).Path;
+        ImageFailedEventArgs args = (ImageFailedEventArgs)e;
+        MainWindow.GlobalErrorMessageFileName.Text = args.Path;
+
+        // JPEG XL decodes through the Store codec: when that is what is missing, say so, with a link to it
+        bool jxlCodecMissing = args.CodecMissing && string.Equals(Path.GetExtension(args.Path), ".jxl", StringComparison.OrdinalIgnoreCase);
+        MainWindow.GlobalErrorMessageText.Text = Culture.GetString(jxlCodecMissing ? "SYSTEM_LOADING_ERROR_JXL_CODEC" : "SYSTEM_LOADING_ERROR");
+        MainWindow.GlobalErrorMessageStoreLink.Visibility = jxlCodecMissing ? Visibility.Visible : Visibility.Collapsed;
 
         CurrentImage.Dispose();
         UpdateButtonsAccessiblity();
