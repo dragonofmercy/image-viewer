@@ -335,4 +335,36 @@ public class ImageTests
             image.Dispose();
         }
     }
+
+    [Fact]
+    public async Task Save_Jxl_RoundTripsThroughWic()
+    {
+        // Needs Microsoft's Store "JPEG XL Image Extension"; nothing to check on a machine without it.
+        if (!ViewerImage.CanSaveJxl) return;
+
+        using TempDir dir = new();
+        string path = FixtureFactory.Save(dir, "src.png", 4, 2);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        string jxl = dir.File("out.jxl");
+        try
+        {
+            await image.Save(jxl, ".jxl");
+        }
+        finally
+        {
+            image.Dispose();
+        }
+
+        ViewerImage reloaded = await ImageLoader.LoadAsync(jxl);
+        try
+        {
+            Assert.Equal(4, (int)reloaded.Width);
+            Assert.Equal(2, (int)reloaded.Height);
+        }
+        finally
+        {
+            reloaded.Dispose();
+        }
+    }
 }

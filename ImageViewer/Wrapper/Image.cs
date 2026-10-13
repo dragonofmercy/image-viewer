@@ -32,7 +32,13 @@ namespace ImageViewer.Wrapper;
 internal partial class Image
 {
     public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg", ".jxl"];
-    public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga"];
+    public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga", ".jxl"];
+
+    // JPEG XL is encoded by the WIC codec of Microsoft's Store "JPEG XL Image Extension", when installed.
+    private static readonly Lazy<Guid?> JxlEncoderId = new(() => BitmapEncoder.GetEncoderInformationEnumerator()
+        .FirstOrDefault(codec => codec.FileExtensions.Contains(".jxl", StringComparer.OrdinalIgnoreCase))?.CodecId);
+
+    public static bool CanSaveJxl => JxlEncoderId.Value != null;
 
     private readonly string[] NativeExtensions = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp"];
 
@@ -227,6 +233,10 @@ internal partial class Image
                 await WorkingImage.SaveAsTiffAsync(path);
                 break;
 
+            case ".jxl":
+                await EncodeWicAsync(path, JxlEncoderId.Value ?? throw new NotSupportedException("JPEG XL encoder not installed"));
+                break;
+
             default:
                 throw new NotSupportedException($"Unsupported save format: {type}");
         }
@@ -398,6 +408,16 @@ internal partial class Image
             ColorManagementMode.ColorManageToSRgb);
 
         return ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.OrientedPixelWidth, (int)frame.OrientedPixelHeight);
+    }
+
+    private async Task EncodeWicAsync(string path, Guid encoderId)
+    {
+        byte[] pixels = GetBgra32Pixels(out int width, out int height);
+
+        using FileStream file = File.Create(path);
+        BitmapEncoder encoder = await BitmapEncoder.CreateAsync(encoderId, file.AsRandomAccessStream());
+        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight, (uint)width, (uint)height, 96, 96, pixels);
+        await encoder.FlushAsync();
     }
 
     private async void LoadImageFromMemory(IInputStream stream)
