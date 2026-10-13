@@ -65,7 +65,7 @@ This project stands on the shoulders of these open-source libraries:
 
 - [ImageSharp](https://github.com/SixLabors/ImageSharp) by SixLabors - image decoding, encoding and processing
 - [Windows Community Toolkit](https://github.com/CommunityToolkit/Windows) - the `ImageCropper` control
-- [SVG](https://github.com/svg-net/SVG) - SVG rasterization
+- [Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia) - SVG rendering (on top of [SkiaSharp](https://github.com/mono/SkiaSharp))
 - [Velopack](https://github.com/velopack/velopack) - installer and auto-updates
 - [WinUIEx](https://github.com/dotMorten/WinUIEx) - WinUI window helpers
 
