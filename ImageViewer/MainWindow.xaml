@@ -97,7 +97,7 @@
                 <Grid>
                     <controls:CursorGrid x:Name="ImageContainer" x:FieldModifier="public" Drop="ImageContainer_Drop" DragOver="ImageContainer_DragOver" AllowDrop="True">
                         <ProgressRing IsActive="False" Width="64" Height="64" x:Name="ImageLoadingIndicator" x:FieldModifier="public" />
-                        <StackPanel Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="40" x:Name="GlobalErrorMessage" x:FieldModifier="public">
+                        <StackPanel Visibility="Collapsed" Canvas.ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="40" x:Name="GlobalErrorMessage" x:FieldModifier="public">
                             <FontIcon Glyph="&#xe91B;" FontSize="128" Foreground="{ ThemeResource TextFillColorDisabled }" Margin="0,0,0,10"></FontIcon>
                             <TextBlock Foreground="{ ThemeResource TextFillColorSecondary }" TextAlignment="Center" Margin="0,0,0,5" x:Name="GlobalErrorMessageFileName" x:FieldModifier="public"></TextBlock>
                             <TextBlock Foreground="{ ThemeResource TextFillColorTertiary }" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" x:Name="GlobalErrorMessageText" x:FieldModifier="public"></TextBlock>
