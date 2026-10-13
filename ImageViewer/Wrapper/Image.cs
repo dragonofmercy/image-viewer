@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 using Microsoft.UI.Xaml.Media.Imaging;
 
-using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Ico;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tga;
@@ -268,8 +268,8 @@ internal partial class Image
             }
             else if(extension == ".svg")
             {
-                // Formats ImageSharp cannot decode. Both paths rasterize to BGRA pixels and hand
-                // them to ImageSharp directly, so the rest of the class sees a normal image.
+                // ImageSharp cannot decode SVG: Skia rasterizes it to BGRA pixels handed to ImageSharp
+                // directly, so the rest of the class sees a normal image.
                 WorkingImage = RasterizeSvg(path);
                 Encoder = new PngEncoder();
             }
@@ -344,34 +344,27 @@ internal partial class Image
     }
 
     /// <summary>
-    /// Decode through WIC, the codec set Explorer itself uses. This covers ICO, which ImageSharp
-    /// 3.x has no decoder for, without any third-party imaging dependency. An .ico packs several
-    /// sizes in one file, in no guaranteed order: every one is decoded and the list is sorted
-    /// largest first, so the biggest opens by default (a container listing 16x16 first must not
-    /// win over a 256x256 entry) and the size strip reads top-down.
+    /// An .ico packs several sizes in one file, in no guaranteed order. ImageSharp decodes each entry
+    /// as a frame padded top-left onto a canvas the size of the largest one, so every frame is cropped
+    /// back to its own size (directory value, 0 meaning the full canvas). The list is sorted largest
+    /// first, so the biggest opens by default (a container listing 16x16 first must not win over a
+    /// 256x256 entry) and the size strip reads top-down.
     /// </summary>
     private static async Task<ImageSharpImage[]> DecodeIconFramesAsync(string path)
     {
-        using MemoryStream source = new(await File.ReadAllBytesAsync(path));
+        using ImageSharpImage icon = await ImageSharpImage.LoadAsync(path, CancellationToken.None);
 
-        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(source.AsRandomAccessStream());
+        List<ImageSharpImage> frames = new(icon.Frames.Count);
 
-        if(decoder.FrameCount == 0) throw new InvalidOperationException($"No decodable frame in: {path}");
-
-        List<ImageSharpImage> frames = new((int)decoder.FrameCount);
-
-        for(uint i = 0; i < decoder.FrameCount; i++)
+        for(int i = 0; i < icon.Frames.Count; i++)
         {
-            BitmapFrame frame = await decoder.GetFrameAsync(i);
+            IcoFrameMetadata metadata = icon.Frames[i].Metadata.GetIcoMetadata();
+            int width = metadata.EncodingWidth == 0 ? icon.Width : Math.Min((int)metadata.EncodingWidth, icon.Width);
+            int height = metadata.EncodingHeight == 0 ? icon.Height : Math.Min((int)metadata.EncodingHeight, icon.Height);
 
-            PixelDataProvider pixels = await frame.GetPixelDataAsync(
-                BitmapPixelFormat.Bgra8,
-                BitmapAlphaMode.Straight,
-                new BitmapTransform(),
-                ExifOrientationMode.IgnoreExifOrientation,
-                ColorManagementMode.DoNotColorManage);
-
-            frames.Add(ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.PixelWidth, (int)frame.PixelHeight));
+            ImageSharpImage frame = icon.Frames.CloneFrame(i);
+            frame.Mutate(x => x.Crop(width, height));
+            frames.Add(frame);
         }
 
         // OrderByDescending is stable, so two entries of the same size (an icon can hold 32x32 in
