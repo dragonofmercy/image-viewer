@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using Microsoft.UI.Xaml.Media.Imaging;
 
+using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
 using SixLabors.ImageSharp;
@@ -30,7 +31,7 @@ namespace ImageViewer.Wrapper;
 
 internal partial class Image
 {
-    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg"];
+    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg", ".jxl"];
     public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga"];
 
     private readonly string[] NativeExtensions = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".webp"];
@@ -280,6 +281,11 @@ internal partial class Image
                 WorkingImage = IconFrames[0];
                 Encoder = new PngEncoder();
             }
+            else if(extension == ".jxl")
+            {
+                WorkingImage = await DecodeWicAsync(path);
+                Encoder = new PngEncoder();
+            }
             else
             {
                 // Routed through ImageFailed so the caller shows the "cannot open this file" message
@@ -370,6 +376,28 @@ internal partial class Image
         // OrderByDescending is stable, so two entries of the same size (an icon can hold 32x32 in
         // both 8-bit and 32-bit) keep their file order instead of being shuffled.
         return [.. frames.OrderByDescending(frame => (long)frame.Width * frame.Height)];
+    }
+
+    /// <summary>
+    /// Decode the first frame through WIC. Used for JPEG XL, which neither ImageSharp nor Skia read:
+    /// the codec is Microsoft's "JPEG XL Image Extension" (Store, Windows 11 24H2+). Without it,
+    /// BitmapDecoder throws and the user gets the usual "cannot open this file" message.
+    /// </summary>
+    private static async Task<ImageSharpImage> DecodeWicAsync(string path)
+    {
+        using MemoryStream source = new(await File.ReadAllBytesAsync(path));
+
+        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(source.AsRandomAccessStream());
+        BitmapFrame frame = await decoder.GetFrameAsync(0);
+
+        PixelDataProvider pixels = await frame.GetPixelDataAsync(
+            BitmapPixelFormat.Bgra8,
+            BitmapAlphaMode.Straight,
+            new BitmapTransform(),
+            ExifOrientationMode.RespectExifOrientation,
+            ColorManagementMode.ColorManageToSRgb);
+
+        return ImageSharpImage.LoadPixelData<Bgra32>(pixels.DetachPixelData(), (int)frame.OrientedPixelWidth, (int)frame.OrientedPixelHeight);
     }
 
     private async void LoadImageFromMemory(IInputStream stream)

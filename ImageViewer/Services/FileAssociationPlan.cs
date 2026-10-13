@@ -40,7 +40,8 @@ internal sealed class FileAssociationPlan
         { ".tga", "Targa image" },
         { ".ico", "Icon" },
         { ".webp", "WebP image" },
-        { ".svg", "SVG image" }
+        { ".svg", "SVG image" },
+        { ".jxl", "JPEG XL image" }
     };
 
     private readonly string ExePath;
