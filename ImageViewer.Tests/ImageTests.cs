@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -11,6 +12,17 @@ namespace ImageViewer.Tests;
 
 public class ImageTests
 {
+    [Fact]
+    public async Task Load_UnsupportedExtension_RaisesImageFailed()
+    {
+        using TempDir dir = new();
+        string path = dir.File("notes.txt");
+        await File.WriteAllTextAsync(path, "not an image");
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => ImageLoader.LoadAsync(path));
+        Assert.Contains("Unsupported file type", ex.Message);
+    }
+
     [Theory]
     [InlineData("sample.png", 4, 2)]
     [InlineData("sample.jpg", 4, 2)]

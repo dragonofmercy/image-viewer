@@ -237,7 +237,7 @@ internal partial class Image
     {
         try
         {
-            string extension = Path.GetExtension(path).ToLower();
+            string extension = Path.GetExtension(path).ToLowerInvariant();
 
             if(NativeExtensions.Contains(extension))
             {
@@ -273,12 +273,17 @@ internal partial class Image
                 WorkingImage = RasterizeSvg(path);
                 Encoder = new PngEncoder();
             }
-            else
+            else if(extension == ".ico")
             {
                 IconFrames = await DecodeIconFramesAsync(path);
                 IconSizeIndex = 0;
                 WorkingImage = IconFrames[0];
                 Encoder = new PngEncoder();
+            }
+            else
+            {
+                // Routed through ImageFailed so the caller shows the "cannot open this file" message
+                throw new NotSupportedException($"Unsupported file type: {extension}");
             }
 
             // Load completed after Dispose (user navigated away): drop the decoded image silently

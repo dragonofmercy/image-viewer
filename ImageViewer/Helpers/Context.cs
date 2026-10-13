@@ -112,7 +112,6 @@ internal class Context
     public async void LoadDefaultImage()
     {
         if (LaunchArgs.Length <= 0) return;
-        if (!CheckFileExtension(LaunchArgs[0])) return;
 
         LoadingDisplay(true);
         // Brief yield so the window paints and the loading indicator shows before the
@@ -322,7 +321,9 @@ internal class Context
     /// </summary>
     public bool LoadImageFromString(string imagePath, bool reloadDirectories = false)
     {
-        if (!File.Exists(imagePath) || !CheckFileExtension(imagePath)) return false;
+        // No extension filter here: an unsupported file fails in Image.Load and shows the error message
+        // instead of being silently ignored. Folder navigation never sees one, FolderFiles is pre-filtered.
+        if (!File.Exists(imagePath)) return false;
 
         // Normalize relative launch arguments so directory enumeration and index lookups match
         CurrentFilePath = Path.GetFullPath(imagePath);
