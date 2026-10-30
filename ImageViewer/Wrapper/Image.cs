@@ -31,7 +31,7 @@ namespace ImageViewer.Wrapper;
 
 internal partial class Image
 {
-    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg", ".jxl"];
+    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg", ".jxl", ".avif"];
     public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga", ".jxl"];
 
     // JPEG XL is encoded by the WIC codec of Microsoft's Store "JPEG XL Image Extension", when installed.
@@ -295,7 +295,7 @@ internal partial class Image
                 WorkingImage = IconFrames[0];
                 Encoder = new PngEncoder();
             }
-            else if(extension == ".jxl")
+            else if(extension is ".jxl" or ".avif")
             {
                 WorkingImage = await DecodeWicAsync(path);
                 Encoder = new PngEncoder();
@@ -394,8 +394,9 @@ internal partial class Image
     }
 
     /// <summary>
-    /// Decode the first frame through WIC. Used for JPEG XL, which neither ImageSharp nor Skia read:
-    /// the codec is Microsoft's "JPEG XL Image Extension" (Store, Windows 11 24H2+). Without it,
+    /// Decode the first frame through WIC. Used for JPEG XL and AVIF, which neither ImageSharp nor Skia read.
+    /// The codecs are Microsoft's "JPEG XL Image Extension" (Store, Windows 11 24H2+) and, for AVIF,
+    /// "AV1 Video Extension" (Store), whose WIC path drops the alpha channel. Without the codec,
     /// BitmapDecoder throws and the user gets the usual "cannot open this file" message.
     /// </summary>
     private static async Task<ImageSharpImage> DecodeWicAsync(string path)

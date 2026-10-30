@@ -24,7 +24,10 @@
   <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
     <value>L'ouverture des fichiers JPEG XL nécessite l'extension gratuite JPEG XL Image Extension de Microsoft (Windows 11 24H2 ou ultérieur)</value>
   </data>
-  <data name="SYSTEM_LOADING_ERROR_JXL_STORE" xml:space="preserve">
+  <data name="SYSTEM_LOADING_ERROR_AVIF_CODEC" xml:space="preserve">
+    <value>L'ouverture des fichiers AVIF nécessite l'extension gratuite AV1 Video Extension de Microsoft</value>
+  </data>
+  <data name="SYSTEM_LOADING_ERROR_CODEC_STORE" xml:space="preserve">
     <value>L'obtenir sur le Microsoft Store</value>
   </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">

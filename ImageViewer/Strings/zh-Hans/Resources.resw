@@ -24,7 +24,10 @@
   <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
     <value>打开 JPEG XL 文件需要 Microsoft 的免费 JPEG XL Image Extension（Windows 11 24H2 或更高版本）</value>
   </data>
-  <data name="SYSTEM_LOADING_ERROR_JXL_STORE" xml:space="preserve">
+  <data name="SYSTEM_LOADING_ERROR_AVIF_CODEC" xml:space="preserve">
+    <value>打开 AVIF 文件需要 Microsoft 的免费 AV1 Video Extension</value>
+  </data>
+  <data name="SYSTEM_LOADING_ERROR_CODEC_STORE" xml:space="preserve">
     <value>从 Microsoft Store 获取</value>
   </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">

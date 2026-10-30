@@ -12,7 +12,7 @@
 [![Donate](https://img.shields.io/badge/Donate-Ko--fi-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/dragonofmercy)
 
 Simple image viewer for Windows.  
-Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp, svg and jxl (JPEG XL, needs the Microsoft [JPEG XL Image Extension](https://apps.microsoft.com/search?query=JPEG+XL+Image+Extension) on Windows 11 24H2 or later)
+Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp, svg and jxl (JPEG XL, needs the Microsoft [JPEG XL Image Extension](https://apps.microsoft.com/search?query=JPEG+XL+Image+Extension) on Windows 11 24H2 or later) and avif (read only, no transparency, needs the Microsoft [AV1 Video Extension](https://apps.microsoft.com/detail/9MVZQVXJBQ9V))
 
 ![](/.github/screen.webp)
 

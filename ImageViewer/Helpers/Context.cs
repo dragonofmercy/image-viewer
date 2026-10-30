@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Globalization;
@@ -791,14 +792,22 @@ internal class Context
         ImageFailedEventArgs args = (ImageFailedEventArgs)e;
         MainWindow.GlobalErrorMessageFileName.Text = args.Path;
 
-        // JPEG XL decodes through the Store codec: when that is what is missing, say so, with a link to it
-        bool jxlCodecMissing = args.CodecMissing && string.Equals(Path.GetExtension(args.Path), ".jxl", StringComparison.OrdinalIgnoreCase);
-        MainWindow.GlobalErrorMessageText.Text = Culture.GetString(jxlCodecMissing ? "SYSTEM_LOADING_ERROR_JXL_CODEC" : "SYSTEM_LOADING_ERROR");
-        MainWindow.GlobalErrorMessageStoreLink.Visibility = jxlCodecMissing ? Visibility.Visible : Visibility.Collapsed;
+        // JPEG XL and AVIF decode through Store codecs: when that is what is missing, say so, with a link to it
+        (string Message, string StoreId) codec = default;
+        bool codecMissing = args.CodecMissing && StoreCodecs.TryGetValue(Path.GetExtension(args.Path), out codec);
+        MainWindow.GlobalErrorMessageText.Text = Culture.GetString(codecMissing ? codec.Message : "SYSTEM_LOADING_ERROR");
+        MainWindow.GlobalErrorMessageStoreLink.Visibility = codecMissing ? Visibility.Visible : Visibility.Collapsed;
+        if (codecMissing) MainWindow.GlobalErrorMessageStoreLink.NavigateUri = new Uri("https://apps.microsoft.com/detail/" + codec.StoreId);
 
         CurrentImage.Dispose();
         UpdateButtonsAccessiblity();
     }
+
+    private static readonly Dictionary<string, (string Message, string StoreId)> StoreCodecs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { ".jxl", ("SYSTEM_LOADING_ERROR_JXL_CODEC", "9MZPRTH5C0TB") },
+        { ".avif", ("SYSTEM_LOADING_ERROR_AVIF_CODEC", "9MVZQVXJBQ9V") }
+    };
 
     /// <summary>
     /// Event: When image is loaded.

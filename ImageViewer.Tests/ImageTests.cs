@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 using SixLabors.ImageSharp.Processing;
@@ -329,6 +330,29 @@ public class ImageTests
             long lowSize = new System.IO.FileInfo(low).Length;
 
             Assert.True(lowSize < highSize, $"expected q20 ({lowSize}) < q95 ({highSize})");
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task Load_Avif_DecodesThroughWic()
+    {
+        // Needs Microsoft's HEIF and AV1 Store extensions; nothing to check on a machine without them.
+        if (!Windows.Graphics.Imaging.BitmapDecoder.GetDecoderInformationEnumerator().Any(c => c.FileExtensions.Contains(".avif", StringComparer.OrdinalIgnoreCase))) return;
+
+        using TempDir dir = new();
+        string path = dir.File("src.avif");
+        // 8x8 red still (WIC rejects a 4x2 one), nothing in the dependency set encodes AVIF
+        await File.WriteAllBytesAsync(path, Convert.FromBase64String("AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAAD5bWV0YQAAAAAAAAAvaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAFBpY3R1cmVIYW5kbGVyAAAAAA5waXRtAAAAAAABAAAAHmlsb2MAAAAARAAAAQABAAAAAQAAASEAAAAYAAAAKGlpbmYAAAAAAAEAAAAaaW5mZQIAAAAAAQAAYXYwMUNvbG9yAAAAAGppcHJwAAAAS2lwY28AAAAUaXNwZQAAAAAAAAAIAAAACAAAABBwaXhpAAAAAAMICAgAAAAMYXYxQ4EADAAAAAATY29scm5jbHgAAgACAAIAAAAAF2lwbWEAAAAAAAAAAQABBAECgwQAAAAgbWRhdAoFGAi/bAIyDxyAAABYAAAAAK/sqvFLgA=="));
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            Assert.Equal(8, (int)image.Width);
+            Assert.Equal(8, (int)image.Height);
         }
         finally
         {

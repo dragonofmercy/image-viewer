@@ -41,7 +41,8 @@ internal sealed class FileAssociationPlan
         { ".ico", "Icon" },
         { ".webp", "WebP image" },
         { ".svg", "SVG image" },
-        { ".jxl", "JPEG XL image" }
+        { ".jxl", "JPEG XL image" },
+        { ".avif", "AVIF image" }
     };
 
     private readonly string ExePath;
