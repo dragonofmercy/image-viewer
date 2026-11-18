@@ -70,6 +70,10 @@ fn load_api() -> Result<Api, String> {
             *unsafe { lib.get(concat!($name, "\0").as_bytes()) }.map_err(|e| format!("libheif.dll: {}: {e}", $name))?
         };
     }
+    // Loads the codec plugins and builds libheif's internal tables; ref-counted, never paired with heif_deinit since the library stays loaded.
+    let init: unsafe extern "C" fn(*const c_void) -> HeifError = sym!("heif_init");
+    // SAFETY: heif_init(struct heif_init_params*) accepts null for the defaults; this runs once, inside the OnceLock initializer.
+    check(unsafe { init(null()) }).map_err(|e| format!("libheif.dll: heif_init: {e}"))?;
     Ok(Api {
         context_alloc: sym!("heif_context_alloc"),
         context_free: sym!("heif_context_free"),
