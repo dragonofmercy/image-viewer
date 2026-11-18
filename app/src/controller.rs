@@ -13,7 +13,7 @@ use viewer_core::files::{SUPPORTED_FILE_TYPES, is_supported};
 use viewer_core::folder::FolderNav;
 use viewer_core::picture::{LoadError, Picture};
 
-use crate::document::{Document, Loader, Source, frame_delay, next_icon_index};
+use crate::document::{Document, Loader, Source, frame_delay, next_icon_index, reveal_offset};
 use crate::file_info;
 use crate::image_host::ImageHost;
 use crate::win::{dialogs, shell};
@@ -78,6 +78,7 @@ impl Controller {
         let c = controller.clone();
         ui.on_info_folder_clicked(move || c.open_info_folder());
         let c = controller.clone();
+        ui.on_icon_reveal_offset(|current, index, count, pitch, viewport| reveal_offset(current, usize::try_from(index).unwrap_or(0), usize::try_from(count).unwrap_or(0), pitch, viewport));
         ui.on_icon_size_chosen(move |i| c.select_icon_size(i));
         let c = controller.clone();
         ui.on_icon_size_step(move |delta| c.step_icon_size(delta));

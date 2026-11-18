@@ -41,6 +41,8 @@ export component IconStrip inherits Rectangle {
     in property <int> selected;
     // Room the parent leaves for the strip (its width minus the 16px margins).
     in property <length> available;
+    // (current offset, item index, item count, item pitch, viewport width) -> new offset.
+    pure callback reveal-offset(length, int, int, length, length) -> length;
     callback choose(int);
     callback step(int);
 
@@ -51,10 +53,7 @@ export component IconStrip inherits Rectangle {
 
     // Keeps the selected item inside the list: the step buttons can select an item that is scrolled out.
     function reveal() {
-        if (root.selected < 0) {
-            return;
-        }
-        flick.content-x = max(min(flick.content-x, -root.selected * root.item-pitch), flick.width - (root.selected + 1) * root.item-pitch);
+        flick.content-x = root.reveal-offset(flick.content-x, root.selected, root.sizes.length, root.item-pitch, flick.width);
     }
     changed selected => {
         root.reveal();
@@ -90,6 +89,10 @@ export component IconStrip inherits Rectangle {
         }
         flick := Flickable {
             content-width: root.sizes.length * root.item-pitch;
+            // The first reveal needs a real width: init runs before layout.
+            changed width => {
+                root.reveal();
+            }
             for item[i] in root.sizes: Rectangle {
                 x: i * root.item-pitch + 2px;
                 y: 0px;

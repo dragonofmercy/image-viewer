@@ -47,6 +47,8 @@ export component MainWindow inherits Window {
     in property <string> error-file;
     in property <[IconSizeItem]> icon-sizes;
     in property <int> icon-index;
+    // Pure Rust arithmetic of the strip scroll (document.rs `reveal_offset`).
+    pure callback icon-reveal-offset(length, int, int, length, length) -> length;
     callback icon-size-chosen(int);
     callback icon-size-step(int);
     in property <InfoFields> info;
@@ -183,6 +185,9 @@ export component MainWindow inherits Window {
                     available: parent.width - 32px;
                     sizes: root.icon-sizes;
                     selected: root.icon-index;
+                    reveal-offset(current, index, count, pitch, viewport) => {
+                        return root.icon-reveal-offset(current, index, count, pitch, viewport);
+                    }
                     choose(i) => {
                         root.icon-size-chosen(i);
                     }

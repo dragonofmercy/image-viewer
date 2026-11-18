@@ -94,6 +94,21 @@ pub fn next_icon_index(current: usize, delta: i32, count: usize) -> usize {
     (current as i64 + i64::from(delta)).rem_euclid(count as i64) as usize
 }
 
+/// Scroll offset (zero or negative) of the icon strip list that keeps item `index` fully visible, moving as little as possible.
+/// `current` is the present offset, `pitch` the width of one item slot, `viewport` the visible width of the list.
+pub fn reveal_offset(current: f32, index: usize, count: usize, pitch: f32, viewport: f32) -> f32 {
+    if viewport <= 0.0 || count == 0 {
+        return current.min(0.0);
+    }
+    let lowest = (viewport - count as f32 * pitch).min(0.0);
+    let index = index.min(count - 1) as f32;
+    // The item is fully visible for offsets in [left, right].
+    let left = -index * pitch;
+    let right = viewport - (index + 1.0) * pitch;
+    // An item wider than the viewport shows its start.
+    current.min(right).max(left).clamp(lowest, 0.0)
+}
+
 /// Frame delay of an animation: a delay of 0 plays at 100 ms.
 pub fn frame_delay(delay_ms: u32) -> std::time::Duration {
     std::time::Duration::from_millis(if delay_ms == 0 { 100 } else { u64::from(delay_ms) })
@@ -203,6 +218,54 @@ mod tests {
         assert_eq!(next_icon_index(1, 1, 3), 2);
         assert_eq!(next_icon_index(1, -1, 3), 0);
         assert_eq!(next_icon_index(0, 1, 0), 0);
+    }
+
+    // Reviewer cases: viewport 200, pitch 56, 10 items (content 560, lowest offset -360).
+    #[test]
+    fn reveal_first_item_stays_at_zero() {
+        assert_eq!(reveal_offset(0.0, 0, 10, 56.0, 200.0), 0.0);
+    }
+
+    #[test]
+    fn reveal_last_item_scrolls_to_the_end() {
+        assert_eq!(reveal_offset(0.0, 9, 10, 56.0, 200.0), -360.0);
+    }
+
+    #[test]
+    fn reveal_item_hidden_on_the_left_moves_just_enough() {
+        // Item 3 spans 168..224; offset -190 hides its first 22px.
+        assert_eq!(reveal_offset(-190.0, 3, 10, 56.0, 200.0), -168.0);
+    }
+
+    #[test]
+    fn reveal_item_hidden_on_the_right_moves_just_enough() {
+        // Item 5 spans 280..336; at offset 0 only 0..200 is visible.
+        assert_eq!(reveal_offset(0.0, 5, 10, 56.0, 200.0), -136.0);
+    }
+
+    #[test]
+    fn reveal_visible_item_keeps_the_offset() {
+        assert_eq!(reveal_offset(-100.0, 3, 10, 56.0, 200.0), -100.0);
+    }
+
+    #[test]
+    fn reveal_content_narrower_than_viewport_is_zero() {
+        assert_eq!(reveal_offset(0.0, 2, 3, 56.0, 200.0), 0.0);
+        assert_eq!(reveal_offset(-50.0, 0, 3, 56.0, 200.0), 0.0);
+    }
+
+    #[test]
+    fn reveal_wraps_around_both_ways() {
+        assert_eq!(reveal_offset(-360.0, 0, 10, 56.0, 200.0), 0.0);
+        assert_eq!(reveal_offset(0.0, 9, 10, 56.0, 200.0), -360.0);
+    }
+
+    #[test]
+    fn reveal_without_viewport_or_items_only_clamps() {
+        assert_eq!(reveal_offset(-30.0, 4, 10, 56.0, 0.0), -30.0);
+        assert_eq!(reveal_offset(25.0, 4, 10, 56.0, -5.0), 0.0);
+        assert_eq!(reveal_offset(-30.0, 0, 0, 56.0, 200.0), -30.0);
+        assert_eq!(reveal_offset(12.0, 0, 0, 56.0, 200.0), 0.0);
     }
 
     #[test]
