@@ -183,6 +183,22 @@ fn save_webp_over_size_limit_is_an_error_not_a_panic() {
 }
 
 #[test]
+fn save_animated_webp_over_size_limit_is_an_error_not_a_panic() {
+    let dir = fixture_dir();
+    let src = dir.path().join("wide.gif");
+    let mut enc = image::codecs::gif::GifEncoder::new(std::fs::File::create(&src).unwrap());
+    for i in 0..2 {
+        enc.encode_frame(image::Frame::from_parts(image::RgbaImage::from_pixel(16384, 1, anim_color(i)), 0, 0, image::Delay::from_numer_denom_ms(50, 1))).unwrap();
+    }
+    drop(enc);
+    let mut pic = picture::load_path(&src).unwrap();
+    assert!(pic.is_animated());
+    let path = dir.path().join("big.webp");
+    assert!(matches!(pic.save(&path, ".webp", None), Err(SaveError::Encode(_))));
+    assert!(!path.exists());
+}
+
+#[test]
 fn save_overwrites_existing_file() {
     let dir = fixture_dir();
     let path = save_sample(&dir, "a.png", 8, 8);
