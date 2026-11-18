@@ -92,3 +92,15 @@ fn load_ico_decodes_dib_payload() {
     assert_eq!((pic.width(), pic.height()), (2, 2));
     assert_eq!(pic.current().get_pixel(0, 0).0, [30, 20, 10, 255]);
 }
+
+#[test]
+fn frames_yields_the_displayed_icon_frame_and_is_never_animated() {
+    let dir = fixture_dir();
+    let mut pic = picture::load_path(&save_ico(&dir, "a.ico", &[(16, 16), (48, 48), (32, 32)])).unwrap();
+    for i in [0, 2] {
+        pic.select_icon_size(i);
+        assert_eq!(pic.frames().len(), 1);
+        assert_eq!(pic.frames()[0].pixels.dimensions(), pic.current().dimensions());
+        assert!(!pic.is_animated());
+    }
+}

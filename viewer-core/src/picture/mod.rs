@@ -167,7 +167,10 @@ impl Picture {
     }
 
     pub fn frames(&self) -> &[Frame] {
-        &self.frames
+        match self.icon_frames.get(self.icon_index) {
+            Some(f) => std::slice::from_ref(f),
+            None => &self.frames,
+        }
     }
 
     pub fn is_animated(&self) -> bool {
