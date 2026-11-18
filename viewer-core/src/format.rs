@@ -38,6 +38,7 @@ mod tests {
             (1099511627776.0, "1 TB"),
             (1125899906842624.0, "1024 TB"),
             (1536.0, "1.5 KB"),
+            (1280.0, "1.3 KB"),
         ];
         for (input, expected) in cases {
             assert_eq!(humanize_bytes(input), expected, "input {input}");
