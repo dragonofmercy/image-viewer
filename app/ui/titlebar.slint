@@ -14,7 +14,7 @@ component CaptionButton inherits Rectangle {
         text: root.glyph;
         font-family: "Segoe Fluent Icons";
         font-size: 10px;
-        color: Theme.text-primary;
+        color: root.is-close && (root.hover || root.pressed) ? #ffffff : Theme.text-primary;
     }
 }
 

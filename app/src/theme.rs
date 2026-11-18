@@ -70,7 +70,9 @@ mod tests {
         let bytes: Vec<u8> = (0..8u8).flat_map(|i| [i, i + 10, i + 20, 255]).collect();
         let p = parse_accent_palette(&bytes).unwrap();
         assert_eq!(p[0], Color::from_rgb_u8(0, 10, 20));
+        assert_eq!(p[1], Color::from_rgb_u8(1, 11, 21));
         assert_eq!(p[3], Color::from_rgb_u8(3, 13, 23));
+        assert_eq!(p[4], Color::from_rgb_u8(4, 14, 24));
         assert_eq!(p[6], Color::from_rgb_u8(6, 16, 26));
         assert!(parse_accent_palette(&bytes[..27]).is_none());
         assert!(parse_accent_palette(&[]).is_none());
