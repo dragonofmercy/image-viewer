@@ -12,7 +12,9 @@ impl FolderNav {
     /// Supported files of the current file's folder (top level only), natural-sorted; None when the folder is unreadable.
     pub fn list(current: &Path) -> Option<FolderNav> {
         let dir = current.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        let mut files: Vec<PathBuf> = std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.is_file() && is_supported(p)).collect();
+        // file_type() comes with the directory listing on Windows; only a symlink needs a stat to know what it points at.
+        let is_file = |e: &std::fs::DirEntry| e.file_type().is_ok_and(|t| t.is_file() || (t.is_symlink() && e.path().is_file()));
+        let mut files: Vec<PathBuf> = std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).filter(|e| is_file(e)).map(|e| e.path()).filter(|p| is_supported(p)).collect();
         files.sort_by(|a, b| natural_cmp(&a.to_string_lossy(), &b.to_string_lossy()));
         let cur = current.to_string_lossy().to_lowercase();
         let index = files.iter().position(|p| p.to_string_lossy().to_lowercase() == cur).map_or(-1, |i| i as isize);
@@ -29,7 +31,7 @@ impl FolderNav {
             if can_open(&self.files[self.index as usize]) {
                 return Some(self.files[self.index as usize].clone());
             }
-            self.files = remove_at_index(&self.files, self.index);
+            self.files.remove(self.index as usize);
             self.index -= 1;
         }
         None
@@ -45,7 +47,7 @@ impl FolderNav {
             if can_open(&self.files[self.index as usize]) {
                 return Some(self.files[self.index as usize].clone());
             }
-            self.files = remove_at_index(&self.files, self.index);
+            self.files.remove(self.index as usize);
         }
         None
     }
@@ -65,7 +67,7 @@ impl FolderNav {
         if !(0..self.files.len() as isize).contains(&self.index) {
             return;
         }
-        self.files = remove_at_index(&self.files, self.index);
+        self.files.remove(self.index as usize);
         self.index -= 1;
     }
 }
