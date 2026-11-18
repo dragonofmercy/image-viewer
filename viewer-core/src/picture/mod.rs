@@ -5,8 +5,12 @@ use image::{DynamicImage, ImageDecoder, ImageError, ImageReader, Limits, RgbaIma
 
 use crate::files::extension_of;
 
+mod heif;
 mod ico;
 mod svg;
+
+#[doc(hidden)]
+pub use heif::encode_av1_heif;
 
 pub struct Frame {
     pub pixels: RgbaImage,
@@ -62,7 +66,11 @@ pub fn load_path(path: &Path) -> Result<Picture, LoadError> {
         ".jpg" | ".jpeg" | ".bmp" | ".png" | ".gif" | ".tif" | ".tiff" | ".tga" | ".webp" => load_native(path),
         ".svg" => Ok(Picture::from_rgba(svg::rasterize_svg(path)?, 32)),
         ".ico" => Ok(Picture::from_icon_frames(ico::decode_ico(path)?)),
-        ".heic" | ".heif" | ".avif" | ".jxl" => Err(LoadError::Unsupported(ext)),
+        ".heic" | ".heif" | ".avif" => {
+            let (pixels, has_alpha) = heif::decode_heif(&std::fs::read(path)?)?;
+            Ok(Picture::from_rgba(pixels, if has_alpha { 32 } else { 24 }))
+        }
+        ".jxl" => Err(LoadError::Unsupported(ext)),
         _ => Err(LoadError::Unsupported(ext)),
     }
 }
