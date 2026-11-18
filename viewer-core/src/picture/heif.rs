@@ -163,6 +163,9 @@ fn decode_with(api: &Api, bytes: &[u8]) -> Result<(RgbaImage, bool), String> {
         if data.is_null() || w == 0 || h == 0 || stride < row {
             return Err(format!("invalid decoded plane ({w} x {h}, stride {stride})"));
         }
+        if (w as u64).saturating_mul(h as u64).saturating_mul(4) > super::MAX_DECODE_BYTES {
+            return Err("image too large".into());
+        }
         let len = stride.checked_mul(h - 1).and_then(|n| n.checked_add(row)).ok_or("image too large")?;
         // SAFETY: libheif allocates the plane as at least stride * height bytes, and len <= that; img is alive.
         let plane = std::slice::from_raw_parts(data, len);

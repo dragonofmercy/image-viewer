@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::OnceLock;
 
 use image::{DynamicImage, ImageBuffer, RgbaImage};
-use jxl_oxide::{EnumColourEncoding, JxlImage, RenderingIntent};
+use jxl_oxide::{AllocTracker, EnumColourEncoding, JxlImage, RenderingIntent};
 use windows::Win32::Foundation::{E_POINTER, GENERIC_WRITE, RPC_E_CHANGED_MODE, WINCODEC_ERR_COMPONENTNOTFOUND};
 use windows::Win32::Graphics::Imaging::{CLSID_WICImagingFactory, GUID_WICPixelFormat32bppBGRA, IWICBitmapCodecInfo, IWICBitmapEncoder, IWICImagingFactory, WICBitmapEncoderNoCache, WICComponentEnumerateDefault, WICEncoder};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize};
@@ -17,7 +17,10 @@ use super::LoadError;
 /// First frame as 8-bit sRGB RGBA (orientation applied by jxl-oxide), plus whether it has alpha.
 pub(crate) fn decode_jxl(bytes: &[u8]) -> Result<(RgbaImage, bool), LoadError> {
     let err = |e: Box<dyn std::error::Error + Send + Sync>| LoadError::Decode(e.to_string());
-    let mut image = JxlImage::builder().read(bytes).map_err(err)?;
+    // The tracker bounds jxl-oxide's internal buffers; the header check below gives the output buffer a clear error.
+    let tracker = AllocTracker::with_limit(usize::try_from(super::MAX_DECODE_BYTES).unwrap_or(usize::MAX));
+    let mut image = JxlImage::builder().alloc_tracker(tracker).read(bytes).map_err(err)?;
+    super::reserve(&mut 0, super::rgba_bytes(image.width(), image.height()))?;
     if image.num_loaded_keyframes() == 0 {
         return Err(LoadError::Decode("JPEG XL: no complete frame".into()));
     }

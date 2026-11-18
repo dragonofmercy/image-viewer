@@ -208,6 +208,35 @@ fn gif_named_png_still_plays_animated() {
     assert_eq!(pic.frames().len(), 3);
 }
 
+fn is_too_large(r: Result<picture::Picture, LoadError>) -> bool {
+    matches!(&r, Err(LoadError::Decode(m)) if m.contains("too large"))
+}
+
+#[test]
+fn gif_with_huge_logical_screen_is_an_error_without_allocating_it() {
+    let dir = fixture_dir();
+    // 65535 x 65535 logical screen (17 GB as RGBA), then one 1x1 frame with a 2-color local table.
+    let mut gif = b"GIF89a\xff\xff\xff\xff\x00\x00\x00".to_vec();
+    gif.extend_from_slice(b"\x2c\0\0\0\0\x01\0\x01\0\x80\0\0\0\xff\xff\xff\x02\x02\x44\x01\0\x3b");
+    let start = std::time::Instant::now();
+    assert!(is_too_large(picture::load_path(&write_bytes(&dir, "huge.gif", &gif))));
+    assert!(start.elapsed().as_secs() < 5);
+}
+
+#[test]
+fn still_image_over_the_decode_cap_is_rejected_before_allocating() {
+    let dir = fixture_dir();
+    // BMP header only: 50000 x 50000 at 32 bpp (10 GB), no pixel data.
+    let mut bmp = b"BM".to_vec();
+    for v in [54u32, 0, 54, 40, 50000, 50000] {
+        bmp.extend_from_slice(&v.to_le_bytes());
+    }
+    bmp.extend_from_slice(&1u16.to_le_bytes());
+    bmp.extend_from_slice(&32u16.to_le_bytes());
+    bmp.extend_from_slice(&[0; 24]);
+    assert!(is_too_large(picture::load_path(&write_bytes(&dir, "huge.bmp", &bmp))));
+}
+
 #[test]
 fn png_named_gif_and_webp_open_as_still() {
     let dir = fixture_dir();

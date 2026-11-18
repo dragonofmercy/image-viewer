@@ -21,6 +21,26 @@ pub use jxl::can_save_jxl;
 pub use jxl::encode_jxl_wic;
 pub use save::{Flip, Rotate, SaveError};
 
+/// Cap on the pixel memory one decode may allocate: a failed allocation aborts the process, so hostile headers must fail before it. Lets a 200+ Mpx RGBA image through.
+pub const MAX_DECODE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
+
+/// `image` decoder limits: no width/height cap, allocations capped at MAX_DECODE_BYTES.
+fn decode_limits() -> Limits {
+    let mut limits = Limits::no_limits();
+    limits.max_alloc = Some(MAX_DECODE_BYTES);
+    limits
+}
+
+/// Adds `bytes` to the running decode total `used`, failing once it passes MAX_DECODE_BYTES.
+fn reserve(used: &mut u64, bytes: u64) -> Result<(), LoadError> {
+    *used = used.saturating_add(bytes);
+    if *used > MAX_DECODE_BYTES { Err(LoadError::Decode("image too large".into())) } else { Ok(()) }
+}
+
+fn rgba_bytes(width: u32, height: u32) -> u64 {
+    (u64::from(width) * u64::from(height)).saturating_mul(4)
+}
+
 pub struct Frame {
     pub pixels: RgbaImage,
     pub delay_ms: u32,
@@ -101,9 +121,14 @@ fn load_native(path: &Path) -> Result<Picture, LoadError> {
         return Ok(pic);
     }
     let mut reader = ImageReader::open(path)?.with_guessed_format()?;
-    reader.limits(Limits::no_limits());
+    reader.limits(decode_limits());
     let is_tiff = reader.format() == Some(ImageFormat::Tiff);
     let mut decoder = reader.into_decoder()?;
+    // from_decoder allocates the whole buffer without consulting the limits: check it, plus the RGBA copy, first.
+    let (w, h) = decoder.dimensions();
+    let mut used = 0;
+    reserve(&mut used, decoder.total_bytes())?;
+    reserve(&mut used, rgba_bytes(w, h))?;
     let (exif, mut icc) = metadata::read(&mut decoder);
     if icc.is_none() && is_tiff {
         // image's TiffDecoder::set_limits caps tag values to the pixel buffer size, dropping the ICC of small images: retry at the tiff crate's own limits.

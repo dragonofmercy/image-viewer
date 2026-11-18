@@ -71,6 +71,14 @@ fn load_ico_with_256_entry_and_bad_input_never_panics() {
 }
 
 #[test]
+fn ico_with_more_than_256_entries_is_error() {
+    let dir = fixture_dir();
+    let p = save_ico(&dir, "many.ico", &[(1, 1); 300]);
+    assert!(matches!(picture::load_path(&p), Err(LoadError::Decode(_))));
+    assert!(picture::load_path(&save_ico(&dir, "max.ico", &[(1, 1); 256])).is_ok());
+}
+
+#[test]
 fn load_ico_decodes_dib_payload() {
     let dir = fixture_dir();
     let mut dib = Vec::new();

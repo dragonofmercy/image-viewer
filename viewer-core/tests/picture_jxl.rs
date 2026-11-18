@@ -57,6 +57,17 @@ fn load_jxl_decodes_without_store_extension() {
 }
 
 #[test]
+fn jxl_header_over_the_decode_cap_is_rejected() {
+    let dir = fixture_dir();
+    // Codestream signature, then SizeHeader bits (LSB first): div8 0, height selector 2 + 18 bits (40000), ratio 1 (square), all_default
+    // metadata: 6.4 GB as RGBA. The zero tail is the start of a frame header whose TOC is never complete.
+    let mut jxl = vec![0xff, 0x0a, 0xfc, 0xe1, 0x24, 0x01];
+    jxl.resize(64, 0);
+    let r = picture::load_path(&write_bytes(&dir, "huge.jxl", &jxl));
+    assert!(matches!(&r, Err(LoadError::Decode(m)) if m.contains("too large")), "{:?}", r.err());
+}
+
+#[test]
 fn load_garbage_jxl_is_error() {
     let dir = fixture_dir();
     let p = write_bytes(&dir, "bad.jxl", b"definitely not a jpeg xl codestream");

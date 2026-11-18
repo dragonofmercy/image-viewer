@@ -1,10 +1,13 @@
 use std::io::Cursor;
 use std::path::Path;
 
-use image::DynamicImage;
 use image::codecs::ico::IcoDecoder;
+use image::{DynamicImage, ImageDecoder};
 
 use super::{Frame, LoadError};
+
+/// Real icons carry a handful of sizes; the directory count is a u16 an attacker controls.
+const MAX_ENTRIES: usize = 256;
 
 fn bad(msg: &str) -> LoadError {
     LoadError::Decode(msg.to_string())
@@ -20,6 +23,10 @@ pub(super) fn decode_ico(path: &Path) -> Result<Vec<Frame>, LoadError> {
     if count == 0 {
         return Err(bad("ICO has no entries"));
     }
+    if count > MAX_ENTRIES {
+        return Err(bad("ICO has too many entries"));
+    }
+    let mut used = 0;
     let mut frames = Vec::with_capacity(count);
     for i in 0..count {
         let entry = data.get(6 + 16 * i..6 + 16 * (i + 1)).ok_or_else(|| bad("truncated ICO directory"))?;
@@ -31,7 +38,11 @@ pub(super) fn decode_ico(path: &Path) -> Result<Vec<Frame>, LoadError> {
         single.extend_from_slice(&entry[..12]);
         single.extend_from_slice(&22u32.to_le_bytes());
         single.extend_from_slice(payload);
-        let img = DynamicImage::from_decoder(IcoDecoder::new(Cursor::new(single))?)?;
+        let mut decoder = IcoDecoder::new(Cursor::new(single))?;
+        decoder.set_limits(super::decode_limits())?;
+        // The entry-vs-payload size check runs only after from_decoder allocated the payload's own (unbounded) size.
+        super::reserve(&mut used, decoder.total_bytes())?;
+        let img = DynamicImage::from_decoder(decoder)?;
         frames.push(Frame { pixels: img.into_rgba8(), delay_ms: 0 });
     }
     frames.sort_by_key(|f| std::cmp::Reverse(u64::from(f.pixels.width()) * u64::from(f.pixels.height())));

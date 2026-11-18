@@ -4,7 +4,7 @@ use std::path::Path;
 
 use image::codecs::gif::GifDecoder;
 use image::codecs::webp::WebPDecoder;
-use image::{AnimationDecoder, DynamicImage, ImageDecoder, Limits};
+use image::{AnimationDecoder, DynamicImage, ImageDecoder};
 
 use super::{Frame, LoadError, Picture};
 
@@ -30,10 +30,15 @@ pub(super) fn load_animated(path: &Path) -> Result<Option<Picture>, LoadError> {
 }
 
 fn collect<'a, D: ImageDecoder + AnimationDecoder<'a>>(mut decoder: D) -> Result<Picture, LoadError> {
-    decoder.set_limits(Limits::no_limits())?;
+    decoder.set_limits(super::decode_limits())?;
     let (exif, icc) = super::metadata::read(&mut decoder);
     let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
     let bits = decoder.color_type().bits_per_pixel();
+    // The decoder composites onto a canvas-sized buffer (the WebP one ignores the limits), then every frame is a canvas-sized copy.
+    let (w, h) = decoder.dimensions();
+    let frame_bytes = super::rgba_bytes(w, h);
+    let mut used = 0;
+    super::reserve(&mut used, frame_bytes)?;
     let mut frames = Vec::new();
     for frame in decoder.into_frames() {
         // A stream cut mid-frame still shows the frames decoded before the cut; only an empty result is an error.
@@ -42,6 +47,7 @@ fn collect<'a, D: ImageDecoder + AnimationDecoder<'a>>(mut decoder: D) -> Result
             Err(e) if frames.is_empty() => return Err(e.into()),
             Err(_) => break,
         };
+        super::reserve(&mut used, frame_bytes)?;
         let (num, den) = frame.delay().numer_denom_ms();
         let ms = (f64::from(num) / f64::from(den.max(1))).round() as u32;
         let mut img = DynamicImage::ImageRgba8(frame.into_buffer());
