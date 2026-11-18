@@ -39,23 +39,48 @@ component StepButton inherits Rectangle {
 export component IconStrip inherits Rectangle {
     in property <[IconSizeItem]> sizes;
     in property <int> selected;
+    // Room the parent leaves for the strip (its width minus the 16px margins).
+    in property <length> available;
     callback choose(int);
     callback step(int);
 
     // Item container: 40px content + 6px padding each side, 2px margin each side.
     property <length> item-pitch: 40px + 12px + 4px;
-    property <length> chrome: 2 * 4px + 2 * 1px + 2 * 22px + 2 * 2px;
+    // Padding 4px + border 1px on each side, two step buttons, two 2px gaps around the list.
+    property <length> chrome: 2 * 5px + 2 * 22px + 2 * 2px;
 
-    width: min(640px, root.chrome + root.sizes.length * root.item-pitch);
-    height: 52px + 2 * 4px + 2 * 1px;
+    // Keeps the selected item inside the list: the step buttons can select an item that is scrolled out.
+    function reveal() {
+        if (root.selected < 0) {
+            return;
+        }
+        flick.content-x = max(min(flick.content-x, -root.selected * root.item-pitch), flick.width - (root.selected + 1) * root.item-pitch);
+    }
+    changed selected => {
+        root.reveal();
+    }
+    init => {
+        root.reveal();
+    }
+
+    width: max(0px, min(min(640px, root.available), root.chrome + root.sizes.length * root.item-pitch));
+    height: 52px + 2 * 5px;
     border-radius: Theme.overlay-radius;
     background: Theme.pane-background;
     border-width: 1px;
     border-color: Theme.app-bar-border;
 
+    // Swallows what the items and buttons do not take (gaps, padding, drags, wheel) so it never reaches the image view; the wheel scrolls the list.
+    TouchArea {
+        scroll-event(event) => {
+            flick.content-x = max(min(0px, flick.width - root.sizes.length * root.item-pitch), min(0px, flick.content-x + (event.delta-y + event.delta-x)));
+            EventResult.accept
+        }
+    }
+
     HorizontalLayout {
-        padding: 4px;
-        spacing: 0px;
+        padding: 5px;
+        spacing: 2px;
         StepButton {
             glyph: "\u{E76B}";
             name: Tr.t("ICON_SIZE_LARGER");
@@ -63,12 +88,10 @@ export component IconStrip inherits Rectangle {
                 root.step(-1);
             }
         }
-        Flickable {
+        flick := Flickable {
             content-width: root.sizes.length * root.item-pitch;
-            interactive: false;
-            // Margin 2,0 of the list.
             for item[i] in root.sizes: Rectangle {
-                x: i * root.item-pitch + 2px + 2px;
+                x: i * root.item-pitch + 2px;
                 y: 0px;
                 width: 40px + 12px;
                 height: 52px;
@@ -83,6 +106,8 @@ export component IconStrip inherits Rectangle {
                     Rectangle {
                         height: 32px;
                         Image {
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
                             source: item.thumb;
                             width: min(32px, self.source.width * 1px);
                             height: min(32px, self.source.height * 1px);

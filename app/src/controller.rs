@@ -236,8 +236,8 @@ impl Controller {
             .map(|p| {
                 (0..p.icon_size_count())
                     .map(|i| {
-                        let (w, h) = p.icon_size(i);
                         let pixels = p.icon_frame(i);
+                        let (w, h) = pixels.dimensions();
                         IconSizeItem {
                             thumb: slint::Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), w, h)),
                             label: w.to_string().into(),

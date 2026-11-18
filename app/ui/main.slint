@@ -176,6 +176,7 @@ export component MainWindow inherits Window {
                 if AppState.icon-strip: IconStrip {
                     x: (parent.width - self.width) / 2;
                     y: parent.height - self.height - 16px;
+                    available: parent.width - 32px;
                     sizes: root.icon-sizes;
                     selected: root.icon-index;
                     choose(i) => {
