@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use slint::ComponentHandle;
+use viewer_core::settings::{Settings, WindowState};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
 use windows::Win32::Graphics::Gdi::ScreenToClient;
@@ -18,6 +19,7 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCWSTR;
 
 use crate::MainWindow;
+use crate::geometry::Tracker;
 
 const MIN_WIDTH: f32 = 768.0;
 const MIN_HEIGHT: f32 = 400.0;
@@ -36,6 +38,7 @@ thread_local! {
     static HOVER: Cell<i32> = const { Cell::new(0) };
     static PRESSED: Cell<i32> = const { Cell::new(0) };
     static OS_THEME_CHANGED: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
+    static TRACKER: RefCell<Option<(Tracker, Settings)>> = const { RefCell::new(None) };
 }
 
 pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
@@ -74,6 +77,20 @@ pub fn set_dark_title(hwnd: HWND, dark: bool) {
 /// Registers the callback run on the UI thread when the OS color mode or accent changes (`WM_SETTINGCHANGE` "ImmersiveColorSet").
 pub fn on_os_theme_changed(f: impl Fn() + 'static) {
     OS_THEME_CHANGED.with(|c| *c.borrow_mut() = Some(Rc::new(f)));
+}
+
+/// Feeds `tracker` from WM_SIZE / WM_MOVE once the subclass is installed; state changes are written to `settings` right away, as 1.x.
+pub fn track_geometry(tracker: Tracker, settings: Settings) {
+    TRACKER.set(Some((tracker, settings)));
+}
+
+/// Writes the recorded position and size (call on close).
+pub fn flush_geometry() {
+    TRACKER.with_borrow(|t| {
+        if let Some((tracker, settings)) = t {
+            tracker.flush(settings);
+        }
+    });
 }
 
 fn install(ui: &MainWindow, hwnd: HWND) {
@@ -264,6 +281,42 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 HOVER.set(0);
                 push_caption_state();
                 LRESULT(0)
+            }
+            WM_SIZE => {
+                let state = match wparam.0 as u32 {
+                    SIZE_RESTORED => Some(WindowState::Normal),
+                    SIZE_MINIMIZED => Some(WindowState::Minimized),
+                    SIZE_MAXIMIZED => Some(WindowState::Maximized),
+                    _ => None,
+                };
+                if let Some(state) = state {
+                    // Client size in physical px, stored in DIPs like 1.x. Slint syncs `MainWindow.maximized` itself on resize.
+                    let s = scale(hwnd);
+                    let (w, h) = ((lparam.0 & 0xffff) as f32 / s, ((lparam.0 >> 16) & 0xffff) as f32 / s);
+                    TRACKER.with_borrow_mut(|t| {
+                        if let Some((tracker, settings)) = t {
+                            if tracker.on_state(state)
+                                && let Err(e) = settings.set_window_state(state)
+                            {
+                                eprintln!("frame: cannot save the window state: {e}");
+                            }
+                            tracker.on_resized(w.round() as u32, h.round() as u32);
+                        }
+                    });
+                }
+                DefSubclassProc(hwnd, msg, wparam, lparam)
+            }
+            WM_MOVE => {
+                // WM_MOVE gives the client origin; 1.x stores the window rect origin.
+                let mut rc = RECT::default();
+                if GetWindowRect(hwnd, &mut rc).is_ok() {
+                    TRACKER.with_borrow_mut(|t| {
+                        if let Some((tracker, _)) = t {
+                            tracker.on_moved(rc.left, rc.top);
+                        }
+                    });
+                }
+                DefSubclassProc(hwnd, msg, wparam, lparam)
             }
             WM_NCDESTROY => {
                 let _ = RemoveWindowSubclass(hwnd, Some(subclass_proc), 1);

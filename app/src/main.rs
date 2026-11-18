@@ -1,10 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod frame;
+mod geometry;
 mod theme;
 
 use slint::ComponentHandle;
-use viewer_core::settings::{Settings, Theme as ThemeSetting};
+use viewer_core::settings::{Settings, Theme as ThemeSetting, WindowState};
 
 slint::include_modules!();
 
@@ -34,7 +35,22 @@ fn main() -> Result<(), slint::PlatformError> {
 
     let ui = MainWindow::new()?;
     ui.set_title_text(window_title(None).into());
-    apply_theme(&ui, Settings::app().theme());
+    let settings = Settings::app();
+    apply_theme(&ui, settings.theme());
+    let saved = geometry::load(&settings);
+    geometry::apply(ui.window(), &saved);
+    // As 1.x: a saved Minimized state comes back as Normal.
+    let state = if saved.state == WindowState::Maximized { WindowState::Maximized } else { WindowState::Normal };
+    if state == WindowState::Normal
+        && let Err(e) = settings.set_window_state(state)
+    {
+        eprintln!("cannot save the window state: {e}");
+    }
+    frame::track_geometry(geometry::Tracker::new(state), settings);
+    ui.window().on_close_requested(|| {
+        frame::flush_geometry();
+        slint::CloseRequestResponse::HideWindow
+    });
     let weak = ui.as_weak();
     frame::install_when_ready(&ui, move |_| {
         if let Some(ui) = weak.upgrade() {
