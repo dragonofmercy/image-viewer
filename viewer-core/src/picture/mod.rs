@@ -8,6 +8,7 @@ use crate::files::extension_of;
 mod heif;
 mod ico;
 mod jxl;
+mod save;
 mod svg;
 
 #[doc(hidden)]
@@ -15,6 +16,7 @@ pub use heif::encode_av1_heif;
 pub use jxl::can_save_jxl;
 #[doc(hidden)]
 pub use jxl::encode_jxl_wic;
+pub use save::{Flip, Rotate, SaveError};
 
 pub struct Frame {
     pub pixels: RgbaImage,
@@ -145,15 +147,6 @@ impl Picture {
     pub fn select_icon_size(&mut self, i: usize) {
         if i < self.icon_frames.len() {
             self.icon_index = i;
-        }
-    }
-
-    /// The displayed image, mutable (transforms apply here).
-    #[allow(dead_code)]
-    pub(crate) fn current_mut(&mut self) -> &mut RgbaImage {
-        match self.icon_frames.get_mut(self.icon_index) {
-            Some(f) => &mut f.pixels,
-            None => &mut self.frames[0].pixels,
         }
     }
 
