@@ -1,0 +1,42 @@
+import { TitleBar } from "titlebar.slint";
+
+export component MainWindow inherits Window {
+    in property <string> title-text;
+    // `maximized` is the builtin Window property (in-out), kept in sync with the native state by the winit backend.
+    in property <bool> window-active: true;
+    // 0 = none, 1 = minimize, 2 = maximize, 3 = close; driven by the frame subclass.
+    in property <int> caption-hover;
+    in property <int> caption-pressed;
+    // Read by the native hit-test in frame.rs.
+    out property <length> title-bar-height: 48px;
+    out property <length> caption-buttons-width: 3 * 46px;
+    out property <length> caption-button-height: 32px;
+
+    title: root.title-text;
+    icon: @image-url("../assets/ImageViewer.ico");
+    preferred-width: 1280px;
+    preferred-height: 768px;
+    background: #1d2026;
+    default-font-family: "Segoe UI Variable Text";
+
+    VerticalLayout {
+        TitleBar {
+            height: root.title-bar-height;
+            title-text: root.title-text;
+            maximized: root.maximized;
+            caption-hover: root.caption-hover;
+            caption-pressed: root.caption-pressed;
+        }
+        // Spacer row (XAML Auto row), filled by later tasks.
+        Rectangle { vertical-stretch: 0; }
+        // Content row.
+        Rectangle {
+            vertical-stretch: 1;
+            background: #1d2026;
+        }
+        // Footer row.
+        Rectangle {
+            height: 48px;
+        }
+    }
+}

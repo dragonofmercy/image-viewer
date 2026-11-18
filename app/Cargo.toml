@@ -1,0 +1,19 @@
+[package]
+name = "imageviewer"
+edition.workspace = true
+version.workspace = true
+publish = false
+
+[[bin]]
+name = "ImageViewer"
+path = "src/main.rs"
+
+[dependencies]
+slint = { version = "1.19.0", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-skia", "raw-window-handle-06"] }
+raw-window-handle = "0.6.2"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_UI_HiDpi", "Win32_Graphics_Gdi", "Win32_UI_Input_KeyboardAndMouse"] }
+viewer-core = { path = "../viewer-core" }
+
+[build-dependencies]
+slint-build = "1.19.0"
+winresource = "0.1"

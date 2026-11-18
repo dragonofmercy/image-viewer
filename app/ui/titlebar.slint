@@ -1,0 +1,68 @@
+import "../assets/SegoeIcons.ttf";
+
+// No TouchArea: the OS sends non-client messages over the button (HTMINBUTTON etc.), so hover and press state come from Rust.
+component CaptionButton inherits Rectangle {
+    in property <string> glyph;
+    in property <bool> hover;
+    in property <bool> pressed;
+    in property <bool> is-close;
+    width: 46px;
+    height: 32px;
+    background: root.is-close ? (root.pressed ? #c42b1ce6 : root.hover ? #c42b1c : transparent) : (root.pressed ? #494d55 : root.hover ? #32363f : transparent);
+    Text {
+        text: root.glyph;
+        font-family: "Segoe Fluent Icons";
+        font-size: 10px;
+        color: white;
+    }
+}
+
+export component TitleBar inherits Rectangle {
+    in property <string> title-text;
+    in property <bool> maximized;
+    // 0 = none, 1 = minimize, 2 = maximize, 3 = close
+    in property <int> caption-hover;
+    in property <int> caption-pressed;
+    background: #1a202f;
+
+    VerticalLayout {
+        HorizontalLayout {
+            VerticalLayout {
+                alignment: center;
+                padding-left: 16px;
+                padding-right: 16px;
+                Image {
+                    source: @image-url("../assets/ImageViewer.ico");
+                    width: 16px;
+                    height: 16px;
+                }
+            }
+            Text {
+                text: root.title-text;
+                font-size: 12px;
+                color: white;
+                vertical-alignment: center;
+                wrap: no-wrap;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            // Same 144px column as the 1.x XAML, buttons pinned to its top right.
+            HorizontalLayout {
+                width: 144px;
+                alignment: end;
+                VerticalLayout {
+                    alignment: start;
+                    HorizontalLayout {
+                        CaptionButton { glyph: "\u{E921}"; hover: root.caption-hover == 1; pressed: root.caption-pressed == 1; }
+                        CaptionButton { glyph: root.maximized ? "\u{E923}" : "\u{E922}"; hover: root.caption-hover == 2; pressed: root.caption-pressed == 2; }
+                        CaptionButton { glyph: "\u{E8BB}"; hover: root.caption-hover == 3; pressed: root.caption-pressed == 3; is-close: true; }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            height: 1px;
+            background: #32363f;
+        }
+    }
+}

@@ -1,0 +1,229 @@
+// Custom window frame: the system caption is removed and the Slint title bar takes its place.
+// Caption buttons are drawn by Slint but hit-tested natively (HTMINBUTTON/HTMAXBUTTON/HTCLOSE), so Windows keeps
+// snap layouts, the system menu and caption double-click behavior.
+
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+use std::time::Duration;
+
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+use slint::ComponentHandle;
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows::Win32::Graphics::Gdi::ScreenToClient;
+use windows::Win32::UI::HiDpi::{GetDpiForWindow, GetSystemMetricsForDpi};
+use windows::Win32::UI::Input::KeyboardAndMouse::{TME_LEAVE, TME_NONCLIENT, TRACKMOUSEEVENT, TrackMouseEvent};
+use windows::Win32::UI::Shell::{DefSubclassProc, SetWindowSubclass};
+use windows::Win32::UI::WindowsAndMessaging::*;
+
+use crate::MainWindow;
+
+const MIN_WIDTH: f32 = 768.0;
+const MIN_HEIGHT: f32 = 400.0;
+
+/// Title bar geometry in logical px, read once from `MainWindow` when the frame is installed.
+#[derive(Clone, Copy, Default)]
+struct Geometry {
+    bar_height: f32,
+    buttons_width: f32,
+    button_height: f32,
+}
+
+thread_local! {
+    static UI: RefCell<Option<slint::Weak<MainWindow>>> = const { RefCell::new(None) };
+    static GEOMETRY: Cell<Geometry> = Cell::new(Geometry::default());
+    // 0 = none, 1 = minimize, 2 = maximize, 3 = close
+    static HOVER: Cell<i32> = const { Cell::new(0) };
+    static PRESSED: Cell<i32> = const { Cell::new(0) };
+}
+
+pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
+    match window.window_handle().window_handle().ok()?.as_raw() {
+        RawWindowHandle::Win32(h) => Some(HWND(h.hwnd.get() as *mut _)),
+        _ => None,
+    }
+}
+
+/// Polls until the native window exists, installs the frame subclass once, then calls `on_ready`.
+/// `RenderingSetup` never fires with the Skia wgpu renderer, hence the 5 ms timer.
+pub fn install_when_ready(ui: &MainWindow, on_ready: impl FnOnce(HWND) + 'static) {
+    let weak = ui.as_weak();
+    let mut on_ready = Some(on_ready);
+    let timer = Rc::new(slint::Timer::default());
+    let handle = timer.clone();
+    timer.start(slint::TimerMode::Repeated, Duration::from_millis(5), move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let Some(hwnd) = hwnd_of(ui.window()) else { return };
+        handle.stop();
+        install(&ui, hwnd);
+        if let Some(on_ready) = on_ready.take() {
+            on_ready(hwnd);
+        }
+    });
+}
+
+fn install(ui: &MainWindow, hwnd: HWND) {
+    UI.with(|u| *u.borrow_mut() = Some(ui.as_weak()));
+    GEOMETRY.set(Geometry {
+        bar_height: ui.get_title_bar_height(),
+        buttons_width: ui.get_caption_buttons_width(),
+        button_height: ui.get_caption_button_height(),
+    });
+    unsafe {
+        let _ = SetWindowSubclass(hwnd, Some(subclass_proc), 1, 0);
+        // Re-run WM_NCCALCSIZE so the caption disappears right away.
+        let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+}
+
+fn scale(hwnd: HWND) -> f32 {
+    unsafe { GetDpiForWindow(hwnd) as f32 / 96.0 }
+}
+
+/// Height of the resize border that the system adds above the client area (and that a maximized window pushes offscreen).
+fn frame_thickness(hwnd: HWND) -> i32 {
+    unsafe {
+        let dpi = GetDpiForWindow(hwnd);
+        GetSystemMetricsForDpi(SM_CYFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
+    }
+}
+
+fn button_of(hit: u32) -> i32 {
+    match hit {
+        HTMINBUTTON => 1,
+        HTMAXBUTTON => 2,
+        HTCLOSE => 3,
+        _ => 0,
+    }
+}
+
+/// Runs `f` on the UI from the event loop: the window procedure may run while Slint is mid-update.
+fn with_ui(f: impl FnOnce(MainWindow) + Send + 'static) {
+    UI.with(|u| {
+        if let Some(weak) = u.borrow().as_ref() {
+            let _ = weak.upgrade_in_event_loop(f);
+        }
+    });
+}
+
+fn push_caption_state() {
+    let (hover, pressed) = (HOVER.get(), PRESSED.get());
+    with_ui(move |ui| {
+        ui.set_caption_hover(hover);
+        ui.set_caption_pressed(pressed);
+    });
+}
+
+fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
+    let mut pt = POINT {
+        x: (lparam.0 & 0xffff) as i16 as i32,
+        y: ((lparam.0 >> 16) & 0xffff) as i16 as i32,
+    };
+    let mut rc = RECT::default();
+    unsafe {
+        let _ = ScreenToClient(hwnd, &mut pt);
+        let _ = GetClientRect(hwnd, &mut rc);
+    }
+    let s = scale(hwnd);
+    let g = GEOMETRY.get();
+    let zoomed = unsafe { IsZoomed(hwnd).as_bool() };
+    // The top resize border lives inside the client area now that WM_NCCALCSIZE removed it.
+    if !zoomed && pt.y < frame_thickness(hwnd) {
+        return HTTOP;
+    }
+    let y = pt.y as f32;
+    if y >= g.bar_height * s {
+        return HTCLIENT;
+    }
+    let from_right = (rc.right - pt.x) as f32;
+    let button = g.buttons_width / 3.0 * s;
+    if y >= g.button_height * s || from_right > 3.0 * button {
+        HTCAPTION
+    } else if from_right <= button {
+        HTCLOSE
+    } else if from_right <= 2.0 * button {
+        HTMAXBUTTON
+    } else {
+        HTMINBUTTON
+    }
+}
+
+unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM, _id: usize, _data: usize) -> LRESULT {
+    unsafe {
+        match msg {
+            WM_NCCALCSIZE if wparam.0 != 0 => {
+                // Let the system compute the left/right/bottom resize borders, then give the caption back to the client area.
+                let params = &mut *(lparam.0 as *mut NCCALCSIZE_PARAMS);
+                let top = params.rgrc[0].top;
+                let result = DefSubclassProc(hwnd, msg, wparam, lparam);
+                params.rgrc[0].top = top + if IsZoomed(hwnd).as_bool() { frame_thickness(hwnd) } else { 0 };
+                result
+            }
+            WM_NCHITTEST => {
+                let result = DefSubclassProc(hwnd, msg, wparam, lparam);
+                if result.0 != HTCLIENT as isize {
+                    return result;
+                }
+                LRESULT(hit_test(hwnd, lparam) as isize)
+            }
+            WM_GETMINMAXINFO => {
+                let result = DefSubclassProc(hwnd, msg, wparam, lparam);
+                let info = &mut *(lparam.0 as *mut MINMAXINFO);
+                let s = scale(hwnd);
+                info.ptMinTrackSize = POINT {
+                    x: (MIN_WIDTH * s).round() as i32,
+                    y: (MIN_HEIGHT * s).round() as i32,
+                };
+                result
+            }
+            WM_ACTIVATE => {
+                let active = (wparam.0 & 0xffff) as u32 != WA_INACTIVE;
+                with_ui(move |ui| ui.set_window_active(active));
+                DefSubclassProc(hwnd, msg, wparam, lparam)
+            }
+            WM_NCMOUSEMOVE => {
+                let hover = button_of(wparam.0 as u32);
+                if hover != HOVER.get() {
+                    HOVER.set(hover);
+                    push_caption_state();
+                }
+                let mut tme = TRACKMOUSEEVENT {
+                    cbSize: size_of::<TRACKMOUSEEVENT>() as u32,
+                    dwFlags: TME_LEAVE | TME_NONCLIENT,
+                    hwndTrack: hwnd,
+                    dwHoverTime: 0,
+                };
+                let _ = TrackMouseEvent(&mut tme);
+                DefSubclassProc(hwnd, msg, wparam, lparam)
+            }
+            WM_NCMOUSELEAVE => {
+                HOVER.set(0);
+                PRESSED.set(0);
+                push_caption_state();
+                DefSubclassProc(hwnd, msg, wparam, lparam)
+            }
+            // DefWindowProc would run its modal button loop and paint classic caption buttons over ours.
+            WM_NCLBUTTONDOWN | WM_NCLBUTTONDBLCLK if button_of(wparam.0 as u32) != 0 => {
+                PRESSED.set(button_of(wparam.0 as u32));
+                push_caption_state();
+                LRESULT(0)
+            }
+            WM_NCLBUTTONUP if button_of(wparam.0 as u32) != 0 => {
+                let button = button_of(wparam.0 as u32);
+                if button == PRESSED.get() {
+                    let command = match button {
+                        1 => SC_MINIMIZE,
+                        2 if IsZoomed(hwnd).as_bool() => SC_RESTORE,
+                        2 => SC_MAXIMIZE,
+                        _ => SC_CLOSE,
+                    };
+                    let _ = PostMessageW(Some(hwnd), WM_SYSCOMMAND, WPARAM(command as usize), LPARAM(0));
+                }
+                PRESSED.set(0);
+                HOVER.set(0);
+                push_caption_state();
+                LRESULT(0)
+            }
+            _ => DefSubclassProc(hwnd, msg, wparam, lparam),
+        }
+    }
+}

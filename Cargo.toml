@@ -1,7 +1,12 @@
 [workspace]
 resolver = "3"
-members = ["viewer-core"]
+members = ["viewer-core", "app"]
 
 [workspace.package]
 edition = "2024"
 version = "2.0.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
