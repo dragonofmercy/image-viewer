@@ -73,3 +73,32 @@ pub fn write_bytes(dir: &tempfile::TempDir, name: &str, bytes: &[u8]) -> PathBuf
     std::fs::write(path, bytes).unwrap();
     path.to_path_buf()
 }
+
+/// Solid color of animation frame `i`: distinct per frame so tests can tell frames apart.
+pub fn anim_color(i: u32) -> image::Rgba<u8> {
+    image::Rgba([40 + (i * 80) as u8, 200 - (i * 70) as u8, 90, 255])
+}
+
+/// Writes an animated GIF of `frames` 8x6 solid-color frames (see `anim_color`), each shown for `delay_ms`.
+pub fn save_animated_gif(dir: &tempfile::TempDir, name: &str, frames: u32, delay_ms: u32) -> PathBuf {
+    let path = dir.path().join(name);
+    let mut enc = image::codecs::gif::GifEncoder::new(std::fs::File::create(&path).unwrap());
+    enc.set_repeat(image::codecs::gif::Repeat::Infinite).unwrap();
+    for i in 0..frames {
+        let img = RgbaImage::from_pixel(8, 6, anim_color(i));
+        enc.encode_frame(image::Frame::from_parts(img, 0, 0, image::Delay::from_numer_denom_ms(delay_ms, 1))).unwrap();
+    }
+    path
+}
+
+/// Writes an animated WebP of `frames` 8x6 lossless solid-color frames (see `anim_color`), `delay_ms` apart.
+pub fn save_animated_webp(dir: &tempfile::TempDir, name: &str, frames: u32, delay_ms: u32) -> PathBuf {
+    let mut config = webp::WebPConfig::new().unwrap();
+    config.lossless = 1;
+    let imgs: Vec<RgbaImage> = (0..frames).map(|i| RgbaImage::from_pixel(8, 6, anim_color(i))).collect();
+    let mut enc = webp::AnimEncoder::new(8, 6, &config);
+    for (i, img) in imgs.iter().enumerate() {
+        enc.add_frame(webp::AnimFrame::from_rgba(img.as_raw(), 8, 6, (i as u32 * delay_ms) as i32));
+    }
+    write_bytes(dir, name, &enc.encode())
+}

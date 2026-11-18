@@ -116,3 +116,86 @@ fn load_invalid_svg_is_error() {
     let zero = write_bytes(&dir, "z.svg", svg_text(0, 0).as_bytes());
     assert!(matches!(picture::load_path(&zero), Err(LoadError::Decode(_))));
 }
+
+#[test]
+fn load_animated_gif_keeps_every_frame_and_delay() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&save_animated_gif(&dir, "a.gif", 3, 50)).unwrap();
+    assert!(pic.is_animated());
+    assert_eq!(pic.frames().len(), 3);
+    for (i, f) in pic.frames().iter().enumerate() {
+        assert_eq!(f.delay_ms, 50);
+        assert_eq!(*f.pixels.get_pixel(0, 0), anim_color(i as u32));
+    }
+}
+
+#[test]
+fn zero_delay_becomes_100ms() {
+    let dir = fixture_dir();
+    for delay in [0, 10] {
+        let pic = picture::load_path(&save_animated_gif(&dir, "z.gif", 2, delay)).unwrap();
+        assert!(pic.frames().iter().all(|f| f.delay_ms == 100), "delay {delay}");
+    }
+    let pic = picture::load_path(&save_animated_gif(&dir, "ok.gif", 2, 20)).unwrap();
+    assert!(pic.frames().iter().all(|f| f.delay_ms == 20));
+}
+
+#[test]
+fn single_frame_gif_is_not_animated() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&save_animated_gif(&dir, "one.gif", 1, 50)).unwrap();
+    assert!(!pic.is_animated());
+    assert_eq!(pic.frames().len(), 1);
+}
+
+#[test]
+fn save_gif_keeps_animation() {
+    let dir = fixture_dir();
+    let mut pic = picture::load_path(&save_animated_gif(&dir, "a.gif", 3, 50)).unwrap();
+    pic.rotate_flip(picture::Rotate::Rotate90, picture::Flip::None);
+    let out = dir.path().join("out.gif");
+    pic.save(&out, ".gif", None).unwrap();
+    let again = picture::load_path(&out).unwrap();
+    assert_eq!(again.frames().len(), 3);
+    assert_eq!((again.width(), again.height()), (6, 8));
+    assert!(again.frames().iter().all(|f| f.delay_ms == 50));
+}
+
+#[test]
+fn truncated_gif_keeps_complete_frames() {
+    let dir = fixture_dir();
+    let bytes = std::fs::read(save_animated_gif(&dir, "a.gif", 3, 50)).unwrap();
+    let pic = picture::load_path(&write_bytes(&dir, "cut.gif", &bytes[..bytes.len() - 12])).unwrap();
+    assert_eq!(pic.frames().len(), 2);
+    assert_eq!(*pic.frames()[1].pixels.get_pixel(0, 0), anim_color(1));
+}
+
+#[test]
+fn gif_truncated_before_first_frame_is_error() {
+    let dir = fixture_dir();
+    let bytes = std::fs::read(save_animated_gif(&dir, "a.gif", 3, 50)).unwrap();
+    // Header and logical screen descriptor only.
+    let r = picture::load_path(&write_bytes(&dir, "cut.gif", &bytes[..13]));
+    assert!(matches!(r, Err(LoadError::Decode(_))), "{:?}", r.err());
+}
+
+#[test]
+fn load_animated_webp_keeps_every_frame() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&save_animated_webp(&dir, "a.webp", 3, 80)).unwrap();
+    assert!(pic.is_animated());
+    assert_eq!(pic.frames().len(), 3);
+    assert_eq!(pic.frames()[0].delay_ms, 80);
+    for (i, f) in pic.frames().iter().enumerate() {
+        // The encoder is lossy by a level or two even with lossless set.
+        let (got, want) = (f.pixels.get_pixel(0, 0).0, anim_color(i as u32).0);
+        assert!(got.iter().zip(want).all(|(g, w)| g.abs_diff(w) <= 2), "{got:?} vs {want:?}");
+    }
+}
+
+#[test]
+fn still_webp_stays_single_frame() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&save_sample(&dir, "s.webp", 8, 6)).unwrap();
+    assert!(!pic.is_animated());
+}
