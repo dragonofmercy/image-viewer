@@ -2,14 +2,16 @@ import { TitleBar } from "titlebar.slint";
 import { Theme } from "theme.slint";
 import { Tr } from "tr.slint";
 import { AppBarButton } from "widgets/app-bar-button.slint";
-import { MenuFlyout, MenuItem, MenuSeparator } from "widgets/menu-flyout.slint";
+import { FocusReturn, MenuFlyout, MenuItem, MenuSeparator } from "widgets/menu-flyout.slint";
 import { ToolTip } from "widgets/tooltip.slint";
 import { ProgressRing } from "widgets/progress-ring.slint";
 import { Button, AccentButton } from "widgets/button.slint";
 import { HyperlinkButton } from "widgets/hyperlink-button.slint";
+import { Footer, Commands, AppState } from "footer.slint";
 
 export { Theme } from "theme.slint";
 export { Tr } from "tr.slint";
+export { Commands, AppState } from "footer.slint";
 
 export component MainWindow inherits Window {
     in property <string> title-text;
@@ -30,30 +32,97 @@ export component MainWindow inherits Window {
     default-font-family: "Segoe UI Variable Text";
     default-font-size: 14px;
 
-    VerticalLayout {
-        TitleBar {
-            height: root.title-bar-height;
-            title-text: root.title-text;
-            maximized: root.maximized;
-            caption-hover: root.caption-hover;
-            caption-pressed: root.caption-pressed;
+    property <int> focus-return: FocusReturn.token;
+    changed focus-return => {
+        scope.focus();
+    }
+
+    scope := FocusScope {
+        init => {
+            self.focus();
         }
-        // Spacer row (XAML Auto row), filled by later tasks.
-        Rectangle { vertical-stretch: 0; }
-        // Content row.
-        Rectangle {
-            vertical-stretch: 1;
-            background: Theme.image-background;
-        }
-        // Footer row.
-        Rectangle {
-            height: 48px;
-            background: Theme.app-bar-background;
-            Rectangle {
-                y: 0px;
-                height: 1px;
-                background: Theme.app-bar-border;
+        key-pressed(event) => {
+            // Ctrl+Shift+S may report an upper-case letter.
+            let key = event.text.to-lowercase();
+            let ctrl = event.modifiers.control;
+            let alt = event.modifiers.alt;
+            let shift = event.modifiers.shift;
+            let plain = !ctrl && !alt;
+            let img = AppState.image-commands;
+            if ctrl && !alt && !shift && key == "o" {
+                Commands.open();
+            } else if ctrl && alt && key == "o" {
+                Commands.settings();
+            } else if ctrl && !alt && !shift && key == "i" {
+                if AppState.file-info { Commands.file-info(); }
+            } else if ctrl && !alt && !shift && key == "s" {
+                if AppState.save-direct { Commands.save(); }
+            } else if ctrl && !alt && shift && key == "s" {
+                if img { Commands.save-as(); }
+            } else if ctrl && !alt && !shift && key == "p" {
+                if img && AppState.print-available { Commands.print(); }
+            } else if ctrl && !alt && !shift && key == "q" {
+                Commands.quit();
+            } else if ctrl && !alt && !shift && event.text == Key.F1 {
+                Commands.about();
+            } else if ctrl && !alt && !shift && key == "c" {
+                Commands.copy();
+            } else if ctrl && !alt && !shift && key == "v" {
+                Commands.paste();
+            } else if ctrl && !alt && !shift && key == "0" {
+                if img && AppState.show-adjust { Commands.adjust(); }
+            } else if ctrl && !alt && !shift && key == "1" {
+                if img && !AppState.show-adjust { Commands.zoom-full(); }
+            } else if alt && !ctrl && !shift && key == "c" {
+                if img { Commands.crop(); }
+            } else if alt && !ctrl && !shift && key == "h" {
+                if img { Commands.flip-horizontal(); }
+            } else if alt && !ctrl && !shift && key == "v" {
+                if img { Commands.flip-vertical(); }
+            } else if alt && !ctrl && !shift && event.text == Key.LeftArrow {
+                if img { Commands.rotate-left(); }
+            } else if alt && !ctrl && !shift && event.text == Key.RightArrow {
+                if img { Commands.rotate-right(); }
+            } else if plain && event.text == Key.Delete {
+                if img { Commands.delete(); }
+            } else if plain && event.text == Key.Escape {
+                Commands.escape();
+            } else if plain && event.text == Key.F11 {
+                Commands.toggle-fullscreen();
+            } else if plain && (event.text == Key.LeftArrow || event.text == Key.DownArrow) {
+                if AppState.navigate { Commands.previous(); }
+            } else if plain && (event.text == Key.RightArrow || event.text == Key.UpArrow) {
+                if AppState.navigate { Commands.next(); }
+            } else if plain && event.text == Key.Home {
+                if AppState.navigate { Commands.first(); }
+            } else if plain && event.text == Key.End {
+                if AppState.navigate { Commands.last(); }
+            } else if plain && key == "+" {
+                if img { Commands.zoom-in(); }
+            } else if plain && key == "-" {
+                if img { Commands.zoom-out(); }
+            } else {
+                return reject;
             }
+            return accept;
+        }
+
+        VerticalLayout {
+            if !AppState.fullscreen: TitleBar {
+                height: root.title-bar-height;
+                title-text: root.title-text;
+                maximized: root.maximized;
+                caption-hover: root.caption-hover;
+                caption-pressed: root.caption-pressed;
+            }
+            // Spacer row (XAML Auto row), filled by later tasks.
+            Rectangle { vertical-stretch: 0; }
+            // Content row.
+            Rectangle {
+                vertical-stretch: 1;
+                background: Theme.image-background;
+            }
+            if !AppState.fullscreen: Footer { }
         }
     }
 }

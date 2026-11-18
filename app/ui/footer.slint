@@ -1,0 +1,204 @@
+import { Theme } from "theme.slint";
+import { Tr } from "tr.slint";
+import { AppBarButton } from "widgets/app-bar-button.slint";
+import { MenuFlyout, MenuItem, MenuSeparator } from "widgets/menu-flyout.slint";
+
+export global Commands {
+    callback open();
+    callback file-info();
+    callback save();
+    callback save-as();
+    callback delete();
+    callback print();
+    callback about();
+    callback settings();
+    callback quit();
+    callback adjust();
+    callback zoom-full();
+    callback zoom-in();
+    callback zoom-out();
+    callback previous();
+    callback next();
+    callback first();
+    callback last();
+    callback theme-light();
+    callback theme-dark();
+    callback crop();
+    callback rotate-left();
+    callback rotate-right();
+    callback flip-horizontal();
+    callback flip-vertical();
+    callback copy();
+    callback paste();
+    callback escape();
+    callback toggle-fullscreen();
+}
+
+// Command availability, set from Rust (ui_state::flags).
+export global AppState {
+    in property <bool> image-commands;
+    in property <bool> save-direct;
+    in property <bool> file-info;
+    in property <bool> navigate;
+    in property <bool> icon-strip;
+    in property <bool> print-available: false;
+    in property <bool> fullscreen;
+    in property <string> dimensions-text;
+    in property <string> zoom-text: "100%";
+    // The adjust button replaces the 100% button.
+    in property <bool> show-adjust;
+    // True when the dark palette is active: the footer then offers the light theme button.
+    in property <bool> dark-setting;
+}
+
+export component Footer inherits Rectangle {
+    height: 48px;
+    background: Theme.app-bar-background;
+
+    // Left column.
+    HorizontalLayout {
+        x: 4px;
+        y: (parent.height - self.height) / 2;
+        height: 40px;
+        width: self.preferred-width;
+        AppBarButton {
+            glyph: "\u{E700}";
+            label: Tr.t("FOOTER_TOOLBAR_MENU");
+            clicked => {
+                file-menu.show();
+            }
+            file-menu := MenuFlyout {
+                MenuItem { glyph: "\u{E7C5}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_OPEN"); shortcut-text: "Ctrl+O"; clicked => { Commands.open(); } }
+                MenuSeparator { }
+                MenuItem { glyph: "\u{E946}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_INFO"); shortcut-text: "Ctrl+I"; enabled: AppState.file-info; clicked => { Commands.file-info(); } }
+                MenuItem { glyph: "\u{E74E}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_SAVE"); shortcut-text: "Ctrl+S"; enabled: AppState.save-direct; clicked => { Commands.save(); } }
+                MenuItem { glyph: "\u{EA35}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_SAVE_AS"); shortcut-text: "Ctrl+Shift+S"; enabled: AppState.image-commands; clicked => { Commands.save-as(); } }
+                MenuItem { glyph: "\u{E74D}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_DELETE"); shortcut-text: "Delete"; enabled: AppState.image-commands; clicked => { Commands.delete(); } }
+                MenuItem { glyph: "\u{E749}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_PRINT"); shortcut-text: "Ctrl+P"; enabled: AppState.image-commands && AppState.print-available; clicked => { Commands.print(); } }
+                MenuSeparator { }
+                MenuItem {
+                    path-data: "M60.88,0a59.43,59.43,0,0,1,43,17,63.19,63.19,0,0,1,15.82,65.08A61,61,0,0,1,109,101.52a59,59,0,0,1-5,5.4A58.28,58.28,0,0,1,65.59,123,59.1,59.1,0,0,1,26,109.5c-1.13-.92-2.22-1.89-3.29-2.89L6.55,112.26a4.93,4.93,0,0,1-6.08-6.75L9,87.5A62.89,62.89,0,0,1,5.15,76.81a63.69,63.69,0,0,1-2-13.72A62.48,62.48,0,0,1,7.25,38.43,61,61,0,0,1,20.68,17.52,58.89,58.89,0,0,1,39.12,4.82,57.76,57.76,0,0,1,60.88,0ZM59.25,36.15a7.78,7.78,0,0,1,.57-3,7.6,7.6,0,0,1,1.71-2.49A8,8,0,0,1,64,29a7.57,7.57,0,0,1,2.9-.56,7.48,7.48,0,0,1,2.89.56,7.77,7.77,0,0,1,2.44,1.69,7.6,7.6,0,0,1,1.68,2.5,7.88,7.88,0,0,1,.55,3,7.71,7.71,0,0,1-.55,2.93,7.82,7.82,0,0,1-1.67,2.51,7.59,7.59,0,0,1-2.45,1.72,7.27,7.27,0,0,1-2.89.57,7.5,7.5,0,0,1-3-.57,7.25,7.25,0,0,1-2.47-1.7,7.54,7.54,0,0,1-2.23-5.46Zm2.92,45.24L62,82c-.15.63-.36,1.51.13,2.06a.91.91,0,0,0,.34.22,1.35,1.35,0,0,0,.52.09,2.59,2.59,0,0,0,1.37-.61,13,13,0,0,0,2-1.94,35.09,35.09,0,0,0,2.43-3.13q1.26-1.78,2.64-4.1a.36.36,0,0,1,.48-.12l3.1,2.31a.35.35,0,0,1,.09.47,54.27,54.27,0,0,1-4.33,6.5,29.76,29.76,0,0,1-4.48,4.64h0a17.37,17.37,0,0,1-4.65,2.77,13.49,13.49,0,0,1-4.91.93,13.32,13.32,0,0,1-3.86-.51A7.59,7.59,0,0,1,50,90a6.71,6.71,0,0,1-1.76-2.58A9.38,9.38,0,0,1,47.68,84a18.3,18.3,0,0,1,.72-4.58c.17-.64.38-1.35.63-2.14l5.46-16.86.45-1.59c.11-.44.21-.83.28-1.16a8.23,8.23,0,0,0,.15-.86,7.06,7.06,0,0,0,.05-.73,2.59,2.59,0,0,0-.19-1v0a2.12,2.12,0,0,0-.54-.76,2.4,2.4,0,0,0-.89-.52,3.69,3.69,0,0,0-1.2-.18H48.2a.35.35,0,0,1-.35-.35l0-.12L49,48.88a.34.34,0,0,1,.33-.25l22.41-.71a.36.36,0,0,1,.36.34l0,.11-9.94,33ZM97,24.07A49.61,49.61,0,0,0,61.11,9.86a48.05,48.05,0,0,0-18,4A48.88,48.88,0,0,0,27.7,24.43,51.22,51.22,0,0,0,16.43,41.94,52.88,52.88,0,0,0,13,62.75a53.74,53.74,0,0,0,1.68,11.59,52.72,52.72,0,0,0,4,10.63,4.93,4.93,0,0,1,.21,4.62l-4.49,9.49,7.8-2.72a4.92,4.92,0,0,1,5.36,1.19,51.13,51.13,0,0,0,4.68,4.35,49.35,49.35,0,0,0,33,11.28,48.43,48.43,0,0,0,31.87-13.4,49.81,49.81,0,0,0,4.2-4.51,51.54,51.54,0,0,0,9-16.3A53.38,53.38,0,0,0,97,24.07Z";
+                    viewbox-width: 123;
+                    viewbox-height: 123;
+                    text: Tr.t("FOOTER_TOOLBAR_MENU_ABOUT");
+                    shortcut-text: "Ctrl+F1";
+                    clicked => { Commands.about(); }
+                }
+                MenuItem { glyph: "\u{E713}"; text: Tr.t("FOOTER_TOOLBAR_MENU_OPTIONS"); shortcut-text: "Ctrl+Alt+O"; clicked => { Commands.settings(); } }
+                MenuItem { glyph: "\u{F3B1}"; text: Tr.t("FOOTER_TOOLBAR_MENU_QUIT"); shortcut-text: "Ctrl+Q"; clicked => { Commands.quit(); } }
+            }
+        }
+        if AppState.show-adjust: AppBarButton {
+            glyph: "\u{E9A6}";
+            tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_ADJUST");
+            enabled: AppState.image-commands;
+            clicked => { Commands.adjust(); }
+        }
+        if !AppState.show-adjust: AppBarButton {
+            path-data: "M4.8 5.1C4.9 5.2 5 5.3 5 5.5v5C5 10.8 4.8 11 4.5 11S4 10.8 4 10.5V6.3L3.7 6.4C3.5 6.5 3.2 6.4 3 6.2 2.9 6 3 5.7 3.3 5.6l1-.5C4.4 5 4.6 5 4.8 5.1zM12 5.5c0-.2-.1-.3-.2-.4-.1-.1-.3-.1-.5 0l-1 .5C10 5.7 9.9 6 10.1 6.2c.1.2.4.3.7.2L11 6.3v4.2c0 .3.2.5.5.5s.5-.2.5-.5V5.5zM8 7C8 7 7 7 7 7S7 6 7 6 8 6 8 6zM8 10c0 0 0-1 0-1S7 9 7 9 7 10 7 10zM0 4.8C0 3.2 1.2 2 2.8 2h10.5C14.8 2 16 3.2 16 4.8v6.5c0 1.5-1.2 2.8-2.8 2.8H2.8C1.2 14 0 12.8 0 11.2V4.8zM2.8 3C1.8 3 1 3.8 1 4.8v6.5c0 1 .8 1.8 1.8 1.8h10.5c1 0 1.8-.8 1.8-1.8V4.8c0-1-.8-1.8-1.8-1.8H2.8z";
+            viewbox-width: 16;
+            viewbox-height: 16;
+            icon-size: 16px;
+            tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_ZOOM_100");
+            enabled: AppState.image-commands;
+            clicked => { Commands.zoom-full(); }
+        }
+        // XAML Margin="8,0"; 12px, "Gray" foreground.
+        Text {
+            text: AppState.dimensions-text;
+            font-size: 12px;
+            color: Theme.text-tertiary;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+
+    // Center column: XAML Padding="4,0".
+    HorizontalLayout {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        height: 40px;
+        width: self.preferred-width;
+        padding-left: 4px;
+        padding-right: 4px;
+        AppBarButton { glyph: "\u{E892}"; tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_PREVIOUS"); enabled: AppState.navigate; clicked => { Commands.previous(); } }
+        AppBarButton { glyph: "\u{E8A3}"; tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_ZOOM_IN"); enabled: AppState.image-commands; clicked => { Commands.zoom-in(); } }
+        Text {
+            text: AppState.zoom-text;
+            color: Theme.text-primary;
+            width: 45px + 16px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+        AppBarButton { glyph: "\u{E71F}"; tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_ZOOM_OUT"); enabled: AppState.image-commands; clicked => { Commands.zoom-out(); } }
+        AppBarButton { glyph: "\u{E893}"; tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_NEXT"); enabled: AppState.navigate; clicked => { Commands.next(); } }
+    }
+
+    // Right column.
+    HorizontalLayout {
+        x: parent.width - self.width - 4px;
+        y: (parent.height - self.height) / 2;
+        height: 40px;
+        width: self.preferred-width;
+        if AppState.dark-setting: AppBarButton { glyph: "\u{E706}"; clicked => { Commands.theme-light(); } }
+        if !AppState.dark-setting: AppBarButton { glyph: "\u{E708}"; clicked => { Commands.theme-dark(); } }
+        AppBarButton {
+            path-data: "M159.531377 127.625101A95.718826 95.718826 0 0 0 63.812551 223.343927v574.312956A95.718826 95.718826 0 0 0 159.531377 893.375709h313.319623l15.187387-63.812551H159.531377a31.77865 31.77865 0 0 1-31.906276-31.906275v-59.090422l226.853618-255.760703 227.810806 240.318066 44.860223-45.306911-37.904655-40.201907 81.807689-92.209136 42.371534 44.349723 44.604973-45.306911-88.252758-93.549199-124.625911 140.387611L352.947218 388.618433 127.625101 642.337135V223.343927c0-17.676077 14.230199-31.906275 31.906276-31.906275h701.938057c17.676077 0 31.906275 14.230199 31.906275 31.906275v224.811616c4.211628-0.446688 8.487069-1.467689 12.76251-1.467689h3.190628c16.974138 1.021001 32.927276 4.466879 47.859412 9.954758V223.343927A95.718826 95.718826 0 0 0 861.469434 127.625101zM701.938057 255.250203c-35.096903 0-63.812551 28.715648-63.812551 63.81255s28.715648 63.812551 63.812551 63.812551 63.812551-28.715648 63.812551-63.812551-28.715648-63.812551-63.812551-63.81255z m204.3916 255.505452a80.148564 80.148564 0 0 0-56.79317 24.184957l-297.685549 302.599115-44.349723 186.460273 186.460273-44.158285 6.25363-6.445068 296.600735-291.368106c31.651025-30.949087 32.161526-83.020128 0.510501-114.415903l-33.437777-33.693027a79.765688 79.765688 0 0 0-57.55892-23.163956z m0.5105 63.30205c4.211628 0 8.487069 1.722939 11.932947 5.23263l33.437777 33.437776c7.019381 6.700318 7.019381 16.910326 0 23.929707l-290.155668 284.859226-68.78993 16.718888 16.463638-68.78993 285.369727-290.155667a15.953138 15.953138 0 0 1 11.741509-5.23263z";
+            viewbox-width: 1024;
+            viewbox-height: 1024;
+            tooltip: Tr.t("FOOTER_TOOLBAR_TRANSFORM_MENU");
+            enabled: AppState.image-commands;
+            clicked => {
+                transform-menu.show();
+            }
+            transform-menu := MenuFlyout {
+                align-right: true;
+                MenuItem { glyph: "\u{E7A8}"; text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_CROP"); shortcut-text: "Alt+C"; enabled: AppState.image-commands; clicked => { Commands.crop(); } }
+                MenuSeparator { }
+                MenuItem {
+                    path-data: "M170.666667 85.333333h128a85.333333 85.333333 0 0 1 85.333333 85.333334v682.666666a85.333333 85.333333 0 0 1-85.333333 85.333334H170.666667a85.333333 85.333333 0 0 1-85.333334-85.333334V170.666667a85.333333 85.333333 0 0 1 85.333334-85.333334m682.666666 554.666667a85.333333 85.333333 0 0 1 85.333334 85.333333v128a85.333333 85.333333 0 0 1-85.333334 85.333334h-384v-298.666667h384M597.333333 170.666667a341.333333 341.333333 0 0 1 341.333334 341.333333l-2.56 42.666667h-86.186667l3.413333-42.666667a256 256 0 0 0-256-256v128l-170.666666-170.666667 170.666666-170.666666v128z";
+                    viewbox-width: 1024;
+                    viewbox-height: 1024;
+                    text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_ROTATE_LEFT");
+                    shortcut-text: "Alt+Left";
+                    enabled: AppState.image-commands;
+                    clicked => { Commands.rotate-left(); }
+                }
+                MenuItem {
+                    path-data: "M426.666667 170.666667V42.666667l170.666666 170.666666-170.666666 170.666667V256a256 256 0 0 0-256 256l3.413333 42.666667H87.893333L85.333333 512a341.333333 341.333333 0 0 1 341.333334-341.333333m298.666666-85.333334h128a85.333333 85.333333 0 0 1 85.333334 85.333334v682.666666a85.333333 85.333333 0 0 1-85.333334 85.333334h-128a85.333333 85.333333 0 0 1-85.333333-85.333334V170.666667a85.333333 85.333333 0 0 1 85.333333-85.333334M170.666667 640h384v298.666667H170.666667a85.333333 85.333333 0 0 1-85.333334-85.333334v-128a85.333333 85.333333 0 0 1 85.333334-85.333333z";
+                    viewbox-width: 1024;
+                    viewbox-height: 1024;
+                    text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_ROTATE_RIGHT");
+                    shortcut-text: "Alt+Right";
+                    enabled: AppState.image-commands;
+                    clicked => { Commands.rotate-right(); }
+                }
+                MenuSeparator { }
+                MenuItem {
+                    path-data: "m72.21 334.61 319.82 150.95V334.61H72.21zm-56.56-94.06c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h19.23c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45H15.65zm82.14 0c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.46c18.19 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45H97.79zm94.37 0c-18.2 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.45c18.2 0 21.92-26.27 3.74-31.01-1.28-.28-2.39-.45-3.74-.45h-31.45zm94.37 0c-18.2 0-21.92 26.27-3.74 31.01 1.28.28 2.39.45 3.74.45h31.45c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45h-31.45zm94.36 0c-18.19 0-21.91 26.27-3.74 31.01 1.29.28 2.4.45 3.74.45h31.46c18.2 0 21.91-26.27 3.74-31.01-1.29-.28-2.4-.45-3.74-.45h-31.46zM21.02 178.98 397.41 1.33c1.51-.85 3.25-1.33 5.1-1.33C408.3 0 413 4.7 413 10.49v177.96c0 5.79-4.7 10.48-10.49 10.48H25.49c-3.92-.03-7.68-2.25-9.47-6.03-2.46-5.22-.22-11.46 5-13.92zm377.03 332.56L21.69 333.9c-3.91-1.53-6.69-5.33-6.69-9.78 0-5.79 4.7-10.48 10.49-10.48h377.02c5.79 0 10.49 4.69 10.49 10.48v177.95c-.02 1.5-.35 3.02-1.03 4.47-2.46 5.22-8.7 7.46-13.92 5z";
+                    viewbox-width: 413;
+                    viewbox-height: 512;
+                    text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ");
+                    shortcut-text: "Alt+H";
+                    enabled: AppState.image-commands;
+                    clicked => { Commands.flip-horizontal(); }
+                }
+                MenuItem {
+                    path-data: "M333.55 16.79 511 392.75c2.46 5.22.22 11.45-4.99 13.91-1.45.68-2.97 1.01-4.46 1l-177.77.03c-5.78 0-10.47-4.7-10.47-10.48V20.58c0-5.78 4.69-10.47 10.47-10.47 4.44 0 8.25 2.77 9.77 6.68zM240.3 402.16c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-9.45c0-18.18-26.25-21.89-30.98-3.74-.28 1.29-.45 2.4-.45 3.74v9.45zm0-72.3c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-31.42c0-18.18-26.25-21.89-30.98-3.74-.28 1.29-.45 2.4-.45 3.74v31.42zm0-94.27c0 18.18 26.25 21.89 30.98 3.74.28-1.29.45-2.4.45-3.74v-31.42c0-18.18-26.25-21.89-30.98-3.73-.28 1.28-.45 2.39-.45 3.73v31.42zm0-94.26c0 18.17 26.25 21.88 30.98 3.73.28-1.28.45-2.39.45-3.73V109.9c0-18.17-26.25-21.89-30.98-3.73-.28 1.28-.45 2.39-.45 3.73v31.43zm0-94.27c0 18.17 26.25 21.89 30.98 3.73.28-1.28.45-2.39.45-3.73V15.63c0-18.17-26.25-21.88-30.98-3.73-.28 1.29-.45 2.39-.45 3.73v31.43zM1.33 392.11 178.79 16.12c2.46-5.21 8.7-7.45 13.91-4.99 3.78 1.78 5.99 5.54 5.99 9.45l.04 376.63c0 5.78-4.7 10.48-10.48 10.48H10.48c-5.79 0-10.48-4.7-10.48-10.48 0-1.85.48-3.59 1.33-5.1zm483.72-5.37L334.26 67.26v319.48h150.79z";
+                    viewbox-width: 512;
+                    viewbox-height: 413;
+                    text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT");
+                    shortcut-text: "Alt+V";
+                    enabled: AppState.image-commands;
+                    clicked => { Commands.flip-vertical(); }
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        y: 0px;
+        height: 1px;
+        background: Theme.app-bar-border;
+    }
+}

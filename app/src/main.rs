@@ -3,8 +3,11 @@
 mod frame;
 mod geometry;
 mod theme;
+#[allow(dead_code)] // consumed by the image tasks that follow
+mod ui_state;
 
 use slint::ComponentHandle;
+use slint::platform::WindowEvent;
 use viewer_core::culture::{Strings, resolve_language};
 use viewer_core::settings::{Settings, Theme as ThemeSetting, WindowState};
 use windows::Win32::Globalization::{GetUserPreferredUILanguages, MUI_LANGUAGE_NAME};
@@ -43,6 +46,7 @@ fn apply_theme(ui: &MainWindow, setting: ThemeSetting) {
     let global = ui.global::<Theme>();
     global.set_dark(dark);
     global.set_accent(theme::accent(dark));
+    ui.global::<AppState>().set_dark_setting(dark);
     if let Some(hwnd) = frame::hwnd_of(ui.window()) {
         frame::set_dark_title(hwnd, dark);
     }
@@ -72,6 +76,25 @@ fn main() -> Result<(), slint::PlatformError> {
         frame::flush_geometry();
         slint::CloseRequestResponse::HideWindow
     });
+    // Same path as the caption close button, so the geometry is flushed.
+    let weak = ui.as_weak();
+    ui.global::<Commands>().on_quit(move || {
+        if let Some(ui) = weak.upgrade() {
+            ui.window().dispatch_event(WindowEvent::CloseRequested);
+        }
+    });
+    for (dark, setting) in [(false, ThemeSetting::Light), (true, ThemeSetting::Dark)] {
+        let weak = ui.as_weak();
+        let handler = move || {
+            if let Err(e) = Settings::app().set_theme(setting) {
+                eprintln!("cannot save the theme: {e}");
+            }
+            if let Some(ui) = weak.upgrade() {
+                apply_theme(&ui, setting);
+            }
+        };
+        if dark { ui.global::<Commands>().on_theme_dark(handler) } else { ui.global::<Commands>().on_theme_light(handler) }
+    }
     let weak = ui.as_weak();
     frame::install_when_ready(&ui, move |_| {
         if let Some(ui) = weak.upgrade() {

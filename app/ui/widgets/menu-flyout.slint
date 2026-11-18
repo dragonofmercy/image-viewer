@@ -18,6 +18,11 @@ global MenuControl {
     in-out property <int> close-token;
 }
 
+// Bumped each time a flyout closes; the root window watches it to take the keyboard focus back.
+export global FocusReturn {
+    in-out property <int> token;
+}
+
 export component MenuSeparator inherits Rectangle {
     height: 9px;
     Rectangle {
@@ -97,6 +102,13 @@ export component MenuFlyout inherits Rectangle {
     changed close-request => {
         popup.close();
     }
+
+    changed popup-open => {
+        if !root.popup-open {
+            FocusReturn.token += 1;
+        }
+    }
+    property <bool> popup-open: popup.is-open;
 
     public function show() {
         popup.show();
