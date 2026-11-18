@@ -5,5 +5,6 @@ version.workspace = true
 
 [dependencies]
 chrono = "0.4.45"
+roxmltree = "0.21.2"
 windows = { version = "0.62", features = ["Win32_UI_Shell"] }
 winreg = "0.56.0"
