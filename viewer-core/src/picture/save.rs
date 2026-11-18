@@ -155,7 +155,11 @@ impl Picture {
                 drop(enc);
             }
             ".webp" => {
-                let bare = webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode_simple(false, f32::from(quality)).map_err(|e| SaveError::Encode(format!("{e:?}")))?.to_vec();
+                let bare = if frames.len() > 1 {
+                    encode_animated_webp(frames, quality)?
+                } else {
+                    webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode_simple(false, f32::from(quality)).map_err(|e| SaveError::Encode(format!("{e:?}")))?.to_vec()
+                };
                 return Ok(metadata::add_webp_chunks(bare, w, h, self.icc.as_deref(), self.exif.as_deref()));
             }
             _ => return Err(SaveError::UnsupportedFormat(ext.to_string())),
@@ -176,9 +180,33 @@ impl Picture {
     }
 }
 
+/// Lossy animated WebP, looping forever, with the still encoder's quality mapping.
+fn encode_animated_webp(frames: &[Frame], quality: u8) -> Result<Vec<u8>, SaveError> {
+    let err = |e: String| SaveError::Encode(format!("animated WebP: {e}"));
+    let (w, h) = frames[0].pixels.dimensions();
+    // libwebp reads every frame as a canvas-sized buffer.
+    if frames.iter().any(|f| f.pixels.dimensions() != (w, h)) {
+        return Err(err("frames differ in size".into()));
+    }
+    let mut config = webp::WebPConfig::new().map_err(|_| err("config".into()))?;
+    config.lossless = 0;
+    config.alpha_compression = 1;
+    config.quality = f32::from(quality);
+    let mut encoder = webp::AnimEncoder::new(w, h, &config);
+    let mut timestamp = 0i32;
+    for f in frames {
+        encoder.add_frame(webp::AnimFrame::from_rgba(f.pixels.as_raw(), w, h, timestamp));
+        timestamp = i32::try_from(f.delay_ms).ok().and_then(|d| timestamp.checked_add(d)).ok_or_else(|| err("animation too long".into()))?;
+    }
+    let mut out = encoder.try_encode().map_err(|e| err(format!("{e:?}")))?.to_vec();
+    metadata::set_webp_animation_length(&mut out, timestamp as u32);
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use image::ImageDecoder;
 
     #[test]
     fn animated_gif_keeps_every_frame_and_delay() {
@@ -193,5 +221,31 @@ mod tests {
         let frames = image::AnimationDecoder::into_frames(dec).collect_frames().unwrap();
         let delays: Vec<_> = frames.iter().map(|f| f.delay().numer_denom_ms()).map(|(n, d)| n / d).collect();
         assert_eq!(delays, [40, 70]);
+    }
+
+    #[test]
+    fn animated_webp_keeps_frames_delays_and_metadata() {
+        let mut pic = Picture::from_rgba(RgbaImage::from_pixel(8, 6, image::Rgba([200, 30, 30, 255])), 32);
+        pic.frames[0].delay_ms = 40;
+        for (delay_ms, rgba) in [(70, [30, 200, 30, 255]), (500, [30, 30, 200, 128])] {
+            pic.frames.push(Frame {
+                pixels: RgbaImage::from_pixel(8, 6, image::Rgba(rgba)),
+                delay_ms,
+            });
+        }
+        pic.icc = Some(b"icc!".to_vec());
+        pic.exif = Some(b"II*\0exif".to_vec());
+        let bytes = pic.encode(".webp", 90).unwrap();
+        let fourccs: Vec<&[u8]> = metadata::webp_chunks(&bytes).unwrap().iter().map(|c| c.0).collect();
+        assert_eq!(fourccs, [&b"VP8X"[..], b"ICCP", b"ANIM", b"ANMF", b"ANMF", b"ANMF", b"EXIF"]);
+        let mut dec = image::codecs::webp::WebPDecoder::new(Cursor::new(bytes)).unwrap();
+        assert!(dec.has_animation());
+        assert_eq!(dec.icc_profile().unwrap().as_deref(), Some(&b"icc!"[..]));
+        assert_eq!(dec.exif_metadata().unwrap().as_deref(), Some(&b"II*\0exif"[..]));
+        let frames = image::AnimationDecoder::into_frames(dec).collect_frames().unwrap();
+        let delays: Vec<_> = frames.iter().map(|f| f.delay().numer_denom_ms()).map(|(n, d)| n / d).collect();
+        assert_eq!(delays, [40, 70, 500]);
+        let alpha = frames[2].buffer().get_pixel(4, 3)[3];
+        assert!(alpha.abs_diff(128) <= 4, "alpha {alpha}");
     }
 }

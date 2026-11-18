@@ -139,11 +139,16 @@ pub fn anim_color(i: u32) -> image::Rgba<u8> {
 
 /// Writes an animated GIF of `frames` 8x6 solid-color frames (see `anim_color`), each shown for `delay_ms`.
 pub fn save_animated_gif(dir: &tempfile::TempDir, name: &str, frames: u32, delay_ms: u32) -> PathBuf {
+    save_animated_gif_with_delays(dir, name, &vec![delay_ms; frames as usize])
+}
+
+/// Same as `save_animated_gif`, one frame per delay.
+pub fn save_animated_gif_with_delays(dir: &tempfile::TempDir, name: &str, delays_ms: &[u32]) -> PathBuf {
     let path = dir.path().join(name);
     let mut enc = image::codecs::gif::GifEncoder::new(std::fs::File::create(&path).unwrap());
     enc.set_repeat(image::codecs::gif::Repeat::Infinite).unwrap();
-    for i in 0..frames {
-        let img = RgbaImage::from_pixel(8, 6, anim_color(i));
+    for (i, &delay_ms) in delays_ms.iter().enumerate() {
+        let img = RgbaImage::from_pixel(8, 6, anim_color(i as u32));
         enc.encode_frame(image::Frame::from_parts(img, 0, 0, image::Delay::from_numer_denom_ms(delay_ms, 1))).unwrap();
     }
     path

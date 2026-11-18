@@ -86,8 +86,20 @@ pub(super) fn add_webp_chunks(webp: Vec<u8>, width: u32, height: u32, icc: Optio
     out
 }
 
+/// The webp crate ends the animation at timestamp 0, which libwebp rejects, so the last frame gets the average duration of the others.
+/// Sets the last ANMF duration so the frames add up to `total_ms` (the earlier durations are exact, merged identical frames included).
+pub(super) fn set_webp_animation_length(webp: &mut [u8], total_ms: u32) {
+    let Some(chunks) = webp_chunks(webp) else { return };
+    // Chunk start offsets; an ANMF payload holds its 24-bit duration at bytes 12..15, i.e. 20..23 from the chunk start.
+    let anmf: Vec<usize> = chunks.iter().filter(|c| c.0 == b"ANMF" && c.1.len() >= 24).map(|c| c.1.as_ptr() as usize - webp.as_ptr() as usize).collect();
+    let Some((&last, earlier)) = anmf.split_last() else { return };
+    let before: u32 = earlier.iter().map(|&p| u32::from_le_bytes([webp[p + 20], webp[p + 21], webp[p + 22], 0])).sum();
+    let ms = total_ms.saturating_sub(before).min(0xFF_FFFF);
+    webp[last + 20..last + 23].copy_from_slice(&ms.to_le_bytes()[..3]);
+}
+
 /// Splits a RIFF/WEBP file into (fourcc, whole chunk with header and padding). `None` on a bad header or a chunk running past the end.
-fn webp_chunks(webp: &[u8]) -> Option<Vec<(&[u8], &[u8])>> {
+pub(super) fn webp_chunks(webp: &[u8]) -> Option<Vec<(&[u8], &[u8])>> {
     if webp.len() < 12 || &webp[..4] != b"RIFF" || &webp[8..12] != b"WEBP" {
         return None;
     }

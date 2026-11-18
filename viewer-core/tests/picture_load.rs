@@ -162,6 +162,25 @@ fn save_gif_keeps_animation() {
 }
 
 #[test]
+fn save_webp_keeps_animation() {
+    let dir = fixture_dir();
+    let mut pic = picture::load_path(&save_animated_gif_with_delays(&dir, "a.gif", &[50, 80, 300])).unwrap();
+    pic.rotate_flip(picture::Rotate::Rotate90, picture::Flip::None);
+    // Overwrites the source path, as "Save" does.
+    let out = dir.path().join("a.webp");
+    pic.save(&out, ".webp", None).unwrap();
+    pic.save(&out, ".webp", None).unwrap();
+    let again = picture::load_path(&out).unwrap();
+    assert_eq!(again.frames().len(), 3);
+    assert_eq!((again.width(), again.height()), (6, 8));
+    assert_eq!(again.frames().iter().map(|f| f.delay_ms).collect::<Vec<_>>(), [50, 80, 300]);
+    for (i, f) in again.frames().iter().enumerate() {
+        let (got, want) = (f.pixels.get_pixel(3, 4).0, anim_color(i as u32).0);
+        assert!(got.iter().zip(want).all(|(g, w)| g.abs_diff(w) <= 8), "frame {i}: {got:?} vs {want:?}");
+    }
+}
+
+#[test]
 fn truncated_gif_keeps_complete_frames() {
     let dir = fixture_dir();
     let bytes = std::fs::read(save_animated_gif(&dir, "a.gif", 3, 50)).unwrap();
