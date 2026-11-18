@@ -4,3 +4,4 @@ edition.workspace = true
 version.workspace = true
 
 [dependencies]
+windows = { version = "0.62", features = ["Win32_UI_Shell"] }

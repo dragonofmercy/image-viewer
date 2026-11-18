@@ -6,7 +6,8 @@ pub fn humanize_bytes(mut bytes: f64) -> String {
         order += 1;
         bytes /= 1024.0;
     }
-    let number = format!("{bytes:.1}");
+    // Round half away from zero like .NET "0.#"; Rust's {:.1} rounds the binary value half to even.
+    let number = format!("{:.1}", (bytes * 10.0).round() / 10.0);
     format!("{} {}", number.strip_suffix(".0").unwrap_or(&number), SIZES[order])
 }
 
