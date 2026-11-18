@@ -1,55 +1,27 @@
 import { Theme } from "../theme.slint";
 
-// Place it inside the target (it fills it) and bind `hovered` to the target's hover state. Shown after 600 ms.
+// Place it inside the target (it fills it); the built-in Tooltip shows after its fixed delay while the pointer rests on the target, is input-transparent and follows the pointer.
+// An empty `text` shows nothing. Not usable as a direct child of a layout: put it in a Rectangle.
 export component ToolTip inherits Rectangle {
     in property <string> text;
-    in property <bool> hovered;
-    // Show under the target instead of above it.
-    in property <bool> below: false;
-    property <bool> armed;
 
-    changed hovered => {
-        root.armed = root.hovered && root.text != "";
-        if !root.hovered {
-            popup.close();
-        }
-    }
-
-    Timer {
-        interval: 600ms;
-        running: root.armed;
-        triggered => {
-            root.armed = false;
-            popup.show();
-        }
-    }
-
-    // Measures the text so the popup can size itself (the popup content cannot be read from outside).
-    measure := Text {
-        visible: false;
-        text: root.text;
-        font-size: 12px;
-        wrap: no-wrap;
-    }
-
-    popup := PopupWindow {
-        close-policy: no-auto-close;
-        width: measure.preferred-width + 16px + 2px;
-        height: measure.preferred-height + 10px + 2px;
-        x: (root.width - self.width) / 2;
-        y: root.below ? root.height + 4px : -self.height - 4px;
+    if root.text != "": Tooltip {
         Rectangle {
             background: Theme.pane-background;
             border-width: 1px;
             border-color: Theme.surface-stroke-flyout;
             border-radius: 4px;
-            Text {
-                text: root.text;
-                color: Theme.text-primary;
-                font-size: 12px;
-                wrap: no-wrap;
-                horizontal-alignment: center;
-                vertical-alignment: center;
+            HorizontalLayout {
+                padding-left: 8px + 1px;
+                padding-right: 8px + 1px;
+                padding-top: 5px + 1px;
+                padding-bottom: 5px + 1px;
+                Text {
+                    text: root.text;
+                    color: Theme.text-primary;
+                    font-size: 12px;
+                    wrap: no-wrap;
+                }
             }
         }
     }

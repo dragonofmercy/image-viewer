@@ -28,6 +28,8 @@ export component Icon inherits Rectangle {
         viewbox-height: root.viewbox-height;
         width: root.size * min(1, root.viewbox-width / root.viewbox-height);
         height: root.size * min(1, root.viewbox-height / root.viewbox-width);
+        x: (root.size - self.width) / 2;
+        y: (root.size - self.height) / 2;
         fill: root.tint;
         fill-rule: evenodd;
     }

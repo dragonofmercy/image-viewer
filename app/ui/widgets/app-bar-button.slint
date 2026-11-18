@@ -2,6 +2,7 @@ import { Theme } from "../theme.slint";
 import { Icon } from "icon.slint";
 import { ToolTip } from "tooltip.slint";
 
+// A MenuFlyout can be declared inside; open it from `clicked`. See menu-flyout.slint.
 export component AppBarButton inherits Rectangle {
     in property <string> glyph;
     in property <string> path-data;
@@ -52,8 +53,11 @@ export component AppBarButton inherits Rectangle {
         }
     }
 
+    // Disabled buttons show no tooltip (and drop a visible one).
     ToolTip {
-        text: root.tooltip;
-        hovered: touch.has-hover;
+        text: root.enabled ? root.tooltip : "";
     }
+
+    // Optional MenuFlyout; it anchors to this button.
+    @children
 }
