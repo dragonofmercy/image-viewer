@@ -5,6 +5,8 @@ use image::{DynamicImage, ImageDecoder, ImageError, ImageReader, Limits, RgbaIma
 
 use crate::files::extension_of;
 
+mod svg;
+
 pub struct Frame {
     pub pixels: RgbaImage,
     pub delay_ms: u32,
@@ -57,7 +59,8 @@ pub fn load_path(path: &Path) -> Result<Picture, LoadError> {
     let ext = extension_of(path).unwrap_or_default();
     match ext.as_str() {
         ".jpg" | ".jpeg" | ".bmp" | ".png" | ".gif" | ".tif" | ".tiff" | ".tga" | ".webp" => load_native(path),
-        ".svg" | ".ico" | ".heic" | ".heif" | ".avif" | ".jxl" => Err(LoadError::Unsupported(ext)),
+        ".svg" => Ok(Picture::from_rgba(svg::rasterize_svg(path)?, 32)),
+        ".ico" | ".heic" | ".heif" | ".avif" | ".jxl" => Err(LoadError::Unsupported(ext)),
         _ => Err(LoadError::Unsupported(ext)),
     }
 }

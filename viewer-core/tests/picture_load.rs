@@ -82,3 +82,37 @@ fn load_uppercase_extension() {
     let p = save_sample(&dir, "SAMPLE.PNG", 4, 2);
     assert_eq!(picture::load_path(&p).unwrap().width(), 4);
 }
+
+fn svg_text(w: u32, h: u32) -> String {
+    format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}"><rect width="{w}" height="{h}" fill="red"/></svg>"#)
+}
+
+#[test]
+fn load_svg_rasters_within_the_size_cap() {
+    let dir = fixture_dir();
+    for ((w, h), (ew, eh)) in [((32, 32), (32, 32)), ((800, 600), (800, 600)), ((4096, 2048), (1024, 512)), ((1000, 4000), (256, 1024))] {
+        let p = write_bytes(&dir, "a.svg", svg_text(w, h).as_bytes());
+        let pic = picture::load_path(&p).unwrap_or_else(|e| panic!("{w}x{h}: {e}"));
+        assert_eq!((pic.width(), pic.height()), (ew, eh), "{w}x{h}");
+        assert_eq!(pic.depth_string(), "32 bit");
+        assert!(!pic.modified());
+        assert_eq!(pic.current().get_pixel(ew / 2, eh / 2).0, [255, 0, 0, 255]);
+    }
+}
+
+#[test]
+fn load_svg_keeps_straight_alpha() {
+    let dir = fixture_dir();
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#ff0000" fill-opacity="0.5"/></svg>"##;
+    let pic = picture::load_path(&write_bytes(&dir, "a.svg", svg)).unwrap();
+    let p = pic.current().get_pixel(1, 1).0;
+    assert!(p[0] >= 250 && p[1] == 0 && p[2] == 0 && (126..=129).contains(&p[3]), "{p:?}");
+}
+
+#[test]
+fn load_invalid_svg_is_error() {
+    let dir = fixture_dir();
+    assert!(matches!(picture::load_path(&write_bytes(&dir, "a.svg", b"not xml at all")), Err(LoadError::Decode(_))));
+    let zero = write_bytes(&dir, "z.svg", svg_text(0, 0).as_bytes());
+    assert!(matches!(picture::load_path(&zero), Err(LoadError::Decode(_))));
+}
