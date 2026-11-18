@@ -5,7 +5,7 @@
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, TimerMode, VecModel};
 use viewer_core::culture::Strings;
@@ -36,6 +36,8 @@ pub struct Controller {
     strings: Rc<Strings>,
     /// Frame timer of the playing animation. Held here so the controller dropping (or `stop_animation`) ends it.
     anim: slint::Timer,
+    /// IMAGEVIEWER_TRACE set at startup: one timing line per load on stderr.
+    trace: bool,
 }
 
 impl Controller {
@@ -47,6 +49,7 @@ impl Controller {
             loader: Loader::new(),
             strings,
             anim: slint::Timer::default(),
+            trace: std::env::var_os("IMAGEVIEWER_TRACE").is_some(),
         });
         CURRENT.with(|c| *c.borrow_mut() = Rc::downgrade(&controller));
         let commands = ui.global::<Commands>();
@@ -157,24 +160,34 @@ impl Controller {
         }
         let Some((generation, path)) = started else { return false };
         self.refresh_ui();
-        self.loader.request(Source::Path(path), generation, |generation, result| {
+        let requested = self.trace.then(Instant::now);
+        self.loader.request(Source::Path(path), generation, move |generation, result, decode| {
             if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
-                c.finished(generation, result);
+                c.finished(generation, result, decode, requested);
             }
         });
         true
     }
 
-    fn finished(&self, generation: u64, result: Result<Picture, LoadError>) {
+    /// `requested` is set only when tracing.
+    fn finished(&self, generation: u64, result: Result<Picture, LoadError>, decode: Duration, requested: Option<Instant>) {
         if !self.doc.borrow_mut().finish_load(generation, result) {
             return;
         }
         // Taken out for the call so no borrow is held while the host pushes to Slint.
         let picture = self.doc.borrow_mut().picture.take();
+        let show_start = requested.map(|_| Instant::now());
         match &picture {
             Some(p) if p.is_animated() => self.host.show_animated(p.current()),
             Some(p) => self.host.show(p.current()),
             None => self.host.clear(),
+        }
+        if let (Some(requested), Some(show_start)) = (requested, show_start) {
+            let end = Instant::now();
+            let file = self.doc.borrow().inputs().file_name.unwrap_or_default();
+            let (w, h) = picture.as_ref().map_or((0, 0), |p| (p.width(), p.height()));
+            let ms = |d: Duration| d.as_millis();
+            eprintln!("trace load file={file} decode_ms={} show_ms={} total_ms={} size={w}x{h}", ms(decode), ms(end - show_start), ms(end - requested));
         }
         self.set_icon_sizes(picture.as_ref());
         let animated = picture.as_ref().is_some_and(Picture::is_animated);

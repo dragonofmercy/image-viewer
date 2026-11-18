@@ -8,6 +8,7 @@ use image::RgbaImage;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 use viewer_core::folder::FolderNav;
 use viewer_core::picture::{self, LoadError, Picture};
 
@@ -98,7 +99,8 @@ pub fn frame_delay(delay_ms: u32) -> std::time::Duration {
     std::time::Duration::from_millis(if delay_ms == 0 { 100 } else { u64::from(delay_ms) })
 }
 
-type Done = Box<dyn FnOnce(u64, Result<Picture, LoadError>) + Send>;
+/// Receives the generation, the result and the time spent decoding.
+type Done = Box<dyn FnOnce(u64, Result<Picture, LoadError>, Duration) + Send>;
 
 struct Job {
     source: Source,
@@ -152,11 +154,13 @@ impl Loader {
         let worker = shared.clone();
         let spawned = std::thread::Builder::new().name("decode".into()).spawn(move || {
             while let Some(job) = next_job(&worker) {
+                let started = Instant::now();
                 // A decoder panic must not kill the worker: every later load would then hang.
                 let result = panic::catch_unwind(AssertUnwindSafe(|| decode(job.source))).unwrap_or_else(|_| Err(LoadError::Decode("decoder panicked".into())));
+                let elapsed = started.elapsed();
                 let (generation, done) = (job.generation, job.done);
                 // Fails only once the event loop is gone: nothing left to show the result in.
-                let _ = slint::invoke_from_event_loop(move || done(generation, result));
+                let _ = slint::invoke_from_event_loop(move || done(generation, result, elapsed));
             }
         });
         if let Err(e) = spawned {
@@ -165,7 +169,7 @@ impl Loader {
         Self { shared }
     }
 
-    pub fn request(&self, source: Source, generation: u64, done: impl FnOnce(u64, Result<Picture, LoadError>) + Send + 'static) {
+    pub fn request(&self, source: Source, generation: u64, done: impl FnOnce(u64, Result<Picture, LoadError>, Duration) + Send + 'static) {
         let (lock, ready) = &*self.shared;
         if let Ok(mut slot) = lock.lock() {
             slot.job = Some(Job { source, generation, done: Box::new(done) });
@@ -210,7 +214,6 @@ mod tests {
     #[test]
     fn worker_keeps_only_the_latest_request() {
         use std::sync::mpsc;
-        use std::time::Duration;
         let (started_tx, started) = mpsc::channel::<u32>();
         let (open_gate, gate) = mpsc::channel::<()>();
         // The image width is the request id; request 1 blocks until the gate opens.
@@ -222,7 +225,7 @@ mod tests {
             }
             Ok(picture::load_from_rgba(pixels))
         });
-        let request = |id: u32| loader.request(Source::Pixels(RgbaImage::new(id, 1)), u64::from(id), |_, _| {});
+        let request = |id: u32| loader.request(Source::Pixels(RgbaImage::new(id, 1)), u64::from(id), |_, _, _| {});
         let wait = Duration::from_secs(5);
         request(1);
         assert_eq!(started.recv_timeout(wait).ok(), Some(1));
