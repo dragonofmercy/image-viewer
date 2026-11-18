@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Read, Seek};
 use std::path::Path;
 
 use image::codecs::gif::GifDecoder;
@@ -12,14 +12,20 @@ use super::{Frame, LoadError, Picture};
 const MIN_DELAY_MS: u32 = 20;
 const DEFAULT_DELAY_MS: u32 = 100;
 
-/// Decodes every composited frame of a GIF or animated WebP. `None` means a still WebP: the caller decodes it normally.
-pub(super) fn load_animated(path: &Path, gif: bool) -> Result<Option<Picture>, LoadError> {
-    let input = BufReader::new(File::open(path)?);
-    if gif {
+/// Decodes every composited frame of a GIF or animated WebP, sniffed from the file content. `None` means any other file, or a still WebP: the caller decodes it normally.
+pub(super) fn load_animated(path: &Path) -> Result<Option<Picture>, LoadError> {
+    let mut input = BufReader::new(File::open(path)?);
+    let mut magic = [0u8; 12];
+    let n = input.read(&mut magic)?;
+    input.rewind()?;
+    let magic = &magic[..n];
+    if magic.starts_with(b"GIF8") {
         collect(GifDecoder::new(input)?).map(Some)
-    } else {
+    } else if magic.len() == 12 && &magic[..4] == b"RIFF" && &magic[8..] == b"WEBP" {
         let decoder = WebPDecoder::new(input)?;
         if decoder.has_animation() { collect(decoder).map(Some) } else { Ok(None) }
+    } else {
+        Ok(None)
     }
 }
 

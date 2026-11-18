@@ -93,10 +93,7 @@ pub fn load_from_rgba(pixels: RgbaImage) -> Picture {
 }
 
 fn load_native(path: &Path) -> Result<Picture, LoadError> {
-    let ext = extension_of(path).unwrap_or_default();
-    if (ext == ".gif" || ext == ".webp")
-        && let Some(pic) = animated::load_animated(path, ext == ".gif")?
-    {
+    if let Some(pic) = animated::load_animated(path)? {
         return Ok(pic);
     }
     let mut reader = ImageReader::open(path)?.with_guessed_format()?;

@@ -199,3 +199,22 @@ fn still_webp_stays_single_frame() {
     let pic = picture::load_path(&save_sample(&dir, "s.webp", 8, 6)).unwrap();
     assert!(!pic.is_animated());
 }
+
+#[test]
+fn gif_named_png_still_plays_animated() {
+    let dir = fixture_dir();
+    let bytes = std::fs::read(save_animated_gif(&dir, "a.gif", 3, 50)).unwrap();
+    let pic = picture::load_path(&write_bytes(&dir, "mislabeled.png", &bytes)).unwrap();
+    assert_eq!(pic.frames().len(), 3);
+}
+
+#[test]
+fn png_named_gif_and_webp_open_as_still() {
+    let dir = fixture_dir();
+    let bytes = std::fs::read(save_sample(&dir, "a.png", 8, 6)).unwrap();
+    for name in ["mislabeled.gif", "mislabeled.webp"] {
+        let pic = picture::load_path(&write_bytes(&dir, name, &bytes)).unwrap();
+        assert!(!pic.is_animated(), "{name}");
+        assert_eq!((pic.width(), pic.height()), (8, 6), "{name}");
+    }
+}
