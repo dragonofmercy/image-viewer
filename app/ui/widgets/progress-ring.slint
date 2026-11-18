@@ -1,0 +1,24 @@
+import { Theme } from "../theme.slint";
+
+// Indeterminate: a 270 degree accent arc spinning while `active`.
+export component ProgressRing inherits Rectangle {
+    in property <bool> active: true;
+    width: 64px;
+    height: 64px;
+
+    if root.active: Rectangle {
+        transform-rotation: mod(animation-tick() / 1.2s, 1) * 360deg;
+        Path {
+            width: parent.width;
+            height: parent.height;
+            viewbox-x: 0;
+            viewbox-y: 0;
+            viewbox-width: 64;
+            viewbox-height: 64;
+            commands: "M 32 2 A 30 30 0 1 1 2 32";
+            stroke: Theme.accent;
+            stroke-width: 4px;
+            stroke-line-cap: round;
+        }
+    }
+}

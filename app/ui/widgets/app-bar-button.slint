@@ -1,0 +1,59 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+import { ToolTip } from "tooltip.slint";
+
+export component AppBarButton inherits Rectangle {
+    in property <string> glyph;
+    in property <string> path-data;
+    in property <float> viewbox-width: 16;
+    in property <float> viewbox-height: 16;
+    in property <length> icon-size: 20px;
+    // When set, shown to the right of the icon and the width fits the content.
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <string> tooltip;
+    callback clicked;
+
+    width: root.label == "" ? 45px : content.preferred-width;
+    height: 40px;
+    border-radius: Theme.control-radius;
+    background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+
+    content := HorizontalLayout {
+        padding-left: root.label == "" ? 0px : 12px;
+        padding-right: root.label == "" ? 0px : 12px;
+        spacing: 8px;
+        alignment: center;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.glyph;
+                path-data: root.path-data;
+                viewbox-width: root.viewbox-width;
+                viewbox-height: root.viewbox-height;
+                size: root.glyph != "" ? 16px : root.icon-size;
+                tint: root.enabled ? Theme.text-primary : Theme.text-disabled;
+            }
+        }
+        if root.label != "": VerticalLayout {
+            alignment: center;
+            Text {
+                text: root.label;
+                font-size: 12px;
+                color: root.enabled ? Theme.text-primary : Theme.text-disabled;
+            }
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    ToolTip {
+        text: root.tooltip;
+        hovered: touch.has-hover;
+    }
+}

@@ -1,0 +1,43 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+
+// Content is `text`, or `glyph` (font icon) when set.
+export component HyperlinkButton inherits Rectangle {
+    in property <string> text;
+    in property <string> glyph;
+    in property <color> foreground: Theme.accent;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    min-height: 32px;
+    border-radius: Theme.control-radius;
+    background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+
+    HorizontalLayout {
+        padding-left: 11px;
+        padding-right: 11px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        alignment: center;
+        if root.glyph != "": VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.glyph;
+                size: 16px;
+                tint: root.enabled ? root.foreground : Theme.text-disabled;
+            }
+        }
+        if root.glyph == "": Text {
+            text: root.text;
+            vertical-alignment: center;
+            color: root.enabled ? root.foreground : Theme.text-disabled;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.clicked();
+        }
+    }
+}

@@ -1,0 +1,34 @@
+import "../../assets/SegoeIcons.ttf";
+
+// Font glyph (when `glyph` is set) or an SVG path scaled uniformly into a size x size box.
+// `viewbox-*` must match the coordinate range of `path-data`.
+export component Icon inherits Rectangle {
+    in property <string> glyph;
+    in property <string> path-data;
+    in property <float> viewbox-width: 16;
+    in property <float> viewbox-height: 16;
+    in property <length> size: 16px;
+    in property <color> tint;
+    width: root.size;
+    height: root.size;
+
+    if root.glyph != "": Text {
+        text: root.glyph;
+        font-family: "Segoe Fluent Icons";
+        font-size: root.size;
+        color: root.tint;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    if root.glyph == "" && root.path-data != "": Path {
+        commands: root.path-data;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: root.viewbox-width;
+        viewbox-height: root.viewbox-height;
+        width: root.size * min(1, root.viewbox-width / root.viewbox-height);
+        height: root.size * min(1, root.viewbox-height / root.viewbox-width);
+        fill: root.tint;
+        fill-rule: evenodd;
+    }
+}

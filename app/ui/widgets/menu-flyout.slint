@@ -1,0 +1,103 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+
+export component MenuSeparator inherits Rectangle {
+    height: 9px;
+    Rectangle {
+        y: 4px;
+        height: 1px;
+        background: Theme.surface-stroke-flyout;
+    }
+}
+
+export component MenuItem inherits Rectangle {
+    in property <string> glyph;
+    in property <string> path-data;
+    in property <float> viewbox-width: 16;
+    in property <float> viewbox-height: 16;
+    in property <string> text;
+    in property <string> shortcut-text;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    height: 36px;
+    min-width: 200px;
+
+    // 4px side margin around the highlighted row.
+    Rectangle {
+        x: 4px;
+        width: parent.width - 8px;
+        border-radius: Theme.control-radius;
+        background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+    }
+
+    HorizontalLayout {
+        padding-left: 4px + 12px;
+        padding-right: 4px + 12px;
+        spacing: 12px;
+        Rectangle {
+            width: 16px;
+            Icon {
+                glyph: root.glyph;
+                path-data: root.path-data;
+                viewbox-width: root.viewbox-width;
+                viewbox-height: root.viewbox-height;
+                size: 16px;
+                tint: root.enabled ? Theme.text-primary : Theme.text-disabled;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.enabled ? Theme.text-primary : Theme.text-disabled;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: root.shortcut-text;
+            font-size: 12px;
+            color: root.enabled ? Theme.text-secondary : Theme.text-disabled;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+// Place it inside the anchor (it fills it) and call `show()`; the popup opens above the anchor.
+// Any click closes it (PopupWindow default policy). Children are MenuItem / MenuSeparator rows.
+export component MenuFlyout inherits Rectangle {
+    // Right edges aligned (TopEdgeAlignedRight); otherwise left edges aligned (TopEdgeAlignedLeft).
+    in property <bool> align-right: false;
+
+    public function show() {
+        popup.show();
+    }
+
+    public function close() {
+        popup.close();
+    }
+
+    popup := PopupWindow {
+        x: root.align-right ? root.width - self.width : 0px;
+        y: -self.height - 4px;
+        Rectangle {
+            background: Theme.pane-background;
+            border-width: 1px;
+            border-color: Theme.surface-stroke-flyout;
+            border-radius: Theme.overlay-radius;
+            VerticalLayout {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                padding-left: 1px;
+                padding-right: 1px;
+                @children
+            }
+        }
+    }
+}

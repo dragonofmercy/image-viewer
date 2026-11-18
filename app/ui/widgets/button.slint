@@ -1,0 +1,43 @@
+import { Theme } from "../theme.slint";
+
+component ButtonBase inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <bool> accent: false;
+    callback clicked;
+
+    min-height: 32px;
+    border-radius: Theme.control-radius;
+    border-width: 1px;
+    border-color: root.accent ? transparent : Theme.control-stroke;
+    background: root.accent ? (!root.enabled ? Theme.accent.with-alpha(0.37) : touch.pressed ? Theme.accent-pressed : touch.has-hover ? Theme.accent-hover : Theme.accent)
+        : (!root.enabled ? Theme.control-fill : touch.pressed ? Theme.control-fill-pressed : touch.has-hover ? Theme.control-fill-hover : Theme.control-fill);
+
+    HorizontalLayout {
+        padding-left: 11px;
+        padding-right: 11px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        alignment: center;
+        Text {
+            text: root.text;
+            vertical-alignment: center;
+            color: !root.enabled ? Theme.text-disabled : root.accent ? Theme.text-on-accent : Theme.text-primary;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Button inherits ButtonBase {
+    accent: false;
+}
+
+export component AccentButton inherits ButtonBase {
+    accent: true;
+}

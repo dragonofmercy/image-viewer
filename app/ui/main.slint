@@ -1,7 +1,15 @@
 import { TitleBar } from "titlebar.slint";
 import { Theme } from "theme.slint";
+import { Tr } from "tr.slint";
+import { AppBarButton } from "widgets/app-bar-button.slint";
+import { MenuFlyout, MenuItem, MenuSeparator } from "widgets/menu-flyout.slint";
+import { ToolTip } from "widgets/tooltip.slint";
+import { ProgressRing } from "widgets/progress-ring.slint";
+import { Button, AccentButton } from "widgets/button.slint";
+import { HyperlinkButton } from "widgets/hyperlink-button.slint";
 
 export { Theme } from "theme.slint";
+export { Tr } from "tr.slint";
 
 export component MainWindow inherits Window {
     in property <string> title-text;
