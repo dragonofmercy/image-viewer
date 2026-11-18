@@ -7,10 +7,14 @@ use crate::files::extension_of;
 
 mod heif;
 mod ico;
+mod jxl;
 mod svg;
 
 #[doc(hidden)]
 pub use heif::encode_av1_heif;
+pub use jxl::can_save_jxl;
+#[doc(hidden)]
+pub use jxl::encode_jxl_wic;
 
 pub struct Frame {
     pub pixels: RgbaImage,
@@ -70,7 +74,10 @@ pub fn load_path(path: &Path) -> Result<Picture, LoadError> {
             let (pixels, has_alpha) = heif::decode_heif(&std::fs::read(path)?)?;
             Ok(Picture::from_rgba(pixels, if has_alpha { 32 } else { 24 }))
         }
-        ".jxl" => Err(LoadError::Unsupported(ext)),
+        ".jxl" => {
+            let (pixels, has_alpha) = jxl::decode_jxl(&std::fs::read(path)?)?;
+            Ok(Picture::from_rgba(pixels, if has_alpha { 32 } else { 24 }))
+        }
         _ => Err(LoadError::Unsupported(ext)),
     }
 }

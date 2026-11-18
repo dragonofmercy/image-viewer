@@ -6,10 +6,11 @@ version.workspace = true
 [dependencies]
 chrono = "0.4.45"
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "gif", "bmp", "tiff", "tga", "webp", "ico"] }
+jxl-oxide = { version = "0.12.6", features = ["moxcms"] }
 libloading = "0.9.1"
 resvg = "0.50.0"
 roxmltree = "0.21.2"
-windows = { version = "0.62", features = ["Win32_UI_Shell"] }
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_Graphics_Imaging", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_UI_Shell"] }
 winreg = "0.56.0"
 
 [dev-dependencies]
