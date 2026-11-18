@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use viewer_core::association::*;
 use viewer_core::files::SUPPORTED_FILE_TYPES;
 use viewer_core::settings::Settings;
@@ -126,9 +128,11 @@ struct Sandbox {
 
 impl Sandbox {
     fn new() -> Self {
+        // pid + clock + counter: parallel tests in one process can read the same clock tick.
+        static NEXT: AtomicU32 = AtomicU32::new(0);
         let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
         Self {
-            root: format!(r"Software\Dragon Industries\Image Viewer Tests\assoc-{}-{}", std::process::id(), nanos),
+            root: format!(r"Software\Dragon Industries\Image Viewer Tests\assoc-{}-{}-{}", std::process::id(), nanos, NEXT.fetch_add(1, Ordering::Relaxed)),
         }
     }
 

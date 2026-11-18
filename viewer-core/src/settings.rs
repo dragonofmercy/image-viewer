@@ -38,6 +38,7 @@ pub fn clamp_quality(raw: RawValue, default: u8) -> u8 {
     parsed.map_or(default, |q| q.clamp(1, 100) as u8)
 }
 
+#[derive(Clone, Debug)]
 pub struct Settings {
     key: String,
 }

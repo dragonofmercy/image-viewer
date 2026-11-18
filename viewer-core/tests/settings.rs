@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use viewer_core::settings::*;
 use winreg::enums::*;
 use winreg::{RegKey, RegValue};
@@ -9,8 +11,10 @@ struct Sandbox {
 
 impl Sandbox {
     fn new() -> Self {
+        // pid + clock + counter: parallel tests in one process can read the same clock tick.
+        static NEXT: AtomicU32 = AtomicU32::new(0);
         let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let path = format!(r"SOFTWARE\Dragon Industries\Image Viewer Tests\{}-{}", std::process::id(), nanos);
+        let path = format!(r"SOFTWARE\Dragon Industries\Image Viewer Tests\{}-{}-{}", std::process::id(), nanos, NEXT.fetch_add(1, Ordering::Relaxed));
         assert_ne!(path, APP_KEY);
         Self { path }
     }
@@ -98,6 +102,16 @@ fn round_trip_every_value() {
 
     s.set_pos_x(None).unwrap();
     assert_eq!(s.pos_x(), None);
+}
+
+#[test]
+fn settings_clone_targets_the_same_key() {
+    let sb = Sandbox::new();
+    let s = sb.settings();
+    let copy = s.clone();
+    s.set_language("de").unwrap();
+    assert_eq!(copy.language(), "de");
+    assert!(format!("{copy:?}").contains("Image Viewer Tests"));
 }
 
 #[test]
