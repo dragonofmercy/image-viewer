@@ -243,6 +243,25 @@ fn gif_with_huge_logical_screen_is_an_error_without_allocating_it() {
 }
 
 #[test]
+fn animated_webp_with_4_gib_canvas_is_an_error_not_a_panic() {
+    let dir = fixture_dir();
+    // 32768 x 32768 canvas: exactly 4 GiB as RGBA, which overflows image-webp's u32 canvas size computation.
+    let mut body = b"WEBPVP8X\x0a\0\0\0\x02\0\0\0".to_vec();
+    body.extend_from_slice(&[0xff, 0x7f, 0, 0xff, 0x7f, 0]);
+    body.extend_from_slice(b"ANIM\x06\0\0\0\0\0\0\0\0\0");
+    // One ANMF: 1x1 frame at (0, 0), 100 ms, then an empty VP8L sub-chunk header.
+    body.extend_from_slice(b"ANMF\x18\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x64\0\0\0VP8L\0\0\0\0");
+    let mut webp = b"RIFF".to_vec();
+    webp.extend_from_slice(&(body.len() as u32).to_le_bytes());
+    webp.extend_from_slice(&body);
+    let start = std::time::Instant::now();
+    let r = picture::load_path(&write_bytes(&dir, "huge.webp", &webp));
+    // Exactly our reserve's message: the header was accepted by image-webp and rejected by the cap, not by the parser.
+    assert!(matches!(&r, Err(LoadError::Decode(m)) if m == "image too large"), "{:?}", r.err());
+    assert!(start.elapsed().as_secs() < 5);
+}
+
+#[test]
 fn still_image_over_the_decode_cap_is_rejected_before_allocating() {
     let dir = fixture_dir();
     // BMP header only: 50000 x 50000 at 32 bpp (10 GB), no pixel data.

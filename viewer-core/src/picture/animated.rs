@@ -37,8 +37,9 @@ fn collect<'a, D: ImageDecoder + AnimationDecoder<'a>>(mut decoder: D) -> Result
     // The decoder composites onto a canvas-sized buffer (the WebP one ignores the limits), then every frame is a canvas-sized copy.
     let (w, h) = decoder.dimensions();
     let frame_bytes = super::rgba_bytes(w, h);
+    // Canvas + first frame before any decoding: also rejects a canvas of exactly 4 GiB, whose size image-webp computes in u32 (overflow panic).
     let mut used = 0;
-    super::reserve(&mut used, frame_bytes)?;
+    super::reserve(&mut used, frame_bytes.saturating_mul(2))?;
     let mut frames = Vec::new();
     for frame in decoder.into_frames() {
         // A stream cut mid-frame still shows the frames decoded before the cut; only an empty result is an error.
@@ -47,7 +48,9 @@ fn collect<'a, D: ImageDecoder + AnimationDecoder<'a>>(mut decoder: D) -> Result
             Err(e) if frames.is_empty() => return Err(e.into()),
             Err(_) => break,
         };
-        super::reserve(&mut used, frame_bytes)?;
+        if !frames.is_empty() {
+            super::reserve(&mut used, frame_bytes)?;
+        }
         let (num, den) = frame.delay().numer_denom_ms();
         let ms = (f64::from(num) / f64::from(den.max(1))).round() as u32;
         let mut img = DynamicImage::ImageRgba8(frame.into_buffer());
