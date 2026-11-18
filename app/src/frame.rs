@@ -13,7 +13,7 @@ use windows::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowA
 use windows::Win32::Graphics::Gdi::ScreenToClient;
 use windows::Win32::UI::HiDpi::{GetDpiForWindow, GetSystemMetricsForDpi};
 use windows::Win32::UI::Input::KeyboardAndMouse::{TME_LEAVE, TME_NONCLIENT, TRACKMOUSEEVENT, TrackMouseEvent};
-use windows::Win32::UI::Shell::{DefSubclassProc, SetWindowSubclass};
+use windows::Win32::UI::Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass};
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCWSTR;
 
@@ -27,7 +27,6 @@ const MIN_HEIGHT: f32 = 400.0;
 struct Geometry {
     bar_height: f32,
     buttons_width: f32,
-    button_height: f32,
 }
 
 thread_local! {
@@ -82,10 +81,12 @@ fn install(ui: &MainWindow, hwnd: HWND) {
     GEOMETRY.set(Geometry {
         bar_height: ui.get_title_bar_height(),
         buttons_width: ui.get_caption_buttons_width(),
-        button_height: ui.get_caption_button_height(),
     });
     unsafe {
-        let _ = SetWindowSubclass(hwnd, Some(subclass_proc), 1, 0);
+        if !SetWindowSubclass(hwnd, Some(subclass_proc), 1, 0).as_bool() {
+            eprintln!("frame: SetWindowSubclass failed, keeping the system caption");
+            return;
+        }
         // Re-run WM_NCCALCSIZE so the caption disappears right away.
         let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
@@ -100,6 +101,14 @@ fn frame_thickness(hwnd: HWND) -> i32 {
     unsafe {
         let dpi = GetDpiForWindow(hwnd);
         GetSystemMetricsForDpi(SM_CYFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
+    }
+}
+
+/// Width of the side resize borders, also used as the corner zone of the top resize strip.
+fn frame_width(hwnd: HWND) -> i32 {
+    unsafe {
+        let dpi = GetDpiForWindow(hwnd);
+        GetSystemMetricsForDpi(SM_CXFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
     }
 }
 
@@ -144,7 +153,14 @@ fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
     let zoomed = unsafe { IsZoomed(hwnd).as_bool() };
     // The top resize border lives inside the client area now that WM_NCCALCSIZE removed it.
     if !zoomed && pt.y < frame_thickness(hwnd) {
-        return HTTOP;
+        let corner = frame_width(hwnd);
+        return if pt.x < corner {
+            HTTOPLEFT
+        } else if pt.x >= rc.right - corner {
+            HTTOPRIGHT
+        } else {
+            HTTOP
+        };
     }
     let y = pt.y as f32;
     if y >= g.bar_height * s {
@@ -152,7 +168,7 @@ fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
     }
     let from_right = (rc.right - pt.x) as f32;
     let button = g.buttons_width / 3.0 * s;
-    if y >= g.button_height * s || from_right > 3.0 * button {
+    if from_right > 3.0 * button {
         HTCAPTION
     } else if from_right <= button {
         HTCLOSE
@@ -168,10 +184,10 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
         match msg {
             WM_NCCALCSIZE if wparam.0 != 0 => {
                 // Let the system compute the left/right/bottom resize borders, then give the caption back to the client area.
-                let params = &mut *(lparam.0 as *mut NCCALCSIZE_PARAMS);
-                let top = params.rgrc[0].top;
+                let params = lparam.0 as *mut NCCALCSIZE_PARAMS;
+                let top = (*params).rgrc[0].top;
                 let result = DefSubclassProc(hwnd, msg, wparam, lparam);
-                params.rgrc[0].top = top + if IsZoomed(hwnd).as_bool() { frame_thickness(hwnd) } else { 0 };
+                (*params).rgrc[0].top = top + if IsZoomed(hwnd).as_bool() { frame_thickness(hwnd) } else { 0 };
                 result
             }
             WM_NCHITTEST => {
@@ -183,11 +199,12 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
             }
             WM_GETMINMAXINFO => {
                 let result = DefSubclassProc(hwnd, msg, wparam, lparam);
-                let info = &mut *(lparam.0 as *mut MINMAXINFO);
+                let info = lparam.0 as *mut MINMAXINFO;
                 let s = scale(hwnd);
-                info.ptMinTrackSize = POINT {
-                    x: (MIN_WIDTH * s).round() as i32,
-                    y: (MIN_HEIGHT * s).round() as i32,
+                let min = (*info).ptMinTrackSize;
+                (*info).ptMinTrackSize = POINT {
+                    x: min.x.max((MIN_WIDTH * s).round() as i32),
+                    y: min.y.max((MIN_HEIGHT * s).round() as i32),
                 };
                 result
             }
@@ -247,6 +264,10 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 HOVER.set(0);
                 push_caption_state();
                 LRESULT(0)
+            }
+            WM_NCDESTROY => {
+                let _ = RemoveWindowSubclass(hwnd, Some(subclass_proc), 1);
+                DefSubclassProc(hwnd, msg, wparam, lparam)
             }
             _ => DefSubclassProc(hwnd, msg, wparam, lparam),
         }
