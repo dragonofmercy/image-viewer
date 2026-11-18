@@ -91,6 +91,21 @@ fn icc_larger_than_one_jpeg_segment_round_trips() {
 }
 
 #[test]
+fn exif_too_big_for_one_jpeg_segment_is_dropped_not_corrupting() {
+    let dir = fixture_dir();
+    let mut exif = exif_block("TestCam", 1);
+    exif.resize(65528, 0);
+    let mut pic = picture::load_path(&png_with_metadata(&dir, "a.png", &sample_image(8, 6), &exif, &fake_icc())).unwrap();
+    assert_eq!(pic.exif().map(<[u8]>::len), Some(65528));
+    let out = dir.path().join("out.jpg");
+    pic.save(&out, ".jpg", None).unwrap();
+    let back = picture::load_path(&out).unwrap();
+    assert_eq!((back.width(), back.height()), (8, 6));
+    assert_eq!(back.exif(), None);
+    assert_eq!(back.icc_profile(), Some(&fake_icc()[..]));
+}
+
+#[test]
 fn memory_loaded_picture_has_no_metadata() {
     let dir = fixture_dir();
     let mut pic = picture::load_from_rgba(sample_image(4, 4));

@@ -69,7 +69,9 @@ pub(super) fn add_webp_chunks(webp: Vec<u8>, width: u32, height: u32, icc: Optio
         push_chunk(&mut body, b"ICCP", icc);
     }
     let image_chunks = if first == b"VP8X" { &chunks[1..] } else { &chunks[..] };
-    for (_, chunk) in image_chunks {
+    // A chunk being replaced is dropped: a reader takes the first ICCP / EXIF it meets.
+    let replaced = |fourcc: &[u8]| (fourcc == b"ICCP" && icc.is_some()) || (fourcc == b"EXIF" && exif.is_some());
+    for (_, chunk) in image_chunks.iter().filter(|c| !replaced(c.0)) {
         body.extend_from_slice(chunk);
         // Restores a pad byte missing at the end of the input, so the EXIF chunk after it stays aligned.
         if chunk.len() % 2 == 1 {
@@ -196,5 +198,19 @@ mod tests {
         assert_eq!(dec.icc_profile().unwrap().as_deref(), Some(&b"icc"[..]));
         assert_eq!(dec.exif_metadata().unwrap().as_deref(), Some(&b"exif!"[..]));
         assert_eq!(dec.dimensions(), (5, 3));
+    }
+
+    #[test]
+    fn existing_iccp_and_exif_are_replaced_not_duplicated() {
+        let img = image::RgbaImage::from_pixel(5, 3, image::Rgba([10, 20, 30, 255]));
+        let plain = webp::Encoder::from_rgba(img.as_raw(), 5, 3).encode_simple(false, 90.0).unwrap().to_vec();
+        let once = add_webp_chunks(plain, 5, 3, Some(b"old icc"), Some(b"old exif"));
+        let out = add_webp_chunks(once, 5, 3, Some(b"icc"), Some(b"exif!"));
+        let chunks = webp_chunks(&out).unwrap();
+        let fourccs: Vec<&[u8]> = chunks.iter().map(|c| c.0).collect();
+        assert_eq!(fourccs, [&b"VP8X"[..], b"ICCP", b"VP8 ", b"EXIF"]);
+        let mut dec = image::codecs::webp::WebPDecoder::new(std::io::Cursor::new(out)).unwrap();
+        assert_eq!(dec.icc_profile().unwrap().as_deref(), Some(&b"icc"[..]));
+        assert_eq!(dec.exif_metadata().unwrap().as_deref(), Some(&b"exif!"[..]));
     }
 }
