@@ -119,6 +119,8 @@ impl Picture {
         } else {
             std::fs::write(&temp, self.encode(&ext, quality.unwrap_or(100).clamp(1, 100))?)?;
         }
+        // Flush to disk before the replace: a power cut must not leave a journaled rename over unwritten data.
+        std::fs::OpenOptions::new().write(true).open(&temp)?.sync_all()?;
         temp.persist(path).map_err(|e| SaveError::Io(e.error))?;
         self.modified = false;
         Ok(())
@@ -142,7 +144,7 @@ impl Picture {
                 enc.encode_frames(frames.iter().map(|f| image::Frame::from_parts(f.pixels.clone(), 0, 0, Delay::from_numer_denom_ms(f.delay_ms, 1))))?;
                 drop(enc);
             }
-            ".webp" => return Ok(webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode(f32::from(quality)).to_vec()),
+            ".webp" => return Ok(webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode_simple(false, f32::from(quality)).map_err(|e| SaveError::Encode(format!("{e:?}")))?.to_vec()),
             _ => return Err(SaveError::UnsupportedFormat(ext.to_string())),
         }
         Ok(out.into_inner())

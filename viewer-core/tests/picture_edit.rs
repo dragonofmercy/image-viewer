@@ -107,6 +107,7 @@ fn save_round_trips_every_save_type() {
     for ext in SAVE_FILE_TYPES {
         if ext == ".jxl" && !picture::can_save_jxl() {
             eprintln!("skipping .jxl round trip: no JPEG XL encoder");
+            assert!(matches!(pic.save(&dir.path().join("out.jxl"), ext, None), Err(SaveError::JxlUnavailable)));
             continue;
         }
         let path = dir.path().join(format!("out{ext}"));
@@ -130,6 +131,35 @@ fn failed_save_keeps_original_file() {
     assert!(target.join("keep.txt").exists());
     let names: Vec<_> = std::fs::read_dir(dir.path()).unwrap().map(|e| e.unwrap().file_name()).collect();
     assert_eq!(names.len(), 2, "temp file left behind: {names:?}");
+}
+
+#[test]
+fn failed_replace_leaves_original_bytes_intact() {
+    let dir = fixture_dir();
+    let path = save_sample(&dir, "a.png", 8, 8);
+    let before = std::fs::read(&path).unwrap();
+    let mut pic = picture::load_path(&path).unwrap();
+    pic.crop(0, 0, 4, 4);
+    let mut perms = std::fs::metadata(&path).unwrap().permissions();
+    perms.set_readonly(true);
+    std::fs::set_permissions(&path, perms.clone()).unwrap();
+    let result = pic.save(&path, ".png", None);
+    #[allow(clippy::permissions_set_readonly_false)] // Windows-only crate: the Unix world-writable concern does not apply
+    perms.set_readonly(false);
+    std::fs::set_permissions(&path, perms).unwrap();
+    assert!(result.is_err());
+    assert!(pic.modified());
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1, "temp file left behind");
+}
+
+#[test]
+fn save_webp_over_size_limit_is_an_error_not_a_panic() {
+    let dir = fixture_dir();
+    let mut pic = picture::load_from_rgba(image::RgbaImage::new(16384, 1));
+    let path = dir.path().join("big.webp");
+    assert!(matches!(pic.save(&path, ".webp", None), Err(SaveError::Encode(_))));
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
 }
 
 #[test]
