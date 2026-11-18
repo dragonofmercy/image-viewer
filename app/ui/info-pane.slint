@@ -1,0 +1,148 @@
+import { Theme } from "theme.slint";
+import { Tr } from "tr.slint";
+import { Icon } from "widgets/icon.slint";
+import { ToolTip } from "widgets/tooltip.slint";
+import { HyperlinkButton } from "widgets/hyperlink-button.slint";
+
+export struct InfoFields {
+    name: string,
+    date: string,
+    dimensions: string,
+    size: string,
+    depth: string,
+    folder: string,
+}
+
+// File information pane (XAML SplitView pane, Overlay, right): the parent places it; 320px wide, the 1px left border included.
+export component InfoPane inherits Rectangle {
+    in property <InfoFields> info;
+    callback close;
+    callback folder-clicked;
+
+    width: 320px;
+    background: Theme.pane-background;
+
+    // Swallows pointer and wheel events so they never reach the image view underneath.
+    TouchArea {
+        scroll-event(event) => {
+            EventResult.accept
+        }
+    }
+
+    Rectangle {
+        x: 0px;
+        width: 1px;
+        background: Theme.app-bar-border;
+    }
+
+    VerticalLayout {
+        padding: 16px;
+        padding-left: 17px;
+        alignment: start;
+        // Title row: text and a 44px column holding the close button.
+        HorizontalLayout {
+            padding-bottom: 16px;
+            Text {
+                text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_INFO");
+                font-size: 20px;
+                color: Theme.text-primary;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                width: 44px;
+                HyperlinkButton {
+                    glyph: "\u{E711}";
+                    foreground: Theme.text-primary;
+                    accessible-role: button;
+                    clicked => {
+                        root.close();
+                    }
+                }
+            }
+        }
+        // File name.
+        HorizontalLayout {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Rectangle {
+                width: 24px;
+                Icon { glyph: "\u{E91B}"; size: 16px; tint: Theme.text-primary; }
+            }
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                Text { text: root.info.name; max-width: 248px; overflow: elide; wrap: no-wrap; color: Theme.text-primary; }
+            }
+        }
+        // Date.
+        HorizontalLayout {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Rectangle {
+                width: 24px;
+                Icon { glyph: "\u{E787}"; size: 16px; tint: Theme.text-primary; }
+            }
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                Text { text: root.info.date; max-width: 248px; wrap: word-wrap; color: Theme.text-primary; }
+            }
+        }
+        // Dimensions, size, depth.
+        HorizontalLayout {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Rectangle {
+                width: 24px;
+                Icon { y: 2px; glyph: "\u{EB3C}"; size: 16px; tint: Theme.text-primary; }
+            }
+            VerticalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 8px;
+                Text { text: Tr.t("FILE_INFORMATION_DIMENSIONS"); max-width: 248px; color: Theme.text-primary; }
+                HorizontalLayout {
+                    spacing: 16px;
+                    alignment: start;
+                    Text { text: root.info.dimensions; font-size: 12px; color: Theme.text-primary; }
+                    Text { text: root.info.size; font-size: 12px; color: Theme.text-primary; }
+                    Text { text: root.info.depth; font-size: 12px; color: Theme.text-primary; }
+                }
+            }
+        }
+        // Folder, a link to Explorer.
+        HorizontalLayout {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Rectangle {
+                width: 24px;
+                Icon { y: 2px; glyph: "\u{E838}"; size: 16px; tint: Theme.text-primary; }
+            }
+            VerticalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 8px;
+                Text { text: Tr.t("FILE_INFORMATION_FOLDER_PATH"); max-width: 248px; color: Theme.text-primary; }
+                Rectangle {
+                    max-width: 248px;
+                    Text {
+                        width: parent.width;
+                        text: root.info.folder;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                        color: Theme.accent;
+                    }
+                    TouchArea {
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => {
+                            root.folder-clicked();
+                        }
+                    }
+                    ToolTip {
+                        text: Tr.t("FILE_INFORMATION_FOLDER_PATH_TIP");
+                    }
+                }
+            }
+        }
+    }
+}

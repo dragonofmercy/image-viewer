@@ -39,6 +39,8 @@ export global AppState {
     in property <bool> image-commands;
     in property <bool> save-direct;
     in property <bool> file-info;
+    // The file information pane is open (the C# SplitView.IsPaneOpen).
+    in-out property <bool> info-open;
     in property <bool> navigate;
     in property <bool> icon-strip;
     in property <bool> print-available: false;

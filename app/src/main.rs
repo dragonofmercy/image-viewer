@@ -2,6 +2,7 @@
 
 mod controller;
 mod document;
+mod file_info;
 mod frame;
 mod geometry;
 mod image_host;
@@ -10,6 +11,8 @@ mod ui_state;
 mod viewport;
 mod win {
     pub mod dialogs;
+    pub mod locale;
+    pub mod shell;
 }
 
 use slint::ComponentHandle;

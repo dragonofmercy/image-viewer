@@ -14,8 +14,9 @@ use viewer_core::folder::FolderNav;
 use viewer_core::picture::{LoadError, Picture};
 
 use crate::document::{Document, Loader, Source, frame_delay, next_icon_index};
+use crate::file_info;
 use crate::image_host::ImageHost;
-use crate::win::dialogs;
+use crate::win::{dialogs, shell};
 use crate::{AppState, Commands, IconSizeItem, MainWindow, frame, ui_state, window_title};
 
 thread_local! {
@@ -67,6 +68,15 @@ impl Controller {
         commands.on_first(move || c.first());
         let c = controller.clone();
         commands.on_last(move || c.last());
+        let c = controller.clone();
+        commands.on_file_info(move || c.open_info());
+        let c = controller.clone();
+        // Task 12 extends this with the rest of the Escape priority (crop, fullscreen).
+        commands.on_escape(move || {
+            c.close_info();
+        });
+        let c = controller.clone();
+        ui.on_info_folder_clicked(move || c.open_info_folder());
         let c = controller.clone();
         ui.on_icon_size_chosen(move |i| c.select_icon_size(i));
         let c = controller.clone();
@@ -193,8 +203,46 @@ impl Controller {
         let animated = picture.as_ref().is_some_and(Picture::is_animated);
         self.doc.borrow_mut().picture = picture;
         self.refresh_ui();
+        self.update_info();
         if animated {
             self.schedule_frame(0);
+        }
+    }
+
+    /// `ButtonFileInfo_Click` + `PaneOpening`: shows the pane filled from the current file.
+    fn open_info(&self) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        ui.global::<AppState>().set_info_open(true);
+        self.update_info();
+    }
+
+    /// Closes the pane. Returns false when it was not open (the Escape handler uses it to fall through). Also called by paste.
+    pub fn close_info(&self) -> bool {
+        let Some(ui) = self.ui.upgrade() else { return false };
+        let app = ui.global::<AppState>();
+        let was_open = app.get_info_open();
+        app.set_info_open(false);
+        was_open
+    }
+
+    /// `Context.UpdateFileInfo`, only while the pane is open (opening refreshes it too).
+    fn update_info(&self) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        if !ui.global::<AppState>().get_info_open() {
+            return;
+        }
+        let info = {
+            let doc = self.doc.borrow();
+            file_info::describe(doc.path.as_deref(), doc.picture.as_ref())
+        };
+        ui.set_info(info);
+    }
+
+    /// `TextBlockInfoFolder_Click`: the folder of the current file in Explorer.
+    fn open_info_folder(&self) {
+        let folder = self.doc.borrow().path.as_deref().and_then(Path::parent).map(Path::to_path_buf);
+        if let Some(folder) = folder {
+            shell::open_in_explorer(&folder);
         }
     }
 
