@@ -21,38 +21,6 @@ pub fn uc_first(s: &str) -> String {
     chars.next().map(|c| c.to_uppercase().chain(chars).collect()).unwrap_or_default()
 }
 
-/// Normalize a stored "yyyy-MM-dd HH:mm:ss" update date. Returns an empty string when the value is not a valid date, so the caller shows its localized "never" label.
-// shortcut: the C# version formats with the current culture; this crate has no locale support, so the date comes back in its stored form.
-pub fn to_update_date(raw: &str) -> String {
-    if is_valid_update_date(raw) { raw.to_string() } else { String::new() }
-}
-
-fn is_valid_update_date(raw: &str) -> bool {
-    let b = raw.as_bytes();
-    if b.len() != 19 || !raw.is_ascii() {
-        return false;
-    }
-    let separators = [(4, b'-'), (7, b'-'), (10, b' '), (13, b':'), (16, b':')];
-    if separators.iter().any(|&(i, c)| b[i] != c) {
-        return false;
-    }
-    let field = |range: std::ops::Range<usize>| {
-        let digits = &raw[range];
-        if digits.bytes().all(|c| c.is_ascii_digit()) { digits.parse::<u32>().ok() } else { None }
-    };
-    let (Some(year), Some(month), Some(day), Some(hour), Some(minute), Some(second)) = (field(0..4), field(5..7), field(8..10), field(11..13), field(14..16), field(17..19)) else {
-        return false;
-    };
-    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    let days = match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => 28 + u32::from(leap),
-        _ => return false,
-    };
-    year >= 1 && (1..=days).contains(&day) && hour < 24 && minute < 60 && second < 60
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,12 +55,5 @@ mod tests {
     fn uc_first_cases() {
         assert_eq!(uc_first("hello"), "Hello");
         assert_eq!(uc_first(""), "");
-    }
-
-    #[test]
-    fn to_update_date_valid_and_invalid() {
-        assert_eq!(to_update_date("2026-11-18 09:05:03"), "2026-11-18 09:05:03");
-        assert_eq!(to_update_date("garbage"), "");
-        assert_eq!(to_update_date("2026-13-18 09:05:03"), "");
     }
 }
