@@ -43,6 +43,31 @@ pub fn jpeg_with_orientation(dir: &tempfile::TempDir, name: &str, w: u32, h: u32
     path
 }
 
+/// Writes an .ico with one PNG-payload entry per (w, h), in the given order.
+pub fn save_ico(dir: &tempfile::TempDir, name: &str, sizes: &[(u32, u32)]) -> PathBuf {
+    let payloads: Vec<Vec<u8>> = sizes
+        .iter()
+        .map(|&(w, h)| {
+            let mut buf = std::io::Cursor::new(Vec::new());
+            DynamicImage::ImageRgba8(sample_image(w, h)).write_to(&mut buf, image::ImageFormat::Png).unwrap();
+            buf.into_inner()
+        })
+        .collect();
+    let mut out = vec![0, 0, 1, 0];
+    out.extend_from_slice(&(sizes.len() as u16).to_le_bytes());
+    let mut offset = 6 + 16 * sizes.len() as u32;
+    for (&(w, h), p) in sizes.iter().zip(&payloads) {
+        out.extend_from_slice(&[w as u8, h as u8, 0, 0]); // 256 wraps to 0, as the format wants
+        out.extend_from_slice(&1u16.to_le_bytes());
+        out.extend_from_slice(&32u16.to_le_bytes());
+        out.extend_from_slice(&(p.len() as u32).to_le_bytes());
+        out.extend_from_slice(&offset.to_le_bytes());
+        offset += p.len() as u32;
+    }
+    payloads.iter().for_each(|p| out.extend_from_slice(p));
+    write_bytes(dir, name, &out)
+}
+
 pub fn write_bytes(dir: &tempfile::TempDir, name: &str, bytes: &[u8]) -> PathBuf {
     let path: &Path = &dir.path().join(name);
     std::fs::write(path, bytes).unwrap();

@@ -5,6 +5,7 @@ use image::{DynamicImage, ImageDecoder, ImageError, ImageReader, Limits, RgbaIma
 
 use crate::files::extension_of;
 
+mod ico;
 mod svg;
 
 pub struct Frame {
@@ -60,7 +61,8 @@ pub fn load_path(path: &Path) -> Result<Picture, LoadError> {
     match ext.as_str() {
         ".jpg" | ".jpeg" | ".bmp" | ".png" | ".gif" | ".tif" | ".tiff" | ".tga" | ".webp" => load_native(path),
         ".svg" => Ok(Picture::from_rgba(svg::rasterize_svg(path)?, 32)),
-        ".ico" | ".heic" | ".heif" | ".avif" | ".jxl" => Err(LoadError::Unsupported(ext)),
+        ".ico" => Ok(Picture::from_icon_frames(ico::decode_ico(path)?)),
+        ".heic" | ".heif" | ".avif" | ".jxl" => Err(LoadError::Unsupported(ext)),
         _ => Err(LoadError::Unsupported(ext)),
     }
 }
@@ -91,6 +93,52 @@ impl Picture {
             icon_index: 0,
             bits_per_pixel,
             modified: false,
+        }
+    }
+
+    fn from_icon_frames(icon_frames: Vec<Frame>) -> Picture {
+        Picture {
+            frames: Vec::new(),
+            icon_frames,
+            icon_index: 0,
+            bits_per_pixel: 32,
+            modified: false,
+        }
+    }
+
+    pub fn has_icon_sizes(&self) -> bool {
+        self.icon_frames.len() > 1
+    }
+
+    pub fn icon_size_count(&self) -> usize {
+        self.icon_frames.len()
+    }
+
+    pub fn icon_size(&self, i: usize) -> (u32, u32) {
+        self.icon_frames[i].pixels.dimensions()
+    }
+
+    pub fn icon_frame(&self, i: usize) -> &RgbaImage {
+        &self.icon_frames[i].pixels
+    }
+
+    pub fn icon_size_index(&self) -> usize {
+        self.icon_index
+    }
+
+    /// Out-of-range indices are ignored.
+    pub fn select_icon_size(&mut self, i: usize) {
+        if i < self.icon_frames.len() {
+            self.icon_index = i;
+        }
+    }
+
+    /// The displayed image, mutable (transforms apply here).
+    #[allow(dead_code)]
+    pub(crate) fn current_mut(&mut self) -> &mut RgbaImage {
+        match self.icon_frames.get_mut(self.icon_index) {
+            Some(f) => &mut f.pixels,
+            None => &mut self.frames[0].pixels,
         }
     }
 
