@@ -61,6 +61,8 @@ export component MainWindow inherits Window {
             let alt = event.modifiers.alt;
             let shift = event.modifiers.shift;
             let plain = !ctrl && !alt;
+            // Named keys have no modifier in the XAML accelerators, so Shift must not be held either.
+            let bare = plain && !shift;
             let img = AppState.image-commands;
             if ctrl && !alt && !shift && key == "o" {
                 Commands.open();
@@ -96,19 +98,19 @@ export component MainWindow inherits Window {
                 if img { Commands.rotate-left(); }
             } else if alt && !ctrl && !shift && event.text == Key.RightArrow {
                 if img { Commands.rotate-right(); }
-            } else if plain && event.text == Key.Delete {
+            } else if bare && event.text == Key.Delete {
                 if img { Commands.delete(); }
-            } else if plain && event.text == Key.Escape {
+            } else if bare && event.text == Key.Escape {
                 Commands.escape();
-            } else if plain && event.text == Key.F11 {
+            } else if bare && event.text == Key.F11 {
                 Commands.toggle-fullscreen();
-            } else if plain && (event.text == Key.LeftArrow || event.text == Key.DownArrow) {
+            } else if bare && (event.text == Key.LeftArrow || event.text == Key.DownArrow) {
                 if AppState.navigate { Commands.previous(); }
-            } else if plain && (event.text == Key.RightArrow || event.text == Key.UpArrow) {
+            } else if bare && (event.text == Key.RightArrow || event.text == Key.UpArrow) {
                 if AppState.navigate { Commands.next(); }
-            } else if plain && event.text == Key.Home {
+            } else if bare && event.text == Key.Home {
                 if AppState.navigate { Commands.first(); }
-            } else if plain && event.text == Key.End {
+            } else if bare && event.text == Key.End {
                 if AppState.navigate { Commands.last(); }
             } else if plain && key == "+" {
                 if img { Commands.zoom-in(); }
