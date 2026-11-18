@@ -175,7 +175,6 @@ impl ImageHost {
     }
 
     /// Displays `pixels` at the fit zoom. Smaller levels are built on a worker thread and attached when ready.
-    #[allow(dead_code)] // first caller: the document loading task
     pub fn show(&self, pixels: &RgbaImage) {
         let (w, h) = pixels.dimensions();
         if w == 0 || h == 0 {
@@ -213,7 +212,6 @@ impl ImageHost {
     }
 
     /// Removes the image and resets the zoom indicators.
-    #[allow(dead_code)] // first caller: the document loading task
     pub fn clear(&self) {
         self.token.fetch_add(1, Ordering::SeqCst);
         *self.state.borrow_mut() = State::default();

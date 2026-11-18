@@ -9,6 +9,8 @@ export component ImageView inherits Rectangle {
     in property <length> img-h;
     // Smooth below 400%, pixelated from 400%.
     in property <bool> smooth: true;
+    // False while loading: the ring replaces the image (XAML Opacity 0).
+    in property <bool> image-visible: true;
     // Wheel delta in 1/120 notches (WinUI MouseWheelDelta), cursor in this element's coordinates.
     callback wheel(float, length, length);
     callback drag(length, length);
@@ -36,6 +38,7 @@ export component ImageView inherits Rectangle {
         width: root.img-w;
         height: root.img-h;
         source: root.source;
+        visible: root.image-visible;
         image-fit: fill;
         image-rendering: root.smooth ? ImageRendering.smooth : ImageRendering.pixelated;
     }

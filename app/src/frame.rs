@@ -3,6 +3,9 @@
 // snap layouts, the system menu and caption double-click behavior.
 
 use std::cell::{Cell, RefCell};
+use std::ffi::OsString;
+use std::os::windows::ffi::OsStringExt;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -12,9 +15,10 @@ use viewer_core::settings::{Settings, WindowState};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
 use windows::Win32::Graphics::Gdi::ScreenToClient;
+use windows::Win32::System::Ole::RevokeDragDrop;
 use windows::Win32::UI::HiDpi::{GetDpiForWindow, GetSystemMetricsForDpi};
 use windows::Win32::UI::Input::KeyboardAndMouse::{TME_LEAVE, TME_NONCLIENT, TRACKMOUSEEVENT, TrackMouseEvent};
-use windows::Win32::UI::Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass};
+use windows::Win32::UI::Shell::{DefSubclassProc, DragAcceptFiles, DragFinish, DragQueryFileW, HDROP, RemoveWindowSubclass, SetWindowSubclass};
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCWSTR;
 
@@ -31,6 +35,8 @@ struct Geometry {
     buttons_width: f32,
 }
 
+type DropHandler = Rc<dyn Fn(PathBuf)>;
+
 thread_local! {
     static UI: RefCell<Option<slint::Weak<MainWindow>>> = const { RefCell::new(None) };
     static GEOMETRY: Cell<Geometry> = Cell::new(Geometry::default());
@@ -39,6 +45,7 @@ thread_local! {
     static PRESSED: Cell<i32> = const { Cell::new(0) };
     static OS_THEME_CHANGED: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
     static TRACKER: RefCell<Option<(Tracker, Settings)>> = const { RefCell::new(None) };
+    static FILE_DROPPED: RefCell<Option<DropHandler>> = const { RefCell::new(None) };
 }
 
 pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
@@ -79,6 +86,11 @@ pub fn on_os_theme_changed(f: impl Fn() + 'static) {
     OS_THEME_CHANGED.with(|c| *c.borrow_mut() = Some(Rc::new(f)));
 }
 
+/// Registers the callback run on the UI thread with the first file dropped on the window (`WM_DROPFILES`).
+pub fn on_file_dropped(f: impl Fn(PathBuf) + 'static) {
+    FILE_DROPPED.with(|c| *c.borrow_mut() = Some(Rc::new(f)));
+}
+
 /// Feeds `tracker` from WM_SIZE / WM_MOVE once the subclass is installed; state changes are written to `settings` right away, as 1.x.
 pub fn track_geometry(tracker: Tracker, settings: Settings) {
     TRACKER.set(Some((tracker, settings)));
@@ -106,6 +118,9 @@ fn install(ui: &MainWindow, hwnd: HWND) {
         }
         // Re-run WM_NCCALCSIZE so the caption disappears right away.
         let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        // winit registers an OLE drop target, which would take precedence over WM_DROPFILES.
+        let _ = RevokeDragDrop(hwnd);
+        DragAcceptFiles(hwnd, true);
     }
 }
 
@@ -324,6 +339,22 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                     });
                 }
                 DefSubclassProc(hwnd, msg, wparam, lparam)
+            }
+            WM_DROPFILES => {
+                let drop = HDROP(wparam.0 as *mut _);
+                let len = DragQueryFileW(drop, 0, None) as usize;
+                let mut buf = vec![0u16; len + 1];
+                let copied = DragQueryFileW(drop, 0, Some(&mut buf)) as usize;
+                DragFinish(drop);
+                if copied > 0 {
+                    let path = PathBuf::from(OsString::from_wide(&buf[..copied.min(len)]));
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(f) = FILE_DROPPED.with(|c| c.borrow().clone()) {
+                            f(path);
+                        }
+                    });
+                }
+                LRESULT(0)
             }
             WM_NCDESTROY => {
                 let _ = RemoveWindowSubclass(hwnd, Some(subclass_proc), 1);

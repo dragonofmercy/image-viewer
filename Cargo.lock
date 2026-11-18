@@ -2061,6 +2061,7 @@ dependencies = [
  "raw-window-handle",
  "slint",
  "slint-build",
+ "tempfile",
  "viewer-core",
  "windows",
  "winresource",

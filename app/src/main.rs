@@ -1,15 +1,21 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod controller;
+mod document;
 mod frame;
 mod geometry;
 mod image_host;
 mod theme;
-#[allow(dead_code)] // consumed by the image tasks that follow
 mod ui_state;
 mod viewport;
+mod win {
+    pub mod dialogs;
+}
 
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
+use std::path::PathBuf;
+use std::rc::Rc;
 use viewer_core::culture::{Strings, resolve_language};
 use viewer_core::settings::{Settings, Theme as ThemeSetting, WindowState};
 use windows::Win32::Globalization::{GetUserPreferredUILanguages, MUI_LANGUAGE_NAME};
@@ -62,8 +68,9 @@ fn main() -> Result<(), slint::PlatformError> {
     let settings = Settings::app();
     apply_theme(&ui, settings.theme());
     // The language is fixed for the session: a change applies at next start, as in 1.x.
-    let strings = Strings::load(resolve_language(&settings.language(), &system_ui_languages()));
-    ui.global::<Tr>().on_t(move |key| strings.get(&key).into());
+    let strings = Rc::new(Strings::load(resolve_language(&settings.language(), &system_ui_languages())));
+    let tr = strings.clone();
+    ui.global::<Tr>().on_t(move |key| tr.get(&key).into());
     let saved = geometry::load(&settings);
     geometry::apply(ui.window(), &saved);
     // As 1.x: a saved Minimized state comes back as Normal.
@@ -112,7 +119,11 @@ fn main() -> Result<(), slint::PlatformError> {
             apply_theme(&ui, setting);
         }
     });
-    let _host = image_host::ImageHost::new(&ui);
+    let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings);
+    // Paths may be relative and non-ASCII: kept as OsString, made absolute by the document.
+    if let Some(arg) = std::env::args_os().nth(1) {
+        controller.open_startup(PathBuf::from(arg));
+    }
     ui.run()
 }
 
