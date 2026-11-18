@@ -1,0 +1,117 @@
+import { Theme } from "theme.slint";
+import { Tr } from "tr.slint";
+import { Icon } from "widgets/icon.slint";
+import { ToolTip } from "widgets/tooltip.slint";
+
+export struct IconSizeItem {
+    thumb: image,
+    label: string,
+    tooltip: string,
+}
+
+// Step button of the strip (XAML Button 22x52, no tooltip, accessible name only).
+component StepButton inherits Rectangle {
+    in property <string> glyph;
+    in property <string> name;
+    callback clicked;
+    width: 22px;
+    height: 52px;
+    border-radius: Theme.control-radius;
+    background: touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+    accessible-role: button;
+    accessible-label: root.name;
+    accessible-action-default => {
+        root.clicked();
+    }
+    Icon {
+        glyph: root.glyph;
+        size: 14px;
+        tint: Theme.text-primary;
+    }
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+// Icon size picker (XAML IconSizeBar): the parent places it; it is 52px of content plus 4px padding and the 1px border on each side.
+export component IconStrip inherits Rectangle {
+    in property <[IconSizeItem]> sizes;
+    in property <int> selected;
+    callback choose(int);
+    callback step(int);
+
+    // Item container: 40px content + 6px padding each side, 2px margin each side.
+    property <length> item-pitch: 40px + 12px + 4px;
+    property <length> chrome: 2 * 4px + 2 * 1px + 2 * 22px + 2 * 2px;
+
+    width: min(640px, root.chrome + root.sizes.length * root.item-pitch);
+    height: 52px + 2 * 4px + 2 * 1px;
+    border-radius: Theme.overlay-radius;
+    background: Theme.pane-background;
+    border-width: 1px;
+    border-color: Theme.app-bar-border;
+
+    HorizontalLayout {
+        padding: 4px;
+        spacing: 0px;
+        StepButton {
+            glyph: "\u{E76B}";
+            name: Tr.t("ICON_SIZE_LARGER");
+            clicked => {
+                root.step(-1);
+            }
+        }
+        Flickable {
+            content-width: root.sizes.length * root.item-pitch;
+            interactive: false;
+            // Margin 2,0 of the list.
+            for item[i] in root.sizes: Rectangle {
+                x: i * root.item-pitch + 2px + 2px;
+                y: 0px;
+                width: 40px + 12px;
+                height: 52px;
+                border-radius: Theme.control-radius;
+                background: touch.pressed ? (i == root.selected ? Theme.subtle-fill-secondary : Theme.subtle-fill-tertiary) : touch.has-hover ? (i == root.selected ? Theme.subtle-fill-tertiary : Theme.subtle-fill-secondary) : i == root.selected ? Theme.subtle-fill-secondary : transparent;
+                VerticalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    padding-top: 2px;
+                    padding-bottom: 2px;
+                    // Fixed-height box so every thumbnail shares a baseline; the frame is capped at 32px and never upscaled.
+                    Rectangle {
+                        height: 32px;
+                        Image {
+                            source: item.thumb;
+                            width: min(32px, self.source.width * 1px);
+                            height: min(32px, self.source.height * 1px);
+                            image-fit: contain;
+                        }
+                    }
+                    Text {
+                        text: item.label;
+                        font-size: 11px;
+                        color: Theme.text-secondary;
+                        horizontal-alignment: center;
+                    }
+                }
+                touch := TouchArea {
+                    clicked => {
+                        root.choose(i);
+                    }
+                }
+                ToolTip {
+                    text: item.tooltip;
+                }
+            }
+        }
+        StepButton {
+            glyph: "\u{E76C}";
+            name: Tr.t("ICON_SIZE_SMALLER");
+            clicked => {
+                root.step(1);
+            }
+        }
+    }
+}

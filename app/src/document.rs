@@ -83,6 +83,19 @@ impl Document {
     }
 }
 
+/// `StepIconSize`: moves by `delta` in the size strip, wrapping around both ends.
+pub fn next_icon_index(current: usize, delta: i32, count: usize) -> usize {
+    if count == 0 {
+        return 0;
+    }
+    (current as i64 + i64::from(delta)).rem_euclid(count as i64) as usize
+}
+
+/// Frame delay of an animation: a delay of 0 plays at 100 ms.
+pub fn frame_delay(delay_ms: u32) -> std::time::Duration {
+    std::time::Duration::from_millis(if delay_ms == 0 { 100 } else { u64::from(delay_ms) })
+}
+
 /// Decodes on a worker thread, one thread per request.
 pub struct Loader;
 
@@ -105,6 +118,21 @@ mod tests {
 
     fn png(path: &Path) {
         RgbaImage::from_pixel(3, 2, image::Rgba([1, 2, 3, 255])).save_with_format(path, image::ImageFormat::Png).expect("write png");
+    }
+
+    #[test]
+    fn icon_index_wraps_both_ways() {
+        assert_eq!(next_icon_index(0, -1, 3), 2);
+        assert_eq!(next_icon_index(2, 1, 3), 0);
+        assert_eq!(next_icon_index(1, 1, 3), 2);
+        assert_eq!(next_icon_index(1, -1, 3), 0);
+        assert_eq!(next_icon_index(0, 1, 0), 0);
+    }
+
+    #[test]
+    fn zero_delay_plays_at_100_ms() {
+        assert_eq!(frame_delay(0).as_millis(), 100);
+        assert_eq!(frame_delay(40).as_millis(), 40);
     }
 
     #[test]

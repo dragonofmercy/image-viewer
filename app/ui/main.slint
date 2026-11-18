@@ -10,10 +10,12 @@ import { HyperlinkButton } from "widgets/hyperlink-button.slint";
 import { Icon } from "widgets/icon.slint";
 import { Footer, Commands, AppState } from "footer.slint";
 import { ImageView } from "image-view.slint";
+import { IconStrip, IconSizeItem } from "icon-strip.slint";
 
 export { Theme } from "theme.slint";
 export { Tr } from "tr.slint";
 export { Commands, AppState } from "footer.slint";
+export { IconSizeItem } from "icon-strip.slint";
 
 export component MainWindow inherits Window {
     in property <string> title-text;
@@ -41,6 +43,10 @@ export component MainWindow inherits Window {
     in property <bool> loading;
     in property <bool> error-visible;
     in property <string> error-file;
+    in property <[IconSizeItem]> icon-sizes;
+    in property <int> icon-index;
+    callback icon-size-chosen(int);
+    callback icon-size-step(int);
 
     title: root.title-text;
     icon: @image-url("../assets/ImageViewer.ico");
@@ -165,6 +171,19 @@ export component MainWindow inherits Window {
                 if root.loading: ProgressRing {
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
+                }
+                // XAML IconSizeBar: floats bottom-centered, 16px clear of the edges, never wider than 640px.
+                if AppState.icon-strip: IconStrip {
+                    x: (parent.width - self.width) / 2;
+                    y: parent.height - self.height - 16px;
+                    sizes: root.icon-sizes;
+                    selected: root.icon-index;
+                    choose(i) => {
+                        root.icon-size-chosen(i);
+                    }
+                    step(d) => {
+                        root.icon-size-step(d);
+                    }
                 }
                 // XAML GlobalErrorMessage (the Store link is not ported: JXL decodes without the Store codec).
                 if root.error-visible: VerticalLayout {

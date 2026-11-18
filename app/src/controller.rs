@@ -7,16 +7,16 @@ use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
-use slint::ComponentHandle;
+use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, TimerMode, VecModel};
 use viewer_core::culture::Strings;
 use viewer_core::files::{SUPPORTED_FILE_TYPES, is_supported};
 use viewer_core::folder::FolderNav;
 use viewer_core::picture::{LoadError, Picture};
 
-use crate::document::{Document, Loader, Source};
+use crate::document::{Document, Loader, Source, frame_delay, next_icon_index};
 use crate::image_host::ImageHost;
 use crate::win::dialogs;
-use crate::{AppState, Commands, MainWindow, frame, ui_state, window_title};
+use crate::{AppState, Commands, IconSizeItem, MainWindow, frame, ui_state, window_title};
 
 thread_local! {
     // Loader results come back through the event loop, which only carries `Send` closures: they reach the controller through this.
@@ -34,6 +34,8 @@ pub struct Controller {
     doc: RefCell<Document>,
     loader: Loader,
     strings: Rc<Strings>,
+    /// Frame timer of the playing animation. Held here so the controller dropping (or `stop_animation`) ends it.
+    anim: slint::Timer,
 }
 
 impl Controller {
@@ -44,6 +46,7 @@ impl Controller {
             doc: RefCell::default(),
             loader: Loader,
             strings,
+            anim: slint::Timer::default(),
         });
         CURRENT.with(|c| *c.borrow_mut() = Rc::downgrade(&controller));
         let commands = ui.global::<Commands>();
@@ -61,6 +64,10 @@ impl Controller {
         commands.on_first(move || c.first());
         let c = controller.clone();
         commands.on_last(move || c.last());
+        let c = controller.clone();
+        ui.on_icon_size_chosen(move |i| c.select_icon_size(i));
+        let c = controller.clone();
+        ui.on_icon_size_step(move |delta| c.step_icon_size(delta));
         let weak = Rc::downgrade(&controller);
         frame::on_file_dropped(move |path| {
             if let Some(c) = weak.upgrade() {
@@ -130,6 +137,9 @@ impl Controller {
     /// Starts a load of `path` without touching the folder list. False when the file does not exist.
     fn load(&self, path: &Path) -> bool {
         let started = self.doc.borrow_mut().begin_path(path);
+        if started.is_some() {
+            self.stop_animation();
+        }
         let Some((generation, path)) = started else { return false };
         self.refresh_ui();
         self.loader.request(Source::Path(path), generation, |generation, result| {
@@ -147,11 +157,97 @@ impl Controller {
         // Taken out for the call so no borrow is held while the host pushes to Slint.
         let picture = self.doc.borrow_mut().picture.take();
         match &picture {
+            Some(p) if p.is_animated() => self.host.show_animated(p.current()),
             Some(p) => self.host.show(p.current()),
             None => self.host.clear(),
         }
+        self.set_icon_sizes(picture.as_ref());
+        let animated = picture.as_ref().is_some_and(Picture::is_animated);
         self.doc.borrow_mut().picture = picture;
         self.refresh_ui();
+        if animated {
+            self.schedule_frame(0);
+        }
+    }
+
+    /// Stops the frame timer: new load, crop start, window close.
+    pub fn stop_animation(&self) {
+        self.anim.stop();
+    }
+
+    /// Waits the delay of frame `index`, then shows the frame after it (looping).
+    fn schedule_frame(&self, index: usize) {
+        let delay = self.doc.borrow().picture.as_ref().and_then(|p| p.frames().get(index)).map(|f| frame_delay(f.delay_ms));
+        let Some(delay) = delay else { return };
+        self.anim.start(TimerMode::SingleShot, delay, move || {
+            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+                c.show_frame(index + 1);
+            }
+        });
+    }
+
+    /// One animation step. Frames are converted when shown (one copy, no second cache of the whole animation).
+    fn show_frame(&self, index: usize) {
+        let buffer = {
+            let doc = self.doc.borrow();
+            let Some(p) = doc.picture.as_ref().filter(|p| p.is_animated()) else { return };
+            let frames = p.frames();
+            let index = if index < frames.len() { index } else { 0 };
+            let pixels = &frames[index].pixels;
+            (index, SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), pixels.width(), pixels.height()))
+        };
+        self.host.set_frame(buffer.1);
+        self.schedule_frame(buffer.0);
+    }
+
+    /// `PopulateIconSizes`: thumbnails are the decoded frames themselves, built once per opened file.
+    fn set_icon_sizes(&self, picture: Option<&Picture>) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        let items: Vec<IconSizeItem> = picture
+            .filter(|p| p.has_icon_sizes())
+            .map(|p| {
+                (0..p.icon_size_count())
+                    .map(|i| {
+                        let (w, h) = p.icon_size(i);
+                        let pixels = p.icon_frame(i);
+                        IconSizeItem {
+                            thumb: slint::Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), w, h)),
+                            label: w.to_string().into(),
+                            tooltip: format!("{w} x {h}").into(),
+                        }
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        ui.set_icon_sizes(ModelRc::new(VecModel::from(items)));
+        ui.set_icon_index(picture.map_or(0, |p| p.icon_size_index() as i32));
+    }
+
+    /// `SelectIconSize`: the frames are already decoded, so only the view is rebuilt (fit, levels, dimensions).
+    fn select_icon_size(&self, index: i32) {
+        let Ok(index) = usize::try_from(index) else { return };
+        let Some(mut picture) = self.doc.borrow_mut().picture.take() else { return };
+        let changed = picture.has_icon_sizes() && index < picture.icon_size_count() && index != picture.icon_size_index();
+        if changed {
+            picture.select_icon_size(index);
+            self.host.show(picture.current());
+        }
+        let shown = picture.icon_size_index();
+        self.doc.borrow_mut().picture = Some(picture);
+        if let Some(ui) = self.ui.upgrade() {
+            ui.set_icon_index(shown as i32);
+        }
+        if changed {
+            self.refresh_ui();
+        }
+    }
+
+    /// `StepIconSize`: wraps around both ends.
+    fn step_icon_size(&self, delta: i32) {
+        let target = self.doc.borrow().picture.as_ref().filter(|p| p.has_icon_sizes()).map(|p| next_icon_index(p.icon_size_index(), delta, p.icon_size_count()));
+        if let Some(i) = target {
+            self.select_icon_size(i as i32);
+        }
     }
 
     /// `UpdateButtonsAccessiblity` + `LoadingDisplay`: command flags, title, dimensions, ring and error panel.

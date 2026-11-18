@@ -81,10 +81,6 @@ fn main() -> Result<(), slint::PlatformError> {
         eprintln!("cannot save the window state: {e}");
     }
     frame::track_geometry(geometry::Tracker::new(state), settings);
-    ui.window().on_close_requested(|| {
-        frame::flush_geometry();
-        slint::CloseRequestResponse::HideWindow
-    });
     // Same path as the caption close button, so the geometry is flushed.
     let weak = ui.as_weak();
     ui.global::<Commands>().on_quit(move || {
@@ -120,6 +116,12 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
     let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings);
+    let c = controller.clone();
+    ui.window().on_close_requested(move || {
+        c.stop_animation();
+        frame::flush_geometry();
+        slint::CloseRequestResponse::HideWindow
+    });
     // Paths may be relative and non-ASCII: kept as OsString, made absolute by the document.
     if let Some(arg) = std::env::args_os().nth(1) {
         controller.open_startup(PathBuf::from(arg));

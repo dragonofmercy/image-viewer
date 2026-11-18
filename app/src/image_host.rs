@@ -176,11 +176,35 @@ impl ImageHost {
 
     /// Displays `pixels` at the fit zoom. Smaller levels are built on a worker thread and attached when ready.
     pub fn show(&self, pixels: &RgbaImage) {
+        self.show_with(pixels, true);
+    }
+
+    /// Like `show` for a picture that will be played: level 0 only, so `set_frame` can swap the pixels without a pyramid to rebuild.
+    pub fn show_animated(&self, pixels: &RgbaImage) {
+        self.show_with(pixels, false);
+    }
+
+    /// Replaces the displayed pixels of an animated picture, keeping zoom and offsets. Ignored when the size differs from the shown image.
+    pub fn set_frame(&self, pixels: Buffer) {
+        let mut s = self.state.borrow_mut();
+        if s.image != (pixels.width(), pixels.height()) || s.levels.len() != 1 {
+            return;
+        }
+        let image = Image::from_rgba8(pixels);
+        s.levels[0] = Some(image.clone());
+        s.shown = Some(0);
+        drop(s);
+        if let Some(ui) = self.ui.upgrade() {
+            ui.set_view_source(image);
+        }
+    }
+
+    fn show_with(&self, pixels: &RgbaImage, pyramid: bool) {
         let (w, h) = pixels.dimensions();
         if w == 0 || h == 0 {
             return self.clear();
         }
-        let sizes = level_sizes(w, h);
+        let sizes = if pyramid { level_sizes(w, h) } else { vec![(w, h)] };
         let first = first_displayable(&sizes);
         // One copy of the pixels, shared by level 0 and the worker (reference counted).
         let buffer = Buffer::clone_from_slice(pixels.as_raw(), w, h);
