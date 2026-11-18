@@ -41,7 +41,7 @@ export component ImageView inherits Rectangle {
     }
 
     touch := TouchArea {
-        mouse-cursor: root.dragging ? MouseCursor.pointer : MouseCursor.default;
+        mouse-cursor: root.dragging && root.img-w > 0px ? MouseCursor.pointer : MouseCursor.default;
         pointer-event(event) => {
             if event.button == PointerEventButton.left {
                 if event.kind == PointerEventKind.down {

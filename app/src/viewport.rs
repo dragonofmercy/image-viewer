@@ -196,7 +196,8 @@ mod tests {
             assert_eq!((n.offset_x, n.offset_y), (0.0, 0.0));
             assert!(n.zoom.is_finite());
         }
-        assert!(wheel(view(1.0, 0.0, 0.0), 120, (1.0, 1.0), image, (0.0, 0.0)).zoom.is_finite());
+        let n = wheel(view(1.0, 0.0, 0.0), 120, (1.0, 1.0), image, (0.0, 0.0));
+        assert!(n.zoom.is_finite() && n.offset_x.is_finite() && n.offset_y.is_finite());
     }
 
     #[test]
@@ -236,5 +237,32 @@ mod tests {
         assert!(is_fit(&view(0.5, 0.0, 0.0), image, VIEW));
         assert!(!is_fit(&view(1.0, 0.0, 0.0), image, VIEW));
         assert_eq!(centered(1.0, image, VIEW), view(1.0, 400.0, 300.0));
+    }
+
+    #[test]
+    fn wheel_crossing_from_smaller_to_larger_keeps_pixel() {
+        let image = (700, 500);
+        let v = view(1.0, 0.0, 0.0);
+        let cursor = (500.0, 300.0);
+        let (x0, y0, w0, h0) = image_rect(v, image, VIEW);
+        assert!(w0 < VIEW.0 && h0 < VIEW.1);
+        let pixel = ((cursor.0 - x0) / v.zoom, (cursor.1 - y0) / v.zoom);
+        let n = wheel(v, 360, cursor, image, VIEW);
+        let (x1, y1, w1, h1) = image_rect(n, image, VIEW);
+        assert!(w1 > VIEW.0 && h1 > VIEW.1);
+        assert!((x1 + pixel.0 * n.zoom - cursor.0).abs() < 0.5);
+        assert!((y1 + pixel.1 * n.zoom - cursor.1).abs() < 0.5);
+    }
+
+    #[test]
+    fn wheel_near_an_edge_clamps() {
+        let image = (4000, 3000);
+        let n = wheel(view(1.0, 0.0, 0.0), -120, (700.0, 500.0), image, VIEW);
+        assert!(n.zoom < 1.0);
+        assert_eq!((n.offset_x, n.offset_y), (0.0, 0.0));
+        let far = view(1.0, 3200.0, 2400.0);
+        let n = wheel(far, -120, (10.0, 10.0), image, VIEW);
+        assert!(n.offset_x <= image.0 as f32 * n.zoom - VIEW.0 && n.offset_y <= image.1 as f32 * n.zoom - VIEW.1);
+        assert!(n.offset_x.is_finite() && n.offset_y.is_finite());
     }
 }

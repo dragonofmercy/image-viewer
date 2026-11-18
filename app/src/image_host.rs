@@ -5,15 +5,19 @@
 
 use crate::viewport::{self, View};
 use crate::{AppState, Commands, MainWindow};
-use image::{RgbaImage, imageops};
+use image::{ImageBuffer, Rgba, RgbaImage, imageops};
 use slint::{ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer, SharedString};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// GPU texture side limit: a level above it is never uploaded.
 const MAX_TEXTURE: u32 = 16384;
 /// Levels stop once the longest edge is at or under this.
 const LEVEL_STOP: u32 = 1024;
+
+type Buffer = SharedPixelBuffer<Rgba8Pixel>;
 
 thread_local! {
     // Worker results come back through the event loop, which can only carry `Send` closures: they reach the host through this.
@@ -45,9 +49,77 @@ fn pick_level(present: &[bool], want: usize) -> Option<usize> {
     (0..=want).rev().chain(want + 1..present.len()).find(|&i| present[i])
 }
 
-fn to_image(pixels: &RgbaImage) -> Image {
-    // Rgba8Pixel buffers are non-premultiplied, as `RgbaImage`.
-    Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), pixels.width(), pixels.height()))
+fn has_area(view: (f32, f32)) -> bool {
+    view.0 > 0.0 && view.1 > 0.0
+}
+
+/// A fit asked while the view had no area (before the first layout, minimized) waits for a view with an area.
+/// Returns (fit now, still pending).
+fn resolve_pending(pending: bool, view: (f32, f32)) -> (bool, bool) {
+    let ready = has_area(view);
+    (pending && ready, pending && !ready)
+}
+
+fn premultiply(w: u32, h: u32, bytes: &[u8]) -> Option<RgbaImage> {
+    let data = bytes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .flat_map(|p| {
+            let a = u32::from(p[3]);
+            [p[0], p[1], p[2]].map(|c| ((u32::from(c) * a + 127) / 255) as u8).into_iter().chain([p[3]])
+        })
+        .collect();
+    RgbaImage::from_raw(w, h, data)
+}
+
+fn unpremultiply(bytes: &[u8]) -> Vec<u8> {
+    bytes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .flat_map(|p| {
+            let a = u32::from(p[3]);
+            let rgb = [p[0], p[1], p[2]].map(|c| (u32::from(c) * 255 + a / 2).checked_div(a).map_or(0, |v| v.min(255) as u8));
+            rgb.into_iter().chain([p[3]])
+        })
+        .collect()
+}
+
+/// Builds levels 1.. of `sizes` from the level 0 bytes (no copy unless the image has transparency, where the chain runs premultiplied
+/// to avoid dark fringes). `emit(index, buffer)` receives each level at or after `first` and returns false to stop; `stale` is checked
+/// before each level and ends the build early.
+fn build_levels(w: u32, h: u32, bytes: &[u8], sizes: &[(u32, u32)], first: usize, stale: &dyn Fn() -> bool, emit: &mut dyn FnMut(usize, Buffer) -> bool) {
+    let Some(borrowed) = ImageBuffer::<Rgba<u8>, &[u8]>::from_raw(w, h, bytes) else { return };
+    let alpha = bytes.as_chunks::<4>().0.iter().any(|p| p[3] != 255);
+    let mut current: Option<RgbaImage> = if alpha {
+        match premultiply(w, h, bytes) {
+            Some(image) => Some(image),
+            None => return,
+        }
+    } else {
+        None
+    };
+    for (index, &(lw, lh)) in sizes.iter().enumerate().skip(1) {
+        if stale() {
+            return;
+        }
+        let next = match &current {
+            Some(image) => imageops::thumbnail(image, lw, lh),
+            None => imageops::thumbnail(&borrowed, lw, lh),
+        };
+        if index >= first {
+            let buffer = if alpha {
+                Buffer::clone_from_slice(&unpremultiply(next.as_raw()), next.width(), next.height())
+            } else {
+                Buffer::clone_from_slice(next.as_raw(), next.width(), next.height())
+            };
+            if stale() || !emit(index, buffer) {
+                return;
+            }
+        }
+        current = Some(next);
+    }
 }
 
 #[derive(Default)]
@@ -56,25 +128,40 @@ struct State {
     levels: Vec<Option<Image>>,
     shown: Option<usize>,
     view: Option<View>,
-    /// Incremented by each `show`/`clear`: levels coming from an older one are dropped.
-    token: u64,
+    fit_pending: bool,
 }
 
 pub struct ImageHost {
     ui: slint::Weak<MainWindow>,
     state: RefCell<State>,
+    /// Incremented by each `show`/`clear`: workers and levels of an older one stop or are dropped.
+    token: Arc<AtomicU64>,
+    /// Wheel delta below one unit (touchpads), carried to the next event.
+    wheel_rest: Cell<f32>,
 }
 
 impl ImageHost {
     pub fn new(ui: &MainWindow) -> Rc<Self> {
-        let host = Rc::new(Self { ui: ui.as_weak(), state: RefCell::default() });
+        let host = Rc::new(Self {
+            ui: ui.as_weak(),
+            state: RefCell::default(),
+            token: Arc::new(AtomicU64::new(0)),
+            wheel_rest: Cell::new(0.0),
+        });
         CURRENT.with(|c| *c.borrow_mut() = Rc::downgrade(&host));
         let h = host.clone();
-        ui.on_view_wheel(move |delta, x, y| h.update(|v, image, view| viewport::wheel(v, delta.round() as i32, (x, y), image, view)));
+        ui.on_view_wheel(move |delta, x, y| {
+            let total = h.wheel_rest.get() + delta;
+            let whole = total.trunc();
+            h.wheel_rest.set(total - whole);
+            if whole != 0.0 {
+                h.update(|v, image, view| viewport::wheel(v, whole as i32, (x, y), image, view));
+            }
+        });
         let h = host.clone();
         ui.on_view_drag(move |dx, dy| h.update(|v, image, view| viewport::pan(v, dx, dy, image, view)));
         let h = host.clone();
-        ui.on_view_resized(move || h.update(viewport::clamp));
+        ui.on_view_resized(move || h.resized());
         let commands = ui.global::<Commands>();
         let h = host.clone();
         commands.on_adjust(move || h.fit());
@@ -96,36 +183,40 @@ impl ImageHost {
         }
         let sizes = level_sizes(w, h);
         let first = first_displayable(&sizes);
+        // One copy of the pixels, shared by level 0 and the worker (reference counted).
+        let buffer = Buffer::clone_from_slice(pixels.as_raw(), w, h);
         let mut levels = vec![None; sizes.len()];
         if first == 0 {
-            levels[0] = Some(to_image(pixels));
+            levels[0] = Some(Image::from_rgba8(buffer.clone()));
+        } else if let Some(ui) = self.ui.upgrade() {
+            // Level 0 is not displayable: do not keep the previous image stretched until the first level arrives.
+            ui.set_view_source(Image::default());
         }
-        let token = {
-            let mut s = self.state.borrow_mut();
-            s.token += 1;
-            *s = State {
-                image: (w, h),
-                levels,
-                shown: None,
-                view: None,
-                token: s.token,
-            };
-            s.token
-        };
+        let token = self.token.fetch_add(1, Ordering::SeqCst) + 1;
+        *self.state.borrow_mut() = State { image: (w, h), levels, ..State::default() };
         self.fit();
         if sizes.len() > 1 {
-            let base = pixels.clone();
-            std::thread::spawn(move || build_levels(base, sizes, first, token));
+            let latest = self.token.clone();
+            std::thread::spawn(move || {
+                let stale = || latest.load(Ordering::SeqCst) != token;
+                let mut emit = |index: usize, level: Buffer| {
+                    slint::invoke_from_event_loop(move || {
+                        if let Some(host) = CURRENT.with(|c| c.borrow().upgrade()) {
+                            host.attach(token, index, level);
+                        }
+                    })
+                    .is_ok()
+                };
+                build_levels(w, h, buffer.as_bytes(), &sizes, first, &stale, &mut emit);
+            });
         }
     }
 
     /// Removes the image and resets the zoom indicators.
     #[allow(dead_code)] // first caller: the document loading task
     pub fn clear(&self) {
-        {
-            let mut s = self.state.borrow_mut();
-            *s = State { token: s.token + 1, ..State::default() };
-        }
+        self.token.fetch_add(1, Ordering::SeqCst);
+        *self.state.borrow_mut() = State::default();
         if let Some(ui) = self.ui.upgrade() {
             ui.set_view_source(Image::default());
             ui.set_view_w(0.0);
@@ -136,8 +227,11 @@ impl ImageHost {
         }
     }
 
-    /// Zoom to fit the view at offset 0.
+    /// Zoom to fit the view at offset 0. With a view that has no area yet, the fit is applied at the first resize that gives it one.
     pub fn fit(&self) {
+        if let Some(ui) = self.ui.upgrade() {
+            self.state.borrow_mut().fit_pending = !has_area((ui.get_view_width(), ui.get_view_height()));
+        }
         self.update(|_, image, view| View {
             zoom: viewport::fit_zoom(image, view),
             offset_x: 0.0,
@@ -145,10 +239,20 @@ impl ImageHost {
         });
     }
 
-    fn attach(&self, token: u64, index: usize, buffer: SharedPixelBuffer<Rgba8Pixel>) {
+    fn resized(&self) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        let (fit_now, pending) = resolve_pending(self.state.borrow().fit_pending, (ui.get_view_width(), ui.get_view_height()));
+        self.state.borrow_mut().fit_pending = pending;
+        if fit_now { self.fit() } else { self.update(viewport::clamp) }
+    }
+
+    fn attach(&self, token: u64, index: usize, buffer: Buffer) {
+        if self.token.load(Ordering::SeqCst) != token {
+            return;
+        }
         {
             let mut s = self.state.borrow_mut();
-            if s.token != token || index >= s.levels.len() {
+            if index >= s.levels.len() {
                 return;
             }
             s.levels[index] = Some(Image::from_rgba8(buffer));
@@ -193,29 +297,20 @@ impl ImageHost {
     }
 }
 
-/// Worker thread: halves the image down the pyramid and hands each level that fits a texture to the UI thread.
-fn build_levels(base: RgbaImage, sizes: Vec<(u32, u32)>, first: usize, token: u64) {
-    let mut current: Option<RgbaImage> = None;
-    for (index, &(w, h)) in sizes.iter().enumerate().skip(1) {
-        let next = imageops::thumbnail(current.as_ref().unwrap_or(&base), w, h);
-        if index >= first {
-            let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(next.as_raw(), next.width(), next.height());
-            let sent = slint::invoke_from_event_loop(move || {
-                if let Some(host) = CURRENT.with(|c| c.borrow().upgrade()) {
-                    host.attach(token, index, buffer);
-                }
-            });
-            if sent.is_err() {
-                return;
-            }
-        }
-        current = Some(next);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
+
+    fn run(w: u32, h: u32, bytes: &[u8], stale: &dyn Fn() -> bool) -> Vec<(usize, u32, u32, Vec<u8>)> {
+        let sizes = level_sizes(w, h);
+        let mut out = Vec::new();
+        build_levels(w, h, bytes, &sizes, first_displayable(&sizes), stale, &mut |i, b| {
+            out.push((i, b.width(), b.height(), b.as_bytes().to_vec()));
+            true
+        });
+        out
+    }
 
     #[test]
     fn level_sizes_halve_until_1024() {
@@ -239,5 +334,54 @@ mod tests {
         assert_eq!(pick_level(&[false, false, true], 0), Some(2));
         assert_eq!(pick_level(&[false], 0), None);
         assert_eq!(pick_level(&[], 0), None);
+    }
+
+    #[test]
+    fn pending_fit_waits_for_a_view_with_area() {
+        assert_eq!(resolve_pending(true, (0.0, 0.0)), (false, true));
+        assert_eq!(resolve_pending(true, (800.0, 0.0)), (false, true));
+        assert_eq!(resolve_pending(true, (800.0, 600.0)), (true, false));
+        assert_eq!(resolve_pending(false, (800.0, 600.0)), (false, false));
+        assert_eq!(resolve_pending(false, (0.0, 0.0)), (false, false));
+    }
+
+    #[test]
+    fn levels_stop_at_1024_and_match_sizes() {
+        let bytes = vec![255u8; 3000 * 2000 * 4];
+        let out = run(3000, 2000, &bytes, &|| false);
+        assert_eq!(out.iter().map(|l| l.0).collect::<Vec<_>>(), vec![1, 2]);
+        let last = out.last().map(|l| (l.1, l.2)).unwrap_or_default();
+        assert!(last.0.max(last.1) <= LEVEL_STOP, "{last:?}");
+        assert!(out.iter().all(|l| l.3.len() == (l.1 * l.2 * 4) as usize));
+    }
+
+    #[test]
+    fn stale_token_stops_the_build() {
+        let bytes = vec![255u8; 3000 * 2000 * 4];
+        assert!(run(3000, 2000, &bytes, &|| true).is_empty());
+        // Fresh for the first check of level 1 and for its emit check, stale afterwards: only level 1 comes out.
+        let calls = Cell::new(0);
+        let out = run(3000, 2000, &bytes, &|| {
+            calls.set(calls.get() + 1);
+            calls.get() > 2
+        });
+        assert_eq!(out.iter().map(|l| l.0).collect::<Vec<_>>(), vec![1]);
+    }
+
+    #[test]
+    fn transparent_edges_do_not_darken() {
+        // Opaque white up to column 1022, transparent black from 1023: the half-covered block must stay white.
+        let (w, h) = (2048u32, 4u32);
+        let mut bytes = Vec::new();
+        for _ in 0..h {
+            for x in 0..w {
+                bytes.extend_from_slice(if x < 1023 { &[255, 255, 255, 255] } else { &[0, 0, 0, 0] });
+            }
+        }
+        let out = run(w, h, &bytes, &|| false);
+        let level = &out[0];
+        let px = &level.3[511 * 4..511 * 4 + 4];
+        assert!(px[3] > 0 && px[3] < 255, "{px:?}");
+        assert!(px[0] >= 250, "{px:?}");
     }
 }
