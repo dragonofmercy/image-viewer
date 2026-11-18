@@ -1,4 +1,5 @@
 import "../assets/SegoeIcons.ttf";
+import { Theme } from "theme.slint";
 
 // No TouchArea: the OS sends non-client messages over the button (HTMINBUTTON etc.), so hover and press state come from Rust.
 component CaptionButton inherits Rectangle {
@@ -8,12 +9,12 @@ component CaptionButton inherits Rectangle {
     in property <bool> is-close;
     width: 46px;
     height: 32px;
-    background: root.is-close ? (root.pressed ? #c42b1ce6 : root.hover ? #c42b1c : transparent) : (root.pressed ? #494d55 : root.hover ? #32363f : transparent);
+    background: root.is-close ? (root.pressed ? #c42b1ce6 : root.hover ? #c42b1c : transparent) : (root.pressed ? Theme.title-button-pressed : root.hover ? Theme.title-button-hover : transparent);
     Text {
         text: root.glyph;
         font-family: "Segoe Fluent Icons";
         font-size: 10px;
-        color: white;
+        color: Theme.text-primary;
     }
 }
 
@@ -23,7 +24,7 @@ export component TitleBar inherits Rectangle {
     // 0 = none, 1 = minimize, 2 = maximize, 3 = close
     in property <int> caption-hover;
     in property <int> caption-pressed;
-    background: #1a202f;
+    background: Theme.app-bar-background;
 
     VerticalLayout {
         HorizontalLayout {
@@ -40,7 +41,7 @@ export component TitleBar inherits Rectangle {
             Text {
                 text: root.title-text;
                 font-size: 12px;
-                color: white;
+                color: Theme.text-primary;
                 vertical-alignment: center;
                 wrap: no-wrap;
                 overflow: elide;
@@ -62,7 +63,7 @@ export component TitleBar inherits Rectangle {
         }
         Rectangle {
             height: 1px;
-            background: #32363f;
+            background: Theme.app-bar-border;
         }
     }
 }

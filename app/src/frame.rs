@@ -9,11 +9,13 @@ use std::time::Duration;
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use slint::ComponentHandle;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
 use windows::Win32::Graphics::Gdi::ScreenToClient;
 use windows::Win32::UI::HiDpi::{GetDpiForWindow, GetSystemMetricsForDpi};
 use windows::Win32::UI::Input::KeyboardAndMouse::{TME_LEAVE, TME_NONCLIENT, TRACKMOUSEEVENT, TrackMouseEvent};
 use windows::Win32::UI::Shell::{DefSubclassProc, SetWindowSubclass};
 use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::core::PCWSTR;
 
 use crate::MainWindow;
 
@@ -34,6 +36,7 @@ thread_local! {
     // 0 = none, 1 = minimize, 2 = maximize, 3 = close
     static HOVER: Cell<i32> = const { Cell::new(0) };
     static PRESSED: Cell<i32> = const { Cell::new(0) };
+    static OS_THEME_CHANGED: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
 }
 
 pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
@@ -59,6 +62,19 @@ pub fn install_when_ready(ui: &MainWindow, on_ready: impl FnOnce(HWND) + 'static
             on_ready(hwnd);
         }
     });
+}
+
+/// Switches the native title bar and system menu between light and dark (the Slint title bar is painted separately).
+pub fn set_dark_title(hwnd: HWND, dark: bool) {
+    let value = i32::from(dark);
+    unsafe {
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, std::ptr::from_ref(&value).cast(), size_of::<i32>() as u32);
+    }
+}
+
+/// Registers the callback run on the UI thread when the OS color mode or accent changes (`WM_SETTINGCHANGE` "ImmersiveColorSet").
+pub fn on_os_theme_changed(f: impl Fn() + 'static) {
+    OS_THEME_CHANGED.with(|c| *c.borrow_mut() = Some(Rc::new(f)));
 }
 
 fn install(ui: &MainWindow, hwnd: HWND) {
@@ -174,6 +190,15 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                     y: (MIN_HEIGHT * s).round() as i32,
                 };
                 result
+            }
+            WM_SETTINGCHANGE if lparam.0 != 0 && PCWSTR(lparam.0 as *const u16).to_string().is_ok_and(|s| s == "ImmersiveColorSet") => {
+                // Deferred: do not touch Slint properties from inside the window procedure.
+                let _ = slint::invoke_from_event_loop(|| {
+                    if let Some(f) = OS_THEME_CHANGED.with(|c| c.borrow().clone()) {
+                        f();
+                    }
+                });
+                DefSubclassProc(hwnd, msg, wparam, lparam)
             }
             WM_ACTIVATE => {
                 let active = (wparam.0 & 0xffff) as u32 != WA_INACTIVE;

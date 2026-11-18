@@ -1,6 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod frame;
+mod theme;
+
+use slint::ComponentHandle;
+use viewer_core::settings::{Settings, Theme as ThemeSetting};
 
 slint::include_modules!();
 
@@ -14,12 +18,38 @@ fn window_title(prefix: Option<&str>) -> String {
     }
 }
 
+/// Sets the palette, the accent and the native title bar mode from the setting (Default follows the OS).
+fn apply_theme(ui: &MainWindow, setting: ThemeSetting) {
+    let dark = theme::resolve(setting, theme::os_is_dark());
+    let global = ui.global::<Theme>();
+    global.set_dark(dark);
+    global.set_accent(theme::accent(dark));
+    if let Some(hwnd) = frame::hwnd_of(ui.window()) {
+        frame::set_dark_title(hwnd, dark);
+    }
+}
+
 fn main() -> Result<(), slint::PlatformError> {
     slint::BackendSelector::new().backend_name("winit".into()).renderer_name("skia".into()).select()?;
 
     let ui = MainWindow::new()?;
     ui.set_title_text(window_title(None).into());
-    frame::install_when_ready(&ui, |_| {});
+    apply_theme(&ui, Settings::app().theme());
+    let weak = ui.as_weak();
+    frame::install_when_ready(&ui, move |_| {
+        if let Some(ui) = weak.upgrade() {
+            apply_theme(&ui, Settings::app().theme());
+        }
+    });
+    let weak = ui.as_weak();
+    frame::on_os_theme_changed(move || {
+        let setting = Settings::app().theme();
+        if setting == ThemeSetting::Default
+            && let Some(ui) = weak.upgrade()
+        {
+            apply_theme(&ui, setting);
+        }
+    });
     ui.run()
 }
 

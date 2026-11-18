@@ -1,0 +1,35 @@
+export global Theme {
+    in property <bool> dark: true;
+    in property <color> accent: #60cdff;
+
+    out property <color> accent-hover: root.accent.with-alpha(0.9);
+    out property <color> accent-pressed: root.accent.with-alpha(0.8);
+    out property <length> control-radius: 4px;
+    out property <length> overlay-radius: 8px;
+
+    out property <color> app-bar-background: root.dark ? #1a202f : #f0f3f9;
+    out property <color> app-bar-border: root.dark ? #32363f : #dde0e5;
+    out property <color> title-button-hover: root.dark ? #32363f : #dbdbdb;
+    out property <color> title-button-pressed: root.dark ? #494d55 : #c0c2c7;
+    out property <color> image-background: root.dark ? #1d2026 : #ffffff;
+    out property <color> window-background: root.dark ? #1d2026 : #f0f3f9;
+    out property <color> context-background: root.dark ? #171717 : #f0f3f9;
+    out property <color> combo-dropdown-background: root.dark ? #2b2d32 : #f9f9fb;
+    out property <color> crop-thumb-border: root.dark ? #7f7f7f : #1875c5;
+    out property <color> pane-background: root.dark ? #2c2c2c : #f9f9f9;
+    out property <color> text-primary: root.dark ? #ffffff : #000000.with-alpha(0.894);
+    out property <color> text-secondary: root.dark ? #ffffff.with-alpha(0.773) : #000000.with-alpha(0.62);
+    out property <color> text-tertiary: root.dark ? #ffffff.with-alpha(0.529) : #000000.with-alpha(0.447);
+    out property <color> text-disabled: root.dark ? #ffffff.with-alpha(0.365) : #000000.with-alpha(0.361);
+    out property <color> subtle-fill-secondary: root.dark ? #ffffff.with-alpha(0.06) : #000000.with-alpha(0.037);
+    out property <color> subtle-fill-tertiary: root.dark ? #ffffff.with-alpha(0.042) : #000000.with-alpha(0.024);
+    out property <color> control-fill: root.dark ? #ffffff.with-alpha(0.06) : #ffffff.with-alpha(0.7);
+    out property <color> control-fill-hover: root.dark ? #ffffff.with-alpha(0.084) : #f9f9f9.with-alpha(0.5);
+    out property <color> control-fill-pressed: root.dark ? #ffffff.with-alpha(0.033) : #f9f9f9.with-alpha(0.3);
+    out property <color> control-stroke: root.dark ? #ffffff.with-alpha(0.07) : #000000.with-alpha(0.06);
+    out property <color> card-background: root.dark ? #ffffff.with-alpha(0.051) : #ffffff.with-alpha(0.7);
+    out property <color> card-stroke: root.dark ? #000000.with-alpha(0.1) : #000000.with-alpha(0.058);
+    out property <color> surface-stroke-flyout: root.dark ? #000000.with-alpha(0.2) : #000000.with-alpha(0.058);
+    out property <color> smoke: #000000.with-alpha(0.3);
+    out property <color> text-on-accent: root.dark ? #000000 : #ffffff;
+}
