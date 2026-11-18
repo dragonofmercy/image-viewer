@@ -73,6 +73,11 @@
 
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.WinUI.Controls.ImageCropper" Version="8.2.251219" />
+        <!-- HEIC/HEIF and AVIF decoding: libheif with libde265 (HEVC) and aom (AV1) compiled in.
+             The package flags itself as a development dependency; PrivateAssets none lets the
+             native DLL flow to ImageViewer.Tests too. -->
+        <PackageReference Include="LibHeif.Native.Runtime" Version="1.20.2" PrivateAssets="none" />
+        <PackageReference Include="LibHeifSharp" Version="3.2.0" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
         <PackageReference Include="SixLabors.ImageSharp" Version="4.1.3" />
