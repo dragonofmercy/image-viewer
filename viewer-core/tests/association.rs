@@ -217,6 +217,27 @@ fn unregister_keeps_an_application_key_owned_by_another_exe() {
     assert!(sb.key(&plan.application_key_path()).is_some());
 }
 
+/// Registers, sets the (Default) of the .png extension key to `default`, unregisters, and returns what is left of it.
+fn png_default_after_unregister(default: &str) -> Option<String> {
+    let sb = Sandbox::new();
+    let plan = build_plan();
+    sb.service().ensure_registered(&plan).unwrap();
+    let (ext, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(format!(r"{}\{}", sb.root, extension_key_path(".png"))).unwrap();
+    ext.set_value("", &default).unwrap();
+    sb.service().unregister(&plan).unwrap();
+    sb.key(&extension_key_path(".png")).and_then(|k| k.get_value("").ok())
+}
+
+#[test]
+fn unregister_clears_an_extension_default_that_names_our_prog_id() {
+    assert_eq!(png_default_after_unregister("IMAGEVIEWER.PNG"), None);
+}
+
+#[test]
+fn unregister_keeps_an_extension_default_owned_by_another_app() {
+    assert_eq!(png_default_after_unregister("Other.png").as_deref(), Some("Other.png"));
+}
+
 #[test]
 fn never_writes_extension_default_value() {
     let sb = Sandbox::new();
