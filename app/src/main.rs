@@ -2,9 +2,11 @@
 
 mod frame;
 mod geometry;
+mod image_host;
 mod theme;
 #[allow(dead_code)] // consumed by the image tasks that follow
 mod ui_state;
+mod viewport;
 
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
@@ -110,6 +112,7 @@ fn main() -> Result<(), slint::PlatformError> {
             apply_theme(&ui, setting);
         }
     });
+    let _host = image_host::ImageHost::new(&ui);
     ui.run()
 }
 

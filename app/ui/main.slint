@@ -8,6 +8,7 @@ import { ProgressRing } from "widgets/progress-ring.slint";
 import { Button, AccentButton } from "widgets/button.slint";
 import { HyperlinkButton } from "widgets/hyperlink-button.slint";
 import { Footer, Commands, AppState } from "footer.slint";
+import { ImageView } from "image-view.slint";
 
 export { Theme } from "theme.slint";
 export { Tr } from "tr.slint";
@@ -23,6 +24,18 @@ export component MainWindow inherits Window {
     // Read by the native hit-test in frame.rs.
     out property <length> title-bar-height: 48px;
     out property <length> caption-buttons-width: 3 * 46px;
+    // Image area, driven by image_host.rs.
+    in property <image> view-source;
+    in property <length> view-x;
+    in property <length> view-y;
+    in property <length> view-w;
+    in property <length> view-h;
+    in property <bool> view-smooth: true;
+    out property <length> view-width: image-view.width;
+    out property <length> view-height: image-view.height;
+    callback view-wheel(float, length, length);
+    callback view-drag(length, length);
+    callback view-resized();
 
     title: root.title-text;
     icon: @image-url("../assets/ImageViewer.ico");
@@ -118,9 +131,29 @@ export component MainWindow inherits Window {
             // Spacer row (XAML Auto row), filled by later tasks.
             Rectangle { vertical-stretch: 0; }
             // Content row.
-            Rectangle {
+            image-view := ImageView {
                 vertical-stretch: 1;
-                background: Theme.image-background;
+                source: root.view-source;
+                img-x: root.view-x;
+                img-y: root.view-y;
+                img-w: root.view-w;
+                img-h: root.view-h;
+                smooth: root.view-smooth;
+                wheel(delta, x, y) => {
+                    root.view-wheel(delta, x, y);
+                }
+                drag(dx, dy) => {
+                    root.view-drag(dx, dy);
+                }
+                resized(w, h) => {
+                    root.view-resized();
+                }
+                back => {
+                    if AppState.navigate { Commands.previous(); }
+                }
+                forward => {
+                    if AppState.navigate { Commands.next(); }
+                }
             }
             if !AppState.fullscreen: Footer { }
         }
