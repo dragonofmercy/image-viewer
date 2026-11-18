@@ -183,16 +183,16 @@ impl AssociationService {
     }
 
     /// Remove everything `ensure_registered` wrote, so an uninstalled app stops appearing in the "Open with" menu.
-    pub fn unregister(&self, exe_file_name: &str, extensions: &[&str]) -> io::Result<()> {
+    pub fn unregister(&self, plan: &FileAssociationPlan) -> io::Result<()> {
         // An empty name would resolve to the shared Applications key, and deleting that tree would wipe every per-user Open With registration.
-        if exe_file_name.is_empty() {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "executable file name is empty"));
+        if file_name_of(&plan.exe_path).is_empty() {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "executable path has no file name"));
         }
 
         // Clear the stamp first so a failure partway through leaves the app looking unregistered and a later ensure_registered repairs it.
         self.settings.set_file_assoc_stamp("")?;
 
-        for ext in extensions {
+        for ext in &plan.extensions {
             let prog_id = prog_id_for(ext);
 
             // (a) the ProgID tree we own.
@@ -218,13 +218,8 @@ impl AssociationService {
         }
 
         // Software\Classes\Applications\<name> is shared by file name: only delete it when its open command is ours.
-        // Only the file name is known here, so ownership is "quoted path ending in <name>" rather than the exact exe path.
-        let app_key_path = application_key_path_for(exe_file_name);
-        let suffix = format!("\\{exe_file_name}\" \"%1\"").to_ascii_lowercase();
-        if self.application_command(&app_key_path).is_some_and(|c| {
-            let c = c.to_ascii_lowercase();
-            c.starts_with('"') && c.ends_with(&suffix)
-        }) {
+        let app_key_path = plan.application_key_path();
+        if self.application_command(&app_key_path).is_some_and(|c| plan.command_matches_current_exe(&c)) {
             self.delete_tree(&app_key_path)?;
         }
 

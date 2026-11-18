@@ -192,7 +192,7 @@ fn unregister_removes_everything_it_wrote() {
     let (open_with, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(format!(r"{}\{}", sb.root, open_with_progids_key_path(".png"))).unwrap();
     open_with.set_value("Other.png", &"").unwrap();
 
-    service.unregister("ImageViewer.exe", &SUPPORTED_FILE_TYPES).unwrap();
+    service.unregister(&plan).unwrap();
 
     for extension in SUPPORTED_FILE_TYPES {
         assert!(sb.key(&prog_id_key_path(extension)).is_none(), "{extension} prog id left behind");
@@ -210,9 +210,9 @@ fn unregister_keeps_an_application_key_owned_by_another_exe() {
     let sb = Sandbox::new();
     let plan = build_plan();
     let (cmd, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(format!(r"{}\{}\shell\open\command", sb.root, plan.application_key_path())).unwrap();
-    cmd.set_value("", &r#""C:\Other\Foreign.exe" "%1""#).unwrap();
+    cmd.set_value("", &r#""C:\Other\ImageViewer.exe" "%1""#).unwrap();
 
-    sb.service().unregister("ImageViewer.exe", &SUPPORTED_FILE_TYPES).unwrap();
+    sb.service().unregister(&plan).unwrap();
 
     assert!(sb.key(&plan.application_key_path()).is_some());
 }
