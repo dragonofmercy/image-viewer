@@ -44,7 +44,7 @@ impl Controller {
             ui: ui.as_weak(),
             host,
             doc: RefCell::default(),
-            loader: Loader,
+            loader: Loader::new(),
             strings,
             anim: slint::Timer::default(),
         });
@@ -80,12 +80,27 @@ impl Controller {
 
     /// `LoadDefaultImage`: the ring shows first, the load starts once the window had time to paint.
     pub fn open_startup(self: &Rc<Self>, path: PathBuf) {
-        self.doc.borrow_mut().loading = true;
+        let generation = {
+            let mut doc = self.doc.borrow_mut();
+            doc.loading = true;
+            doc.generation
+        };
         self.refresh_ui();
         let c = self.clone();
         slint::Timer::single_shot(Duration::from_millis(50), move || {
-            if !c.open_path(&path) {
-                c.doc.borrow_mut().loading = false;
+            if c.open_path(&path) {
+                return;
+            }
+            // A load started meanwhile (a drop) owns the loading state: it clears it when it finishes.
+            let idle = {
+                let mut doc = c.doc.borrow_mut();
+                let idle = doc.generation == generation;
+                if idle {
+                    doc.loading = false;
+                }
+                idle
+            };
+            if idle {
                 c.refresh_ui();
             }
         });

@@ -5,7 +5,9 @@
 
 use crate::ui_state::Inputs;
 use image::RgbaImage;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Condvar, Mutex};
 use viewer_core::folder::FolderNav;
 use viewer_core::picture::{self, LoadError, Picture};
 
@@ -96,19 +98,89 @@ pub fn frame_delay(delay_ms: u32) -> std::time::Duration {
     std::time::Duration::from_millis(if delay_ms == 0 { 100 } else { u64::from(delay_ms) })
 }
 
-/// Decodes on a worker thread, one thread per request.
-pub struct Loader;
+type Done = Box<dyn FnOnce(u64, Result<Picture, LoadError>) + Send>;
+
+struct Job {
+    source: Source,
+    generation: u64,
+    done: Done,
+}
+
+#[derive(Default)]
+struct Slot {
+    job: Option<Job>,
+    closed: bool,
+}
+
+type Shared = Arc<(Mutex<Slot>, Condvar)>;
+
+fn decode(source: Source) -> Result<Picture, LoadError> {
+    match source {
+        Source::Path(path) => picture::load_path(&path),
+        Source::Pixels(pixels) => Ok(picture::load_from_rgba(pixels)),
+    }
+}
+
+/// Waits for the next job; None once the loader is dropped.
+fn next_job(shared: &Shared) -> Option<Job> {
+    let (lock, ready) = &**shared;
+    let mut slot = lock.lock().ok()?;
+    loop {
+        if slot.closed {
+            return None;
+        }
+        if let Some(job) = slot.job.take() {
+            return Some(job);
+        }
+        slot = ready.wait(slot).ok()?;
+    }
+}
+
+/// Decodes on one long-lived worker thread. Only the latest request waits: a newer one replaces it, so holding an arrow key
+/// never queues decodes. A decode already running finishes; its result is then dropped by the generation check.
+pub struct Loader {
+    shared: Shared,
+}
 
 impl Loader {
-    pub fn request(&self, source: Source, generation: u64, done: impl FnOnce(u64, Result<Picture, LoadError>) + Send + 'static) {
-        std::thread::spawn(move || {
-            let result = match source {
-                Source::Path(path) => picture::load_path(&path),
-                Source::Pixels(pixels) => Ok(picture::load_from_rgba(pixels)),
-            };
-            // Fails only once the event loop is gone: nothing left to show the result in.
-            let _ = slint::invoke_from_event_loop(move || done(generation, result));
+    pub fn new() -> Self {
+        Self::with_decoder(decode)
+    }
+
+    fn with_decoder(decode: impl Fn(Source) -> Result<Picture, LoadError> + Send + 'static) -> Self {
+        let shared: Shared = Arc::default();
+        let worker = shared.clone();
+        let spawned = std::thread::Builder::new().name("decode".into()).spawn(move || {
+            while let Some(job) = next_job(&worker) {
+                // A decoder panic must not kill the worker: every later load would then hang.
+                let result = panic::catch_unwind(AssertUnwindSafe(|| decode(job.source))).unwrap_or_else(|_| Err(LoadError::Decode("decoder panicked".into())));
+                let (generation, done) = (job.generation, job.done);
+                // Fails only once the event loop is gone: nothing left to show the result in.
+                let _ = slint::invoke_from_event_loop(move || done(generation, result));
+            }
         });
+        if let Err(e) = spawned {
+            eprintln!("cannot start the decode thread: {e}");
+        }
+        Self { shared }
+    }
+
+    pub fn request(&self, source: Source, generation: u64, done: impl FnOnce(u64, Result<Picture, LoadError>) + Send + 'static) {
+        let (lock, ready) = &*self.shared;
+        if let Ok(mut slot) = lock.lock() {
+            slot.job = Some(Job { source, generation, done: Box::new(done) });
+            ready.notify_one();
+        }
+    }
+}
+
+impl Drop for Loader {
+    fn drop(&mut self) {
+        let (lock, ready) = &*self.shared;
+        if let Ok(mut slot) = lock.lock() {
+            slot.closed = true;
+            ready.notify_one();
+        }
     }
 }
 
@@ -136,6 +208,33 @@ mod tests {
     }
 
     #[test]
+    fn worker_keeps_only_the_latest_request() {
+        use std::sync::mpsc;
+        use std::time::Duration;
+        let (started_tx, started) = mpsc::channel::<u32>();
+        let (open_gate, gate) = mpsc::channel::<()>();
+        // The image width is the request id; request 1 blocks until the gate opens.
+        let loader = Loader::with_decoder(move |source| {
+            let Source::Pixels(pixels) = source else { return Err(LoadError::Decode("unexpected".into())) };
+            let _ = started_tx.send(pixels.width());
+            if pixels.width() == 1 {
+                let _ = gate.recv();
+            }
+            Ok(picture::load_from_rgba(pixels))
+        });
+        let request = |id: u32| loader.request(Source::Pixels(RgbaImage::new(id, 1)), u64::from(id), |_, _| {});
+        let wait = Duration::from_secs(5);
+        request(1);
+        assert_eq!(started.recv_timeout(wait).ok(), Some(1));
+        request(2);
+        request(3);
+        request(4);
+        let _ = open_gate.send(());
+        assert_eq!(started.recv_timeout(wait).ok(), Some(4));
+        assert!(started.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+
+    #[test]
     fn picture_crosses_threads() {
         fn send<T: Send>() {}
         send::<Picture>();
@@ -160,6 +259,8 @@ mod tests {
         assert!(doc.finish_load(newest, Err(LoadError::Decode("bad".into()))));
         assert!(!doc.finish_load(new, picture::load_path(&b)));
         assert!(doc.picture.is_none() && !doc.loading);
+        assert_eq!(doc.path.as_deref(), Some(a.as_path()));
+        assert_eq!(doc.error.as_deref(), Some(a.display().to_string().as_str()));
     }
 
     #[test]
