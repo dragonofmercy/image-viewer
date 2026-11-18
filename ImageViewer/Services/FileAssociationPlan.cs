@@ -42,7 +42,9 @@ internal sealed class FileAssociationPlan
         { ".webp", "WebP image" },
         { ".svg", "SVG image" },
         { ".jxl", "JPEG XL image" },
-        { ".avif", "AVIF image" }
+        { ".avif", "AVIF image" },
+        { ".heic", "HEIC image" },
+        { ".heif", "HEIF image" }
     };
 
     private readonly string ExePath;

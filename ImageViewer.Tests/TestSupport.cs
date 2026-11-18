@@ -55,6 +55,24 @@ public static class FixtureFactory
         return path;
     }
 
+    /// <summary>Solid-color RGBA image in a HEIF container, AV1-coded by the bundled libheif (it has no HEVC encoder).</summary>
+    public static void SaveAv1Heif(string path, int width, int height, byte r, byte g, byte b, byte a)
+    {
+        using LibHeifSharp.HeifContext context = new();
+        using LibHeifSharp.HeifImage image = new(width, height, LibHeifSharp.HeifColorspace.Rgb, LibHeifSharp.HeifChroma.InterleavedRgba32);
+        image.AddPlane(LibHeifSharp.HeifChannel.Interleaved, width, height, 8);
+        LibHeifSharp.HeifPlaneData plane = image.GetPlane(LibHeifSharp.HeifChannel.Interleaved);
+
+        byte[] row = new byte[width * 4];
+        for (int x = 0; x < width; x++) (row[x * 4], row[x * 4 + 1], row[x * 4 + 2], row[x * 4 + 3]) = (r, g, b, a);
+        for (int y = 0; y < height; y++) System.Runtime.InteropServices.Marshal.Copy(row, 0, plane.Scan0 + y * plane.Stride, row.Length);
+
+        using LibHeifSharp.HeifEncoder encoder = context.GetEncoder(LibHeifSharp.HeifCompressionFormat.Av1);
+        encoder.SetLossyQuality(90);
+        context.EncodeImage(image, encoder);
+        context.WriteToFile(path);
+    }
+
     public static string SaveSvg(TempDir dir, string fileName, int width, int height)
     {
         string path = dir.File(fileName);

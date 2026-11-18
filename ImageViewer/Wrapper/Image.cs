@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+
+using LibHeifSharp;
 
 using Microsoft.UI.Xaml.Media.Imaging;
 
@@ -31,7 +34,7 @@ namespace ImageViewer.Wrapper;
 
 internal partial class Image
 {
-    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg", ".jxl", ".avif"];
+    public static readonly string[] SupportedFileTypes = [".jpg", ".jpeg", ".bmp", ".png", ".gif", ".tif", ".tiff", ".tga", ".ico", ".webp", ".svg", ".jxl", ".avif", ".heic", ".heif"];
     public static readonly string[] SaveFileTypes = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga", ".jxl"];
 
     // JPEG XL is encoded by the WIC codec of Microsoft's Store "JPEG XL Image Extension", when installed.
@@ -295,7 +298,12 @@ internal partial class Image
                 WorkingImage = IconFrames[0];
                 Encoder = new PngEncoder();
             }
-            else if(extension is ".jxl" or ".avif")
+            else if(extension is ".heic" or ".heif" or ".avif")
+            {
+                WorkingImage = await Task.Run(() => DecodeHeif(path));
+                Encoder = new PngEncoder();
+            }
+            else if(extension == ".jxl")
             {
                 WorkingImage = await DecodeWicAsync(path);
                 Encoder = new PngEncoder();
@@ -394,9 +402,36 @@ internal partial class Image
     }
 
     /// <summary>
-    /// Decode the first frame through WIC. Used for JPEG XL and AVIF, which neither ImageSharp nor Skia read.
-    /// The codecs are Microsoft's "JPEG XL Image Extension" (Store, Windows 11 24H2+) and, for AVIF,
-    /// "AV1 Video Extension" (Store), whose WIC path drops the alpha channel. Without the codec,
+    /// Decode the primary image of a HEIF container (HEIC, AVIF) through the bundled libheif, which
+    /// carries its own HEVC and AV1 decoders: nothing to install, alpha kept. libheif applies the
+    /// container's rotation/mirror itself. Higher bit depths are reduced to 8 bits per channel.
+    /// </summary>
+    private static ImageSharpImage DecodeHeif(string path)
+    {
+        using HeifContext context = new(path);
+        using HeifImageHandle handle = context.GetPrimaryImageHandle();
+
+        bool alpha = handle.HasAlphaChannel;
+        using HeifImage image = handle.Decode(HeifColorspace.Rgb, alpha ? HeifChroma.InterleavedRgba32 : HeifChroma.InterleavedRgb24);
+        HeifPlaneData plane = image.GetPlane(HeifChannel.Interleaved);
+
+        // Rows are padded to Stride: pack them tightly for LoadPixelData
+        int rowBytes = plane.Width * (alpha ? 4 : 3);
+        byte[] pixels = new byte[rowBytes * plane.Height];
+
+        for(int y = 0; y < plane.Height; y++)
+        {
+            Marshal.Copy(plane.Scan0 + y * plane.Stride, pixels, y * rowBytes, rowBytes);
+        }
+
+        return alpha
+            ? ImageSharpImage.LoadPixelData<Rgba32>(pixels, plane.Width, plane.Height)
+            : ImageSharpImage.LoadPixelData<Rgb24>(pixels, plane.Width, plane.Height);
+    }
+
+    /// <summary>
+    /// Decode the first frame through WIC. Used for JPEG XL, which neither ImageSharp nor Skia read.
+    /// The codec is Microsoft's "JPEG XL Image Extension" (Store, Windows 11 24H2+). Without it,
     /// BitmapDecoder throws and the user gets the usual "cannot open this file" message.
     /// </summary>
     private static async Task<ImageSharpImage> DecodeWicAsync(string path)

@@ -338,14 +338,11 @@ public class ImageTests
     }
 
     [Fact]
-    public async Task Load_Avif_DecodesThroughWic()
+    public async Task Load_Avif_DecodesThroughLibHeif()
     {
-        // Needs Microsoft's HEIF and AV1 Store extensions; nothing to check on a machine without them.
-        if (!Windows.Graphics.Imaging.BitmapDecoder.GetDecoderInformationEnumerator().Any(c => c.FileExtensions.Contains(".avif", StringComparer.OrdinalIgnoreCase))) return;
-
         using TempDir dir = new();
         string path = dir.File("src.avif");
-        // 8x8 red still (WIC rejects a 4x2 one), nothing in the dependency set encodes AVIF
+        // 8x8 red still, produced by another encoder than the one bundled
         await File.WriteAllBytesAsync(path, Convert.FromBase64String("AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAAD5bWV0YQAAAAAAAAAvaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAFBpY3R1cmVIYW5kbGVyAAAAAA5waXRtAAAAAAABAAAAHmlsb2MAAAAARAAAAQABAAAAAQAAASEAAAAYAAAAKGlpbmYAAAAAAAEAAAAaaW5mZQIAAAAAAQAAYXYwMUNvbG9yAAAAAGppcHJwAAAAS2lwY28AAAAUaXNwZQAAAAAAAAAIAAAACAAAABBwaXhpAAAAAAMICAgAAAAMYXYxQ4EADAAAAAATY29scm5jbHgAAgACAAIAAAAAF2lwbWEAAAAAAAAAAQABBAECgwQAAAAgbWRhdAoFGAi/bAIyDxyAAABYAAAAAK/sqvFLgA=="));
 
         ViewerImage image = await ImageLoader.LoadAsync(path);
@@ -353,6 +350,32 @@ public class ImageTests
         {
             Assert.Equal(8, (int)image.Width);
             Assert.Equal(8, (int)image.Height);
+        }
+        finally
+        {
+            image.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData(".avif")]
+    [InlineData(".heif")]
+    public async Task Load_HeifWithAlpha_KeepsTransparency(string extension)
+    {
+        using TempDir dir = new();
+        string path = dir.File("src" + extension);
+        // Bundled libheif has an AV1 encoder (no HEVC one), so a .heif here holds AV1: same decode path as .heic
+        FixtureFactory.SaveAv1Heif(path, 16, 16, r: 255, g: 0, b: 0, a: 128);
+
+        ViewerImage image = await ImageLoader.LoadAsync(path);
+        try
+        {
+            byte[] pixels = image.GetBgra32Pixels(out int width, out int height);
+
+            Assert.Equal(16, width);
+            Assert.Equal(16, height);
+            Assert.InRange(pixels[3], 100, 160);
+            Assert.True(pixels[2] > 200 && pixels[1] < 50 && pixels[0] < 50, $"expected red, got BGR {pixels[0]},{pixels[1]},{pixels[2]}");
         }
         finally
         {

@@ -792,7 +792,7 @@ internal class Context
         ImageFailedEventArgs args = (ImageFailedEventArgs)e;
         MainWindow.GlobalErrorMessageFileName.Text = args.Path;
 
-        // JPEG XL and AVIF decode through Store codecs: when that is what is missing, say so, with a link to it
+        // JPEG XL decodes through a Store codec: when that is what is missing, say so, with a link to it
         (string Message, string StoreId) codec = default;
         bool codecMissing = args.CodecMissing && StoreCodecs.TryGetValue(Path.GetExtension(args.Path), out codec);
         MainWindow.GlobalErrorMessageText.Text = Culture.GetString(codecMissing ? codec.Message : "SYSTEM_LOADING_ERROR");
@@ -805,8 +805,7 @@ internal class Context
 
     private static readonly Dictionary<string, (string Message, string StoreId)> StoreCodecs = new(StringComparer.OrdinalIgnoreCase)
     {
-        { ".jxl", ("SYSTEM_LOADING_ERROR_JXL_CODEC", "9MZPRTH5C0TB") },
-        { ".avif", ("SYSTEM_LOADING_ERROR_AVIF_CODEC", "9MVZQVXJBQ9V") }
+        { ".jxl", ("SYSTEM_LOADING_ERROR_JXL_CODEC", "9MZPRTH5C0TB") }
     };
 
     /// <summary>
