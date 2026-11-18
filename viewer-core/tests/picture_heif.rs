@@ -1,3 +1,4 @@
+// All fixtures are AV1 (AVIF / AV1-coded HEIF); HEVC (real iPhone HEIC) was verified manually on 2026-11-18 with two real files, not by an automated test.
 mod support;
 
 use std::path::PathBuf;
@@ -59,5 +60,7 @@ fn load_heif_from_unicode_path() {
 fn load_garbage_heic_is_error() {
     let dir = fixture_dir();
     let p = write_bytes(&dir, "bad.heic", b"definitely not a heif container");
-    assert!(matches!(picture::load_path(&p), Err(LoadError::Decode(_))));
+    let r = picture::load_path(&p);
+    // A missing or unloadable DLL is a Decode error too: make sure libheif itself rejected the bytes.
+    assert!(matches!(&r, Err(LoadError::Decode(m)) if m != "libheif.dll not found" && !m.starts_with("libheif.dll:")), "{:?}", r.err());
 }
