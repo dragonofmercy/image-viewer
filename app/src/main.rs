@@ -61,7 +61,16 @@ fn apply_theme(ui: &MainWindow, setting: ThemeSetting) {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
-    slint::BackendSelector::new().backend_name("winit".into()).renderer_name("skia".into()).select()?;
+    let default_backend = || slint::BackendSelector::new().backend_name("winit".into()).renderer_name("skia".into()).select();
+    // An unforced selector lets Slint read SLINT_BACKEND (for example winit-skia-software).
+    if std::env::var_os("SLINT_BACKEND").is_some_and(|v| !v.is_empty()) {
+        if let Err(e) = slint::BackendSelector::new().select() {
+            eprintln!("SLINT_BACKEND selection failed, using winit-skia: {e}");
+            default_backend()?;
+        }
+    } else {
+        default_backend()?;
+    }
 
     let ui = MainWindow::new()?;
     ui.set_title_text(window_title(None).into());
