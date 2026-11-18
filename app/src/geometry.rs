@@ -42,12 +42,17 @@ pub fn load(settings: &Settings) -> Saved {
     }
 }
 
+/// `start + len`, saturating: the registry can hold absurd sizes.
+fn end(start: i32, len: u32) -> i32 {
+    start.saturating_add(i32::try_from(len).unwrap_or(i32::MAX))
+}
+
 /// The saved position is kept only when its rectangle still intersects a monitor (1.x: `DisplayArea.GetFromRect` with no fallback,
 /// fed with the stored size as is).
 pub fn placement(saved: &Saved, monitors: &[Rect]) -> Placement {
     let (w, h) = saved.size;
     match saved.pos {
-        Some((x, y)) if x > PARKED && y > PARKED && monitors.iter().any(|m| x < m.right && x + w as i32 > m.left && y < m.bottom && y + h as i32 > m.top) => Placement::At { x, y, w, h },
+        Some((x, y)) if x > PARKED && y > PARKED && monitors.iter().any(|m| x < m.right && end(x, w) > m.left && y < m.bottom && end(y, h) > m.top) => Placement::At { x, y, w, h },
         _ => Placement::Centered { w, h },
     }
 }
@@ -74,8 +79,11 @@ impl Tracker {
         self.state == WindowState::Normal && !self.fullscreen
     }
 
-    pub fn on_moved(&mut self, x: i32, y: i32) {
-        if self.recording() && x > PARKED && y > PARKED {
+    /// `actual` is the window's real state at the time of the move (IsZoomed / IsIconic): Windows sends WM_MOVE before
+    /// WM_SIZE, so the tracked state still says Normal while the window is already maximized or minimized, and still says
+    /// Maximized while it is already restored.
+    pub fn on_moved(&mut self, x: i32, y: i32, actual: WindowState) {
+        if actual == WindowState::Normal && !self.fullscreen && x > PARKED && y > PARKED {
             self.pos = Some((x, y));
         }
     }
@@ -139,8 +147,8 @@ pub fn apply(window: &slint::Window, saved: &Saved) {
                 &RECT {
                     left: x,
                     top: y,
-                    right: x + w as i32,
-                    bottom: y + h as i32,
+                    right: end(x, w),
+                    bottom: end(y, h),
                 },
                 MONITOR_DEFAULTTONEAREST,
             ),
@@ -167,7 +175,10 @@ pub fn apply(window: &slint::Window, saved: &Saved) {
         // Final window rect: client plus the side borders and the bottom border.
         Placement::Centered { .. } => {
             let work = info.rcWork;
-            (work.left + (work.right - work.left - (pw + 2 * side)) / 2, work.top + (work.bottom - work.top - (ph + bottom)) / 2)
+            (
+                work.left + (work.right - work.left).saturating_sub(pw.saturating_add(2 * side)) / 2,
+                work.top + (work.bottom - work.top).saturating_sub(ph.saturating_add(bottom)) / 2,
+            )
         }
     };
     window.set_position(slint::PhysicalPosition::new(x, y));
@@ -241,6 +252,22 @@ mod tests {
     }
 
     #[test]
+    fn placement_survives_an_absurd_saved_size() {
+        let huge = Saved {
+            pos: Some((i32::MAX - 10, 100)),
+            size: (u32::MAX, u32::MAX),
+            state: WindowState::Normal,
+        };
+        assert_eq!(placement(&huge, &MONITORS), Placement::Centered { w: u32::MAX, h: u32::MAX });
+        let huge = Saved {
+            pos: Some((100, 100)),
+            size: (u32::MAX, u32::MAX),
+            state: WindowState::Normal,
+        };
+        assert_eq!(placement(&huge, &MONITORS), Placement::At { x: 100, y: 100, w: u32::MAX, h: u32::MAX });
+    }
+
+    #[test]
     fn placement_centers_without_a_saved_position() {
         assert_eq!(placement(&saved(None), &MONITORS), Placement::Centered { w: 1280, h: 768 });
     }
@@ -248,33 +275,52 @@ mod tests {
     #[test]
     fn tracker_ignores_parking_position() {
         let mut t = Tracker::new(WindowState::Normal);
-        t.on_moved(-32000, 10);
-        t.on_moved(10, -32000);
+        t.on_moved(-32000, 10, WindowState::Normal);
+        t.on_moved(10, -32000, WindowState::Normal);
         assert_eq!(t.pos, None);
-        t.on_moved(-31999, 5);
+        t.on_moved(-31999, 5, WindowState::Normal);
         assert_eq!(t.pos, Some((-31999, 5)));
     }
 
     #[test]
     fn tracker_ignores_moves_and_resizes_unless_normal() {
         let mut t = Tracker::new(WindowState::Maximized);
-        t.on_moved(10, 20);
+        t.on_moved(-8, -8, WindowState::Maximized);
         t.on_resized(800, 600);
         assert_eq!((t.pos, t.size), (None, None));
         assert!(t.on_state(WindowState::Minimized));
-        t.on_moved(10, 20);
+        t.on_moved(10, 20, WindowState::Minimized);
         assert_eq!(t.pos, None);
         assert!(t.on_state(WindowState::Normal));
-        t.on_moved(10, 20);
+        t.on_moved(10, 20, WindowState::Normal);
         t.on_resized(800, 600);
         assert_eq!((t.pos, t.size), (Some((10, 20)), Some((800, 600))));
+    }
+
+    #[test]
+    fn move_sent_before_the_state_change_follows_the_actual_state() {
+        // Maximize: WM_MOVE (-8, -8) arrives while the tracked state is still Normal.
+        let mut t = Tracker::new(WindowState::Normal);
+        t.on_moved(100, 50, WindowState::Normal);
+        t.on_moved(-8, -8, WindowState::Maximized);
+        assert!(t.on_state(WindowState::Maximized));
+        assert_eq!(t.pos, Some((100, 50)));
+        // Minimize through a path that skips SC_MINIMIZE: the move lands before WM_SIZE(SIZE_MINIMIZED).
+        t.on_state(WindowState::Normal);
+        t.on_moved(-31000, -31000, WindowState::Minimized);
+        assert_eq!(t.pos, Some((100, 50)));
+        // Restore (drag out of maximized): WM_MOVE arrives while the tracked state is still Maximized.
+        t.on_state(WindowState::Maximized);
+        t.on_moved(300, 40, WindowState::Normal);
+        assert!(t.on_state(WindowState::Normal));
+        assert_eq!(t.pos, Some((300, 40)));
     }
 
     #[test]
     fn tracker_ignores_everything_while_fullscreen() {
         let mut t = Tracker::new(WindowState::Normal);
         t.set_fullscreen(true);
-        t.on_moved(10, 20);
+        t.on_moved(10, 20, WindowState::Normal);
         t.on_resized(800, 600);
         assert_eq!((t.pos, t.size), (None, None));
         t.set_fullscreen(false);
@@ -331,7 +377,7 @@ mod tests {
         s.set_height(500).unwrap();
 
         let mut t = Tracker::new(WindowState::Normal);
-        t.on_moved(300, 200);
+        t.on_moved(300, 200, WindowState::Normal);
         t.flush(&s);
         assert_eq!((s.pos_x(), s.pos_y(), s.width(), s.height()), (Some(300), Some(200), 900, 500));
 

@@ -312,7 +312,14 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 if GetWindowRect(hwnd, &mut rc).is_ok() {
                     TRACKER.with_borrow_mut(|t| {
                         if let Some((tracker, _)) = t {
-                            tracker.on_moved(rc.left, rc.top);
+                            let actual = if IsIconic(hwnd).as_bool() {
+                                WindowState::Minimized
+                            } else if IsZoomed(hwnd).as_bool() {
+                                WindowState::Maximized
+                            } else {
+                                WindowState::Normal
+                            };
+                            tracker.on_moved(rc.left, rc.top, actual);
                         }
                     });
                 }
