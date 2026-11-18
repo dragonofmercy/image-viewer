@@ -96,8 +96,28 @@ fn save_unknown_type_is_unsupported() {
     let mut pic = load(&dir, "a.png", 8, 8);
     let target = dir.path().join("a.xyz");
     assert!(matches!(pic.save(&target, ".xyz", None), Err(SaveError::UnsupportedFormat(_))));
-    assert!(matches!(pic.save(&target, ".jpeg", None), Err(SaveError::UnsupportedFormat(_))));
     assert!(!target.exists());
+}
+
+#[test]
+fn save_accepts_non_canonical_extension_spellings() {
+    let dir = fixture_dir();
+    let mut pic = load(&dir, "a.png", 8, 4);
+    for (ext, format) in [(".PNG", image::ImageFormat::Png), (".JPEG", image::ImageFormat::Jpeg), (".tif", image::ImageFormat::Tiff)] {
+        let path = dir.path().join(format!("out{ext}"));
+        pic.save(&path, ext, None).unwrap_or_else(|e| panic!("{ext}: {e}"));
+        assert_eq!(image::guess_format(&std::fs::read(&path).unwrap()).unwrap(), format, "{ext}");
+    }
+}
+
+#[test]
+fn save_jpeg_without_quality_means_100() {
+    let dir = fixture_dir();
+    let mut pic = load(&dir, "a.png", 32, 32);
+    let (none, hundred) = (dir.path().join("none.jpg"), dir.path().join("hundred.jpg"));
+    pic.save(&none, ".jpg", None).unwrap();
+    pic.save(&hundred, ".jpg", Some(100)).unwrap();
+    assert_eq!(std::fs::read(&none).unwrap(), std::fs::read(&hundred).unwrap());
 }
 
 #[test]

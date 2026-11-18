@@ -10,7 +10,7 @@ use image::imageops;
 use image::{Delay, DynamicImage, ImageEncoder, ImageFormat, RgbaImage};
 
 use super::{Frame, Picture, can_save_jxl, encode_jxl_wic, metadata};
-use crate::files::SAVE_FILE_TYPES;
+use crate::files::{SAVE_FILE_TYPES, normalize_extension};
 
 /// EXIF must fit one APP1 segment (65533 data bytes, minus the "Exif\0\0" prefix); the encoder writes the length unchecked.
 const JPEG_MAX_EXIF: usize = 65533 - 6;
@@ -111,7 +111,7 @@ impl Picture {
 
     /// Encodes into a temp file next to `path`, then replaces `path`: a failure leaves the original untouched.
     pub fn save(&mut self, path: &Path, ext: &str, quality: Option<u8>) -> Result<(), SaveError> {
-        let ext = ext.to_ascii_lowercase();
+        let ext = normalize_extension(ext);
         if !SAVE_FILE_TYPES.contains(&ext.as_str()) {
             return Err(SaveError::UnsupportedFormat(ext));
         }
@@ -149,7 +149,8 @@ impl Picture {
             // The image crate's TIFF encoder takes the ICC profile but has no EXIF support.
             ".tiff" => pixels.write_with_encoder(self.with_metadata(TiffEncoder::new(&mut out), usize::MAX, usize::MAX))?,
             ".gif" => {
-                let mut enc = GifEncoder::new(&mut out);
+                // The default quantizer speed (1) is the slowest; the gif crate documents 10 as a good speed/quality compromise.
+                let mut enc = GifEncoder::new_with_speed(&mut out, 10);
                 enc.set_repeat(Repeat::Infinite)?;
                 enc.encode_frames(frames.iter().map(|f| image::Frame::from_parts(f.pixels.clone(), 0, 0, Delay::from_numer_denom_ms(f.delay_ms, 1))))?;
                 drop(enc);
