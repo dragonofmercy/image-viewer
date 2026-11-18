@@ -4,11 +4,18 @@ use std::path::Path;
 
 use image::codecs::gif::{GifEncoder, Repeat};
 use image::codecs::jpeg::JpegEncoder;
+use image::codecs::png::PngEncoder;
+use image::codecs::tiff::TiffEncoder;
 use image::imageops;
-use image::{Delay, DynamicImage, ImageFormat, RgbaImage};
+use image::{Delay, DynamicImage, ImageEncoder, ImageFormat, RgbaImage};
 
-use super::{Frame, Picture, can_save_jxl, encode_jxl_wic};
+use super::{Frame, Picture, can_save_jxl, encode_jxl_wic, metadata};
 use crate::files::SAVE_FILE_TYPES;
+
+/// EXIF must fit one APP1 segment (65533 data bytes, minus the "Exif\0\0" prefix); the encoder writes the length unchecked.
+const JPEG_MAX_EXIF: usize = 65533 - 6;
+/// ICC spans at most 255 APP2 segments of 65533 - 14 bytes; above that the encoder fails the whole save.
+const JPEG_MAX_ICC: usize = 255 * (65533 - 14);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Rotate {
@@ -133,21 +140,39 @@ impl Picture {
         let mut out = Cursor::new(Vec::new());
         match ext {
             // JPEG has no alpha: ImageSharp drops it without compositing, so do the same.
-            ".jpg" => DynamicImage::ImageRgba8(pixels.clone()).to_rgb8().write_with_encoder(JpegEncoder::new_with_quality(&mut out, quality))?,
-            ".png" => pixels.write_to(&mut out, ImageFormat::Png)?,
+            ".jpg" => DynamicImage::ImageRgba8(pixels.clone())
+                .to_rgb8()
+                .write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
+            ".png" => pixels.write_with_encoder(self.with_metadata(PngEncoder::new(&mut out), usize::MAX, usize::MAX))?,
             ".bmp" => pixels.write_to(&mut out, ImageFormat::Bmp)?,
             ".tga" => pixels.write_to(&mut out, ImageFormat::Tga)?,
-            ".tiff" => pixels.write_to(&mut out, ImageFormat::Tiff)?,
+            // The image crate's TIFF encoder takes the ICC profile but has no EXIF support.
+            ".tiff" => pixels.write_with_encoder(self.with_metadata(TiffEncoder::new(&mut out), usize::MAX, usize::MAX))?,
             ".gif" => {
                 let mut enc = GifEncoder::new(&mut out);
                 enc.set_repeat(Repeat::Infinite)?;
                 enc.encode_frames(frames.iter().map(|f| image::Frame::from_parts(f.pixels.clone(), 0, 0, Delay::from_numer_denom_ms(f.delay_ms, 1))))?;
                 drop(enc);
             }
-            ".webp" => return Ok(webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode_simple(false, f32::from(quality)).map_err(|e| SaveError::Encode(format!("{e:?}")))?.to_vec()),
+            ".webp" => {
+                let bare = webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode_simple(false, f32::from(quality)).map_err(|e| SaveError::Encode(format!("{e:?}")))?.to_vec();
+                return Ok(metadata::add_webp_chunks(bare, w, h, self.icc.as_deref(), self.exif.as_deref()));
+            }
             _ => return Err(SaveError::UnsupportedFormat(ext.to_string())),
         }
         Ok(out.into_inner())
+    }
+
+    /// Hands the picture's metadata to an encoder. A blob over the format's limit is left out rather than failing the save or writing a corrupt file.
+    fn with_metadata<E: ImageEncoder>(&self, mut encoder: E, max_exif: usize, max_icc: usize) -> E {
+        // Unsupported (TIFF EXIF) is the only error these setters return: the save goes on without it.
+        if let Some(icc) = self.icc.as_ref().filter(|b| b.len() <= max_icc) {
+            let _ = encoder.set_icc_profile(icc.clone());
+        }
+        if let Some(exif) = self.exif.as_ref().filter(|b| b.len() <= max_exif) {
+            let _ = encoder.set_exif_metadata(exif.clone());
+        }
+        encoder
     }
 }
 

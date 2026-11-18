@@ -31,6 +31,7 @@ pub(super) fn load_animated(path: &Path) -> Result<Option<Picture>, LoadError> {
 
 fn collect<'a, D: ImageDecoder + AnimationDecoder<'a>>(mut decoder: D) -> Result<Picture, LoadError> {
     decoder.set_limits(Limits::no_limits())?;
+    let (exif, icc) = super::metadata::read(&mut decoder);
     let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
     let bits = decoder.color_type().bits_per_pixel();
     let mut frames = Vec::new();
@@ -59,5 +60,7 @@ fn collect<'a, D: ImageDecoder + AnimationDecoder<'a>>(mut decoder: D) -> Result
         icon_index: 0,
         bits_per_pixel: bits,
         modified: false,
+        exif,
+        icc,
     })
 }

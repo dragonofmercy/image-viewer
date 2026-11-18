@@ -1,7 +1,8 @@
 use std::fmt;
 use std::path::Path;
 
-use image::{DynamicImage, ImageDecoder, ImageError, ImageReader, Limits, RgbaImage};
+use image::codecs::tiff::TiffDecoder;
+use image::{DynamicImage, ImageDecoder, ImageError, ImageFormat, ImageReader, Limits, RgbaImage};
 
 use crate::files::extension_of;
 
@@ -9,6 +10,7 @@ mod animated;
 mod heif;
 mod ico;
 mod jxl;
+mod metadata;
 mod save;
 mod svg;
 
@@ -64,6 +66,8 @@ pub struct Picture {
     icon_index: usize,
     bits_per_pixel: u16,
     modified: bool,
+    exif: Option<Vec<u8>>,
+    icc: Option<Vec<u8>>,
 }
 
 /// Loads an image file, dispatching on its lower-cased extension.
@@ -98,12 +102,22 @@ fn load_native(path: &Path) -> Result<Picture, LoadError> {
     }
     let mut reader = ImageReader::open(path)?.with_guessed_format()?;
     reader.limits(Limits::no_limits());
+    let is_tiff = reader.format() == Some(ImageFormat::Tiff);
     let mut decoder = reader.into_decoder()?;
+    let (exif, mut icc) = metadata::read(&mut decoder);
+    if icc.is_none() && is_tiff {
+        // image's TiffDecoder::set_limits caps tag values to the pixel buffer size, dropping the ICC of small images: retry at the tiff crate's own limits.
+        icc = std::fs::File::open(path).ok().and_then(|f| TiffDecoder::new(std::io::BufReader::new(f)).ok()).and_then(|mut d| metadata::read(&mut d).1);
+    }
     let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
     let bits = decoder.color_type().bits_per_pixel();
     let mut img = DynamicImage::from_decoder(decoder)?;
     img.apply_orientation(orientation);
-    Ok(Picture::from_rgba(img.into_rgba8(), bits))
+    Ok(Picture {
+        exif,
+        icc,
+        ..Picture::from_rgba(img.into_rgba8(), bits)
+    })
 }
 
 impl Picture {
@@ -114,6 +128,8 @@ impl Picture {
             icon_index: 0,
             bits_per_pixel,
             modified: false,
+            exif: None,
+            icc: None,
         }
     }
 
@@ -124,6 +140,8 @@ impl Picture {
             icon_index: 0,
             bits_per_pixel: 32,
             modified: false,
+            exif: None,
+            icc: None,
         }
     }
 
@@ -199,5 +217,14 @@ impl Picture {
 
     pub fn modified(&self) -> bool {
         self.modified
+    }
+
+    /// Raw EXIF payload: the TIFF structure from its byte-order mark, without the "Exif\0\0" prefix. Its Orientation is 1: the loader already applied it.
+    pub fn exif(&self) -> Option<&[u8]> {
+        self.exif.as_deref()
+    }
+
+    pub fn icc_profile(&self) -> Option<&[u8]> {
+        self.icc.as_deref()
     }
 }

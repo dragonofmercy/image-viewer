@@ -24,10 +24,7 @@ pub fn save_sample(dir: &tempfile::TempDir, name: &str, w: u32, h: u32) -> PathB
 
 /// Writes a JPEG whose APP1 Exif segment (inserted right after SOI) carries the given orientation.
 pub fn jpeg_with_orientation(dir: &tempfile::TempDir, name: &str, w: u32, h: u32, orientation: u16) -> PathBuf {
-    let path = save_sample(dir, name, w, h);
-    let jpeg = std::fs::read(&path).unwrap();
-    let mut exif: Vec<u8> = b"Exif\0\0".to_vec();
-    exif.extend_from_slice(b"II*\0\x08\0\0\0"); // little-endian TIFF header, IFD0 at offset 8
+    let mut exif = b"II*\0\x08\0\0\0".to_vec(); // little-endian TIFF header, IFD0 at offset 8
     exif.extend_from_slice(&1u16.to_le_bytes()); // one entry
     exif.extend_from_slice(&0x0112u16.to_le_bytes());
     exif.extend_from_slice(&3u16.to_le_bytes()); // SHORT
@@ -35,12 +32,73 @@ pub fn jpeg_with_orientation(dir: &tempfile::TempDir, name: &str, w: u32, h: u32
     exif.extend_from_slice(&orientation.to_le_bytes());
     exif.extend_from_slice(&[0, 0]);
     exif.extend_from_slice(&0u32.to_le_bytes()); // no next IFD
-    let mut out = vec![0xFF, 0xD8, 0xFF, 0xE1];
-    out.extend_from_slice(&((exif.len() + 2) as u16).to_be_bytes());
-    out.extend_from_slice(&exif);
+    jpeg_with_metadata(dir, name, w, h, Some(&exif), None)
+}
+
+/// Little-endian EXIF (TIFF structure, no "Exif\0\0" prefix): IFD0 holds Make = `make` and Orientation = `orientation`.
+pub fn exif_block(make: &str, orientation: u16) -> Vec<u8> {
+    let make = [make.as_bytes(), b"\0"].concat();
+    let mut exif = b"II*\0\x08\0\0\0".to_vec();
+    exif.extend_from_slice(&2u16.to_le_bytes());
+    // Make: ASCII stored after the IFD (8 header + 2 count + 2 * 12 entries + 4 next-IFD = 38).
+    exif.extend_from_slice(&0x010Fu16.to_le_bytes());
+    exif.extend_from_slice(&2u16.to_le_bytes());
+    exif.extend_from_slice(&(make.len() as u32).to_le_bytes());
+    exif.extend_from_slice(&38u32.to_le_bytes());
+    exif.extend_from_slice(&0x0112u16.to_le_bytes());
+    exif.extend_from_slice(&3u16.to_le_bytes());
+    exif.extend_from_slice(&1u32.to_le_bytes());
+    exif.extend_from_slice(&orientation.to_le_bytes());
+    exif.extend_from_slice(&[0, 0]);
+    exif.extend_from_slice(&0u32.to_le_bytes());
+    exif.extend_from_slice(&make);
+    exif
+}
+
+/// Fake ICC profile: a 128-byte header with its big-endian size and the "acsp" signature, then a recognizable tail.
+pub fn fake_icc() -> Vec<u8> {
+    let mut icc = vec![0u8; 160];
+    icc[..4].copy_from_slice(&160u32.to_be_bytes());
+    icc[36..40].copy_from_slice(b"acsp");
+    icc[128..].iter_mut().enumerate().for_each(|(i, b)| *b = i as u8 + 7);
+    icc
+}
+
+/// Writes a w x h sample JPEG with an APP1 Exif segment (`exif` is the TIFF structure) and a single APP2 ICC segment spliced after SOI.
+pub fn jpeg_with_metadata(dir: &tempfile::TempDir, name: &str, w: u32, h: u32, exif: Option<&[u8]>, icc: Option<&[u8]>) -> PathBuf {
+    let path = save_sample(dir, name, w, h);
+    let jpeg = std::fs::read(&path).unwrap();
+    let mut out = vec![0xFF, 0xD8];
+    let mut segment = |marker: u8, payload: Vec<u8>| {
+        out.extend_from_slice(&[0xFF, marker]);
+        out.extend_from_slice(&((payload.len() + 2) as u16).to_be_bytes());
+        out.extend_from_slice(&payload);
+    };
+    if let Some(exif) = exif {
+        segment(0xE1, [b"Exif\0\0", exif].concat());
+    }
+    if let Some(icc) = icc {
+        segment(0xE2, [b"ICC_PROFILE\0\x01\x01", icc].concat());
+    }
     out.extend_from_slice(&jpeg[2..]);
     std::fs::write(&path, out).unwrap();
     path
+}
+
+/// Writes an RGBA PNG carrying the given EXIF (eXIf) and ICC (iCCP) chunks.
+pub fn png_with_metadata(dir: &tempfile::TempDir, name: &str, img: &RgbaImage, exif: &[u8], icc: &[u8]) -> PathBuf {
+    use image::ImageEncoder;
+    let path = dir.path().join(name);
+    let mut enc = image::codecs::png::PngEncoder::new(std::fs::File::create(&path).unwrap());
+    enc.set_exif_metadata(exif.to_vec()).unwrap();
+    enc.set_icc_profile(icc.to_vec()).unwrap();
+    enc.write_image(img.as_raw(), img.width(), img.height(), image::ExtendedColorType::Rgba8).unwrap();
+    path
+}
+
+/// True when `needle` occurs anywhere in `haystack`.
+pub fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack.windows(needle.len()).any(|w| w == needle)
 }
 
 /// Writes an .ico with one PNG-payload entry per (w, h), in the given order.
