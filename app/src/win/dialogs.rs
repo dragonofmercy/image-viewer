@@ -9,7 +9,7 @@ use viewer_core::picture::can_save_jxl;
 use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree};
 use windows::Win32::UI::Shell::Common::COMDLG_FILTERSPEC;
-use windows::Win32::UI::Shell::{FOS_FILEMUSTEXIST, FOS_FORCEFILESYSTEM, FOS_OVERWRITEPROMPT, FOS_STRICTFILETYPES, FileOpenDialog, FileSaveDialog, IFileOpenDialog, IFileSaveDialog, IShellItem, SIGDN_FILESYSPATH};
+use windows::Win32::UI::Shell::{FOS_FILEMUSTEXIST, FOS_FORCEFILESYSTEM, FOS_OVERWRITEPROMPT, FileOpenDialog, FileSaveDialog, IFileOpenDialog, IFileSaveDialog, IShellItem, SIGDN_FILESYSPATH};
 use windows::core::{HSTRING, PCWSTR};
 
 /// `*.jpg;*.jpeg;...` from extensions with their leading dot.
@@ -112,9 +112,9 @@ unsafe fn show_save(owner: HWND, suggested_name: &str, filters: &[(String, &str)
             dialog.SetDefaultExtension(&HSTRING::from(ext.trim_start_matches('.')))?;
         }
         dialog.SetFileName(&HSTRING::from(suggested_name))?;
-        // Strict types make the dialog append the filter extension to a name with an unlisted one, so the overwrite prompt sees the final
-        // name. The caller still refuses to replace an existing file whose name changed after the dialog.
-        dialog.SetOptions(dialog.GetOptions()? | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT | FOS_STRICTFILETYPES)?;
+        // No strict file types: they could rewrite a typed `a.png` under the JPG filter. The caller refuses to replace an existing file
+        // whose name changed after the dialog.
+        dialog.SetOptions(dialog.GetOptions()? | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT)?;
         dialog.Show(Some(owner))?;
         let index = dialog.GetFileTypeIndex()? as usize;
         Ok((file_system_path(&dialog.GetResult()?)?, index.saturating_sub(1)))
