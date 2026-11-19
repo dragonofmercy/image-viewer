@@ -96,6 +96,33 @@ pub fn track_geometry(tracker: Tracker, settings: Settings) {
     TRACKER.set(Some((tracker, settings)));
 }
 
+/// Enters or leaves borderless fullscreen (winit: drops WS_OVERLAPPEDWINDOW, then SetWindowPos to the monitor; leaving restores
+/// the styles and the saved placement, maximized included). Winit does it synchronously, so WM_SIZE / WM_MOVE reach the subclass
+/// inside `set_fullscreen`: the tracker stops recording before the window leaves its normal rectangle and resumes only once it is
+/// back, so the monitor rectangle is never recorded. No TRACKER borrow is held across the call.
+pub fn set_fullscreen(window: &slint::Window, fullscreen: bool) {
+    let track = |on: bool| {
+        TRACKER.with_borrow_mut(|t| {
+            if let Some((tracker, _)) = t {
+                tracker.set_fullscreen(on);
+            }
+        });
+    };
+    if fullscreen {
+        track(true);
+    }
+    window.set_fullscreen(fullscreen);
+    if !fullscreen {
+        track(false);
+    }
+}
+
+/// Winit's borderless fullscreen removes the caption style (our window always has it otherwise). Read from the window itself so
+/// WM_NCCALCSIZE follows each style change winit makes, in both directions.
+fn is_fullscreen(hwnd: HWND) -> bool {
+    unsafe { GetWindowLongW(hwnd, GWL_STYLE) as u32 & WS_CAPTION.0 == 0 }
+}
+
 /// Writes the recorded position and size (call on close).
 pub fn flush_geometry() {
     TRACKER.with_borrow(|t| {
@@ -175,6 +202,10 @@ fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
         x: (lparam.0 & 0xffff) as i16 as i32,
         y: ((lparam.0 >> 16) & 0xffff) as i16 as i32,
     };
+    // No caption, no caption buttons, no resize borders in fullscreen.
+    if is_fullscreen(hwnd) {
+        return HTCLIENT;
+    }
     let mut rc = RECT::default();
     unsafe {
         let _ = ScreenToClient(hwnd, &mut pt);
@@ -214,6 +245,8 @@ fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
 unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM, _id: usize, _data: usize) -> LRESULT {
     unsafe {
         match msg {
+            // Fullscreen: the whole window is client area (a window maximized before keeps IsZoomed, so no maximized inset either).
+            WM_NCCALCSIZE if wparam.0 != 0 && is_fullscreen(hwnd) => LRESULT(0),
             WM_NCCALCSIZE if wparam.0 != 0 => {
                 // Let the system compute the left/right/bottom resize borders, then give the caption back to the client area.
                 let params = lparam.0 as *mut NCCALCSIZE_PARAMS;

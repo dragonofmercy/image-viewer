@@ -47,6 +47,31 @@ pub fn title_prefix(i: &Inputs, loading_text: &str, pasted_text: &str) -> Option
     Some(if i.modified { format!("\u{25CF} {name}") } else { name.to_string() })
 }
 
+/// What Escape closes (`Context.EscapeAction`, with the dialog in front).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Target {
+    Dialog,
+    Cropper,
+    InfoPane,
+    Fullscreen,
+    Nothing,
+}
+
+/// The first open layer, from the front: dialog, cropper, info pane, fullscreen. Never quits.
+pub fn escape_target(dialog_open: bool, cropping: bool, info_open: bool, fullscreen: bool) -> Target {
+    if dialog_open {
+        Target::Dialog
+    } else if cropping {
+        Target::Cropper
+    } else if info_open {
+        Target::InfoPane
+    } else if fullscreen {
+        Target::Fullscreen
+    } else {
+        Target::Nothing
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -153,6 +178,19 @@ mod tests {
         let i = Inputs { has_icon_sizes: true, ..file() };
         assert!(flags(&i).icon_strip);
         assert!(!flags(&Inputs { fullscreen: true, ..i }).icon_strip);
+    }
+
+    #[test]
+    fn escape_backs_out_by_priority_and_never_quits() {
+        use Target::*;
+        assert_eq!(escape_target(true, true, true, true), Dialog);
+        assert_eq!(escape_target(false, true, true, true), Cropper);
+        assert_eq!(escape_target(false, false, true, true), InfoPane);
+        assert_eq!(escape_target(false, false, false, true), Fullscreen);
+        assert_eq!(escape_target(false, false, false, false), Nothing);
+        assert_eq!(escape_target(true, false, false, false), Dialog);
+        assert_eq!(escape_target(false, true, false, false), Cropper);
+        assert_eq!(escape_target(false, false, true, false), InfoPane);
     }
 
     #[test]

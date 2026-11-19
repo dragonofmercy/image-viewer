@@ -1,6 +1,6 @@
 //! View controller of the image area: owns the `View` (zoom and offset), the display pyramid, and pushes the result to the Slint properties.
 //!
-//! Interface for the loading and editing tasks: `ImageHost::new(&ui)`, `show(&RgbaImage)` (displays at the fit zoom), `clear()`, `fit()`.
+//! Interface for the loading and editing tasks: `ImageHost::new(&ui)`, `show(&RgbaImage)` (displays at the fit zoom), `clear()`, `fit()`, `fit_after_resize()`.
 //! Zoom and pan callbacks (wheel, drag, resize, `Commands.adjust/zoom-full/zoom-in/zoom-out`) are registered by `new`.
 
 use crate::viewport::{self, View};
@@ -259,6 +259,12 @@ impl ImageHost {
             offset_x: 0.0,
             offset_y: 0.0,
         });
+    }
+
+    /// Fits at the next resize of the view: after a window state change (fullscreen) the view gets its new size only once the
+    /// native resize events, queued behind the current handler, have been processed.
+    pub fn fit_after_resize(&self) {
+        self.state.borrow_mut().fit_pending = true;
     }
 
     fn resized(&self) {

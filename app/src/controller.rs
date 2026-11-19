@@ -108,10 +108,9 @@ impl Controller {
         let c = controller.clone();
         commands.on_paste(move || c.paste());
         let c = controller.clone();
-        // Task 12 extends this with the rest of the Escape priority (crop, fullscreen).
-        commands.on_escape(move || {
-            c.close_info();
-        });
+        commands.on_escape(move || c.escape());
+        let c = controller.clone();
+        commands.on_toggle_fullscreen(move || c.toggle_fullscreen());
         let c = controller.clone();
         ui.on_info_folder_clicked(move || c.open_info_folder());
         let c = controller.clone();
@@ -258,13 +257,49 @@ impl Controller {
         self.update_info();
     }
 
-    /// Closes the pane. Returns false when it was not open (the Escape handler uses it to fall through). Also called by paste.
-    pub fn close_info(&self) -> bool {
-        let Some(ui) = self.ui.upgrade() else { return false };
+    /// Closes the pane (Escape, paste, delete of the last file).
+    fn close_info(&self) {
+        if let Some(ui) = self.ui.upgrade() {
+            ui.global::<AppState>().set_info_open(false);
+        }
+    }
+
+    /// `Context.EscapeAction`: closes the front-most open layer, never quits.
+    fn escape(&self) {
+        let Some(ui) = self.ui.upgrade() else { return };
         let app = ui.global::<AppState>();
-        let was_open = app.get_info_open();
-        app.set_info_open(false);
-        was_open
+        // Task 13: `cropping` comes from the cropper state.
+        let cropping = false;
+        match ui_state::escape_target(ui.get_dialog_open(), cropping, app.get_info_open(), app.get_fullscreen()) {
+            // The dialog's own FocusScope closes it on Escape; one reaching the window must not close what lies behind it.
+            ui_state::Target::Dialog => {}
+            // Task 13: close the cropper here.
+            ui_state::Target::Cropper => {}
+            ui_state::Target::InfoPane => self.close_info(),
+            ui_state::Target::Fullscreen => self.set_fullscreen(false),
+            ui_state::Target::Nothing => {}
+        }
+    }
+
+    /// `ToggleFullScreen` (F11).
+    fn toggle_fullscreen(&self) {
+        if let Some(ui) = self.ui.upgrade() {
+            self.set_fullscreen(!ui.global::<AppState>().get_fullscreen());
+        }
+    }
+
+    /// `SetFullScreen`: the title bar, footer and icon strip hide with `AppState.fullscreen`; the image is refitted to the new view.
+    fn set_fullscreen(&self, on: bool) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        let app = ui.global::<AppState>();
+        if app.get_fullscreen() == on {
+            return;
+        }
+        app.set_fullscreen(on);
+        frame::set_fullscreen(ui.window(), on);
+        self.host.fit_after_resize();
+        // The icon strip flag depends on fullscreen.
+        self.refresh_ui();
     }
 
     /// `Context.UpdateFileInfo`, only while the pane is open (opening refreshes it too).

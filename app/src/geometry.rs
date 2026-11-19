@@ -94,8 +94,6 @@ impl Tracker {
         }
     }
 
-    // shortcut: no caller until the fullscreen task wires it, drop the allow then.
-    #[cfg_attr(not(test), allow(dead_code))]
     pub fn set_fullscreen(&mut self, fullscreen: bool) {
         self.fullscreen = fullscreen;
     }
