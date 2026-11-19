@@ -24,19 +24,16 @@ export component InfoBar inherits Rectangle {
         spacing: 12px;
         VerticalLayout {
             alignment: center;
-            Rectangle {
+            // The glyphs are the filled discs with the mark cut out, so the glyph colour is the disc colour.
+            Text {
                 width: 16px;
                 height: 16px;
-                border-radius: 8px;
-                background: root.severity == 1 ? (Theme.dark ? #6ccb5f : #0f7b0f) : root.severity == 2 ? (Theme.dark ? #fce100 : #9d5d00) : root.severity == 3 ? (Theme.dark ? #ff99a4 : #c42b1c) : Theme.accent;
-                Text {
-                    text: root.severity == 1 ? "\u{2713}" : root.severity == 0 ? "i" : "!";
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: root.severity == 0 ? Theme.text-on-accent : Theme.dark ? #000000 : #ffffff;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
+                text: root.severity == 1 ? "\u{F13E}" : root.severity == 2 ? "\u{F13C}" : root.severity == 3 ? "\u{F13D}" : "\u{F13F}";
+                font-family: "Segoe Fluent Icons";
+                font-size: 16px;
+                color: root.severity == 1 ? (Theme.dark ? #6ccb5f : #0f7b0f) : root.severity == 2 ? (Theme.dark ? #fce100 : #9d5d00) : root.severity == 3 ? (Theme.dark ? #ff99a4 : #c42b1c) : Theme.accent;
+                horizontal-alignment: center;
+                vertical-alignment: center;
             }
         }
         VerticalLayout {
