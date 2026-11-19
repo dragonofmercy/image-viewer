@@ -32,10 +32,17 @@ trait Backend: Send + Sync {
     fn apply(&self) -> Result<(), String>;
 }
 
+/// ureq 3 formats a non-2xx response as "http status: <code>" (inside velopack's "Network error: Http error: ...").
+// shortcut: matches the error text, switch to the typed error if velopack exposes it.
+fn is_server_response(text: &str) -> bool {
+    text.contains("http status: ")
+}
+
 fn message_of(e: velopack::Error) -> String {
+    let text = e.to_string();
     match e {
-        velopack::Error::Network(_) => String::new(),
-        other => other.to_string(),
+        velopack::Error::Network(_) if !is_server_response(&text) => String::new(),
+        _ => text,
     }
 }
 
@@ -348,6 +355,14 @@ mod tests {
                 return;
             }
         }
+    }
+
+    #[test]
+    fn server_status_errors_are_told_apart_from_connection_failures() {
+        assert!(is_server_response("Network error: Http error: http status: 403"));
+        assert!(is_server_response("Network error: Http error: http status: 404"));
+        assert!(!is_server_response("Network error: Http error: io: failed to lookup address information: No such host is known. (os error 11001)"));
+        assert!(!is_server_response("Network error: Http error: timeout: global"));
     }
 
     #[test]
