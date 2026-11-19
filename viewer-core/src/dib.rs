@@ -4,17 +4,37 @@ use image::RgbaImage;
 
 /// Builds a 32 bpp BI_RGB BITMAPINFOHEADER DIB, rows flipped to bottom-up. `top_down_bgra` must hold `width * height * 4` bytes.
 pub fn build_dib(top_down_bgra: &[u8], width: u32, height: u32) -> Vec<u8> {
+    build(top_down_bgra, width, height, false)
+}
+
+/// Same pixels as `build_dib` behind a 124-byte BITMAPV5HEADER (BI_BITFIELDS with an explicit alpha mask, sRGB), for CF_DIBV5:
+/// readers take the alpha channel from it, where a CF_DIB alpha byte is ambiguous.
+pub fn build_dib_v5(top_down_bgra: &[u8], width: u32, height: u32) -> Vec<u8> {
+    build(top_down_bgra, width, height, true)
+}
+
+fn build(top_down_bgra: &[u8], width: u32, height: u32, v5: bool) -> Vec<u8> {
+    let header_size: u32 = if v5 { 124 } else { 40 };
     let stride = width as usize * 4;
     let image_size = stride * height as usize;
-    let mut dib = Vec::with_capacity(40 + image_size);
-    dib.extend_from_slice(&40u32.to_le_bytes()); // biSize
+    let mut dib = Vec::with_capacity(header_size as usize + image_size);
+    dib.extend_from_slice(&header_size.to_le_bytes()); // biSize
     dib.extend_from_slice(&width.to_le_bytes()); // biWidth
     dib.extend_from_slice(&height.to_le_bytes()); // biHeight (positive => bottom-up)
     dib.extend_from_slice(&1u16.to_le_bytes()); // biPlanes
     dib.extend_from_slice(&32u16.to_le_bytes()); // biBitCount
-    dib.extend_from_slice(&0u32.to_le_bytes()); // biCompression = BI_RGB
+    dib.extend_from_slice(&(if v5 { BI_BITFIELDS } else { BI_RGB }).to_le_bytes()); // biCompression
     dib.extend_from_slice(&(image_size as u32).to_le_bytes()); // biSizeImage
     dib.extend_from_slice(&[0; 16]); // biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant
+    if v5 {
+        for mask in [0x00FF_0000u32, 0x0000_FF00, 0x0000_00FF, 0xFF00_0000] {
+            dib.extend_from_slice(&mask.to_le_bytes()); // bV5RedMask, bV5GreenMask, bV5BlueMask, bV5AlphaMask
+        }
+        dib.extend_from_slice(&LCS_SRGB.to_le_bytes()); // bV5CSType
+        dib.extend_from_slice(&[0; 48]); // bV5Endpoints, bV5GammaRed/Green/Blue
+        dib.extend_from_slice(&LCS_GM_IMAGES.to_le_bytes()); // bV5Intent
+        dib.extend_from_slice(&[0; 12]); // bV5ProfileData, bV5ProfileSize, bV5Reserved
+    }
     if stride > 0 {
         for row in top_down_bgra[..image_size].chunks_exact(stride).rev() {
             dib.extend_from_slice(row);
@@ -25,6 +45,9 @@ pub fn build_dib(top_down_bgra: &[u8], width: u32, height: u32) -> Vec<u8> {
 
 const BI_RGB: u32 = 0;
 const BI_BITFIELDS: u32 = 3;
+/// 'sRGB'
+const LCS_SRGB: u32 = 0x7352_4742;
+const LCS_GM_IMAGES: u32 = 4;
 /// Upper bound on the pixel buffer we accept (the buffer must also really contain the data, so this only rejects absurd claims early).
 const MAX_PIXEL_BYTES: u64 = 1 << 32;
 
@@ -222,6 +245,30 @@ mod tests {
         // Pixel bytes [R,G,B,A] as little-endian u32 with masks R=0xFF, G=0xFF00, B=0xFF0000, A=0xFF000000.
         let dib = make_dib(124, 1, 1, 32, 3, Some([0xFF, 0xFF00, 0xFF0000, 0xFF00_0000]), &[10, 20, 30, 40]);
         assert_eq!(parse_dib(&dib).unwrap().get_pixel(0, 0).0, [10, 20, 30, 40]);
+    }
+
+    #[test]
+    fn build_dib_v5_round_trips_with_alpha() {
+        let bgra = [1, 2, 3, 0, 4, 5, 6, 128, 7, 8, 9, 255, 10, 11, 12, 1];
+        let dib = build_dib_v5(&bgra, 2, 2);
+        assert_eq!(dib.len(), 124 + 16);
+        assert_eq!((le32(&dib, 0), le32(&dib, 16), le32(&dib, 52)), (124, 3, 0xFF00_0000u32 as i32));
+        assert_eq!(&dib[56..60], b"BGRs");
+        let img = parse_dib(&dib).unwrap();
+        assert_eq!(img.get_pixel(0, 0).0, [3, 2, 1, 0]);
+        assert_eq!(img.get_pixel(1, 0).0, [6, 5, 4, 128]);
+        assert_eq!(img.get_pixel(1, 1).0, [12, 11, 10, 1]);
+    }
+
+    #[test]
+    fn parse_dib_v5_without_alpha_is_opaque() {
+        // What Windows synthesizes from CF_DIB / CF_BITMAP: no alpha mask, or an alpha mask over zero bytes.
+        let no_mask = make_dib(124, 1, 1, 32, 3, Some([0xFF0000, 0xFF00, 0xFF, 0]), &[1, 2, 3, 99]);
+        assert_eq!(parse_dib(&no_mask).unwrap().get_pixel(0, 0).0, [3, 2, 1, 255]);
+        let zero_alpha = make_dib(124, 1, 1, 32, 3, Some([0xFF0000, 0xFF00, 0xFF, 0xFF00_0000]), &[1, 2, 3, 0]);
+        assert_eq!(parse_dib(&zero_alpha).unwrap().get_pixel(0, 0).0, [3, 2, 1, 255]);
+        let bi_rgb = make_dib(124, 1, 1, 32, 0, None, &[1, 2, 3, 0]);
+        assert_eq!(parse_dib(&bi_rgb).unwrap().get_pixel(0, 0).0, [3, 2, 1, 255]);
     }
 
     #[test]

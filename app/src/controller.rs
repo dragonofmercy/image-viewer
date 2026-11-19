@@ -467,23 +467,24 @@ impl Controller {
         }
     }
 
-    /// `CopyImageToClipboard`: the shown frame as CF_DIB. A failure is only logged, as in 1.x.
+    /// `CopyImageToClipboard`: the shown frame as CF_DIBV5 and CF_DIB (paste prefers CF_DIBV5, so its own copies keep their alpha).
+    /// A failure is only logged, as in 1.x.
     fn copy(&self) {
         let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
-        let dib = {
+        let (v5, dib) = {
             let doc = self.doc.borrow();
             let Some(picture) = doc.picture.as_ref() else { return };
             let (bgra, width, height) = picture.bgra_pixels();
-            dib::build_dib(&bgra, width, height)
+            (dib::build_dib_v5(&bgra, width, height), dib::build_dib(&bgra, width, height))
         };
-        if !clipboard::set_dib(hwnd, &dib) {
+        if !clipboard::set_dibs(hwnd, &v5, &dib) {
             eprintln!("cannot copy the image to the clipboard");
         }
     }
 
-    /// `Window_Paste`: only reacts when the clipboard holds a bitmap. The DIB is parsed on the decode worker; the current image is
-    /// replaced only once it parsed, so a bad payload changes nothing. Refused while a load or a save runs (the loader keeps only
-    /// the latest request, so a paste would drop the pending load's completion).
+    /// `Window_Paste`: only reacts when the clipboard holds a bitmap. The DIB is parsed on the decode worker under the loading state
+    /// of a file load (commands off, ring shown); a payload that fails to parse puts the previous image back untouched. Refused while
+    /// a load, a paste or a save runs (the loader keeps only the latest request, so a paste would drop the pending load's completion).
     fn paste(&self) {
         {
             let doc = self.doc.borrow();
@@ -495,9 +496,9 @@ impl Controller {
         let Some(hwnd) = frame::hwnd_of(ui.window()) else { return };
         let Some(bytes) = clipboard::get_dib(hwnd) else { return };
         self.close_info();
-        // Ring only: the document is untouched until the DIB parsed. Any refresh (another load, the failure) sets it back.
-        ui.set_loading(true);
-        let generation = self.doc.borrow().generation;
+        self.stop_animation();
+        let generation = self.doc.borrow_mut().begin_paste();
+        self.refresh_ui();
         self.loader.request(Source::Dib(bytes), generation, move |generation, result, decode| {
             if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
                 c.pasted(generation, result, decode);
@@ -508,29 +509,29 @@ impl Controller {
     /// `LoadImageFromBuffer`: a parsed DIB becomes an in-memory document with no path (modified from the start). The folder list
     /// is kept, as 1.x only clears `CurrentFilePath`.
     fn pasted(&self, generation: u64, result: Result<Picture, LoadError>, decode: Duration) {
-        // A load or a save started meanwhile: it owns the view now.
-        let current = {
-            let doc = self.doc.borrow();
-            doc.generation == generation && !doc.loading && !doc.saving
-        };
-        if !current {
-            return;
-        }
-        let picture = match result {
-            Ok(picture) => picture,
+        match result {
+            Ok(picture) => {
+                // A load started meanwhile owns the view now (`finished` drops the stale result too, but the path must stay).
+                {
+                    let mut doc = self.doc.borrow_mut();
+                    if doc.generation != generation {
+                        return;
+                    }
+                    doc.path = None;
+                }
+                self.finished(generation, Ok(picture), decode, None);
+            }
             Err(e) => {
+                if !self.doc.borrow_mut().cancel_paste(generation) {
+                    return;
+                }
                 eprintln!("cannot paste the image: {e}");
                 self.refresh_ui();
-                return;
+                if self.doc.borrow().picture.as_ref().is_some_and(Picture::is_animated) {
+                    self.schedule_frame(0);
+                }
             }
-        };
-        self.stop_animation();
-        let generation = {
-            let mut doc = self.doc.borrow_mut();
-            doc.path = None;
-            doc.begin_load()
-        };
-        self.finished(generation, Ok(picture), decode, None);
+        }
     }
 
     /// `ShowErrorAsync`: one dialog at a time, a second one is dropped.

@@ -19,7 +19,7 @@ pub enum Source {
     Path(PathBuf),
     #[allow(dead_code)] // only the worker test builds it; paste hands over the raw DIB so parsing stays off the UI thread
     Pixels(RgbaImage),
-    /// A CF_DIB payload read from the clipboard (untrusted bytes).
+    /// A CF_DIBV5 or CF_DIB payload read from the clipboard (untrusted bytes).
     Dib(Vec<u8>),
 }
 
@@ -34,6 +34,8 @@ pub struct Document {
     pub saving: bool,
     /// File line of the error panel after a failed load (1.x shows the full path; empty for pasted content).
     pub error: Option<String>,
+    /// A paste is parsing: the picture and error panel it replaced, put back when the DIB fails to parse.
+    paste_backup: Option<(Option<Picture>, Option<String>)>,
 }
 
 impl Document {
@@ -43,7 +45,28 @@ impl Document {
         self.loading = true;
         self.picture = None;
         self.error = None;
+        self.paste_backup = None;
         self.generation
+    }
+
+    /// Starts a paste like a load (commands off, ring shown), keeping the current picture and error aside for `cancel_paste`.
+    pub fn begin_paste(&mut self) -> u64 {
+        let backup = (self.picture.take(), self.error.take());
+        let generation = self.begin_load();
+        self.paste_backup = Some(backup);
+        generation
+    }
+
+    /// The pasted DIB did not parse: the previous picture and error come back untouched. False when a newer load took over.
+    pub fn cancel_paste(&mut self, generation: u64) -> bool {
+        if generation != self.generation {
+            return false;
+        }
+        let Some((picture, error)) = self.paste_backup.take() else { return false };
+        self.loading = false;
+        self.picture = picture;
+        self.error = error;
+        true
     }
 
     /// `LoadImageFromString`: None when the file does not exist; otherwise records the absolute path and starts a load.
@@ -62,6 +85,7 @@ impl Document {
             return false;
         }
         self.loading = false;
+        self.paste_backup = None;
         match result {
             Ok(picture) => self.picture = Some(picture),
             Err(e) => {
@@ -514,6 +538,43 @@ mod tests {
         assert_eq!(doc.folder.as_ref().map(|f| f.files.len()), Some(2));
         let inputs = doc.inputs();
         assert!(!inputs.loaded && inputs.has_path && inputs.folder_count == 2);
+    }
+
+    #[test]
+    fn failed_paste_restores_the_previous_state() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let a = dir.path().join("a.png");
+        png(&a);
+        let mut doc = Document::default();
+        let (g, _) = doc.begin_path(&a).expect("a exists");
+        assert!(doc.finish_load(g, picture::load_path(&a)));
+        let paste = doc.begin_paste();
+        // Busy like a load: no picture, so every image command is off.
+        let inputs = doc.inputs();
+        assert!(inputs.loading && !inputs.loaded && inputs.has_path);
+        assert!(doc.cancel_paste(paste));
+        assert!(doc.picture.is_some() && !doc.loading && doc.error.is_none());
+        assert!(!doc.cancel_paste(paste), "only once");
+        // An error panel comes back too.
+        let mut doc = Document { error: Some("x".into()), ..Document::default() };
+        let paste = doc.begin_paste();
+        assert!(doc.error.is_none());
+        assert!(doc.cancel_paste(paste));
+        assert_eq!(doc.error.as_deref(), Some("x"));
+    }
+
+    #[test]
+    fn load_during_a_paste_drops_the_backup() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let a = dir.path().join("a.png");
+        png(&a);
+        let mut doc = Document::default();
+        let paste = doc.begin_paste();
+        let (g, _) = doc.begin_path(&a).expect("a exists");
+        assert!(!doc.cancel_paste(paste));
+        assert!(doc.loading);
+        assert!(doc.finish_load(g, picture::load_path(&a)));
+        assert!(!doc.cancel_paste(g), "no backup left");
     }
 
     #[test]

@@ -1,11 +1,11 @@
-//! CF_DIB on the Win32 clipboard (`Utilities/ClipboardHelper.cs` in 1.x, plus the paste side).
+//! CF_DIBV5 / CF_DIB on the Win32 clipboard (`Utilities/ClipboardHelper.cs` in 1.x, plus the paste side).
 
 use std::time::Duration;
 
 use windows::Win32::Foundation::{GlobalFree, HANDLE, HGLOBAL, HWND};
 use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, GetClipboardData, IsClipboardFormatAvailable, OpenClipboard, SetClipboardData};
 use windows::Win32::System::Memory::{GMEM_MOVEABLE, GlobalAlloc, GlobalLock, GlobalSize, GlobalUnlock};
-use windows::Win32::System::Ole::CF_DIB;
+use windows::Win32::System::Ole::{CF_DIB, CF_DIBV5};
 
 /// Open clipboard; closed on drop, so every path after a successful open closes it.
 struct Open;
@@ -30,13 +30,19 @@ impl Drop for Open {
     }
 }
 
-/// Replaces the clipboard content with `dib` as CF_DIB. False when the clipboard could not be opened or written.
-pub fn set_dib(owner: HWND, dib: &[u8]) -> bool {
+/// Replaces the clipboard content with `dib_v5` as CF_DIBV5 (first: the most descriptive) and `dib` as CF_DIB. False when the
+/// clipboard could not be opened or written.
+pub fn set_dibs(owner: HWND, dib_v5: &[u8], dib: &[u8]) -> bool {
     let Some(_open) = Open::new(owner) else { return false };
     // The clipboard is open on this thread.
     if unsafe { EmptyClipboard() }.is_err() {
         return false;
     }
+    put(CF_DIBV5.0, dib_v5) && put(CF_DIB.0, dib)
+}
+
+/// Adds one format to the open clipboard.
+fn put(format: u16, dib: &[u8]) -> bool {
     // A plain allocation: no pointer is handed out yet.
     let Ok(mem) = (unsafe { GlobalAlloc(GMEM_MOVEABLE, dib.len()) }) else { return false };
     // `mem` is a live movable block we own.
@@ -50,7 +56,7 @@ pub fn set_dib(owner: HWND, dib: &[u8]) -> bool {
     // Balances the lock above; the result reports the lock count, not a failure.
     let _ = unsafe { GlobalUnlock(mem) };
     // On success the system owns `mem`; on failure it is still ours.
-    if unsafe { SetClipboardData(u32::from(CF_DIB.0), Some(HANDLE(mem.0))) }.is_err() {
+    if unsafe { SetClipboardData(u32::from(format), Some(HANDLE(mem.0))) }.is_err() {
         free(mem);
         return false;
     }
@@ -62,11 +68,12 @@ fn free(mem: HGLOBAL) {
     let _ = unsafe { GlobalFree(Some(mem)) };
 }
 
-/// The CF_DIB content of the clipboard (copied out), or None when there is none or the clipboard is busy.
+/// The bitmap of the clipboard (copied out), or None when there is none or the clipboard is busy. CF_DIBV5 comes first: the CF_DIB
+/// that Windows synthesizes from it drops the alpha mask. A CF_DIBV5 synthesized from CF_DIB or CF_BITMAP has an all-zero alpha,
+/// which `parse_dib` reads as opaque.
 pub fn get_dib(owner: HWND) -> Option<Vec<u8>> {
-    let format = u32::from(CF_DIB.0);
     // Checked first so a clipboard without a bitmap is not opened at all.
-    unsafe { IsClipboardFormatAvailable(format) }.ok()?;
+    let format = [CF_DIBV5, CF_DIB].into_iter().map(|f| u32::from(f.0)).find(|&f| unsafe { IsClipboardFormatAvailable(f) }.is_ok())?;
     let _open = Open::new(owner)?;
     // The clipboard is open on this thread; the handle stays the clipboard's and is never freed here.
     let mem = HGLOBAL(unsafe { GetClipboardData(format) }.ok()?.0);
@@ -93,8 +100,8 @@ mod tests {
     #[ignore]
     fn dib_round_trips_through_the_clipboard() {
         let bgra: Vec<u8> = (0..16).collect();
-        let dib = viewer_core::dib::build_dib(&bgra, 2, 2);
-        assert!(set_dib(HWND::default(), &dib));
-        assert_eq!(get_dib(HWND::default()).as_deref(), Some(dib.as_slice()));
+        let (v5, dib) = (viewer_core::dib::build_dib_v5(&bgra, 2, 2), viewer_core::dib::build_dib(&bgra, 2, 2));
+        assert!(set_dibs(HWND::default(), &v5, &dib));
+        assert_eq!(get_dib(HWND::default()).as_deref(), Some(v5.as_slice()));
     }
 }
