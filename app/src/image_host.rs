@@ -19,6 +19,7 @@ const MAX_TEXTURE: u32 = 16384;
 const LEVEL_STOP: u32 = 1024;
 
 type Buffer = SharedPixelBuffer<Rgba8Pixel>;
+type FullSource = Box<dyn Fn() -> Option<Buffer>>;
 
 thread_local! {
     // Worker results come back through the event loop, which can only carry `Send` closures: they reach the host through this.
@@ -141,6 +142,9 @@ pub struct ImageHost {
     wheel_rest: Cell<f32>,
     /// The cropper is open: zoom and pan do not move, a resize refits.
     locked: Cell<bool>,
+    /// Copies the shown picture's pixels again: level 0 is dropped once the pyramid is built and the view does not need it, so a
+    /// large image fitted in the window is held once (by the document), not twice. None when the picture is not available now.
+    full: RefCell<Option<FullSource>>,
 }
 
 impl ImageHost {
@@ -151,6 +155,7 @@ impl ImageHost {
             token: Arc::new(AtomicU64::new(0)),
             wheel_rest: Cell::new(0.0),
             locked: Cell::new(false),
+            full: RefCell::new(None),
         });
         CURRENT.with(|c| *c.borrow_mut() = Rc::downgrade(&host));
         let h = host.clone();
@@ -183,6 +188,11 @@ impl ImageHost {
         let h = host.clone();
         commands.on_zoom_out(move || h.unlocked_update(|v, image, view| viewport::step(v, -0.1, image, view)));
         host
+    }
+
+    /// Sets where level 0 is copied from again after it was dropped (see `full`).
+    pub fn set_full_source(&self, source: impl Fn() -> Option<Buffer> + 'static) {
+        *self.full.borrow_mut() = Some(Box::new(source));
     }
 
     /// Locks zoom and pan while the cropper is open (the controller sets it from the document state). A change refits: while locked
@@ -319,6 +329,11 @@ impl ImageHost {
             s.shown = None;
         }
         self.update(|v, _, _| v);
+        // Pyramid complete and a smaller level on screen: level 0 goes, `update` copies it back if the zoom asks for it.
+        let mut s = self.state.borrow_mut();
+        if index + 1 == s.levels.len() && s.shown.is_some_and(|shown| shown > 0) {
+            s.levels[0] = None;
+        }
     }
 
     /// Computes the next view from the current one, clamps it and pushes everything to the UI. No-op without an image.
@@ -338,8 +353,16 @@ impl ImageHost {
         let view = viewport::clamp(next(current, image, view_size), image, view_size);
         s.view = Some(view);
         let (x, y, w, h) = viewport::image_rect(view, image, view_size);
+        let want = viewport::level_for(view.zoom * scale, s.levels.len());
+        if want == 0
+            && s.levels[0].is_none()
+            && image.0.max(image.1) <= MAX_TEXTURE
+            && let Some(buffer) = self.full.borrow().as_ref().and_then(|full| full()).filter(|b| (b.width(), b.height()) == image)
+        {
+            s.levels[0] = Some(Image::from_rgba8(buffer));
+        }
         let present: Vec<bool> = s.levels.iter().map(Option::is_some).collect();
-        let level = pick_level(&present, viewport::level_for(view.zoom * scale, present.len()));
+        let level = pick_level(&present, want);
         let source = if level != s.shown { level.and_then(|i| s.levels[i].clone()) } else { None };
         if source.is_some() {
             s.shown = level;

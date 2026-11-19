@@ -10,7 +10,7 @@ use image::RgbaImage;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex, mpsc};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 use viewer_core::dib;
 use viewer_core::files::{SAVE_FILE_TYPES, extension_of, normalize_extension};
 use viewer_core::folder::FolderNav;
@@ -103,7 +103,8 @@ impl Document {
 
     /// Applies a load result. Returns false, leaving everything untouched, when `generation` is not the current load.
     pub fn finish_load(&mut self, generation: u64, result: Result<Picture, LoadError>) -> bool {
-        if generation != self.generation {
+        // Not loading: this load was already finished (by a preloaded picture, with the same generation).
+        if generation != self.generation || !self.loading {
             return false;
         }
         self.loading = false;
@@ -138,6 +139,50 @@ impl Document {
             file_name: self.path.as_ref().and_then(|p| p.file_name()).map(|n| n.to_string_lossy().into_owned()),
             ..Inputs::default()
         }
+    }
+}
+
+/// Size and modification time of a file: a cached picture is used only while its file still has the stamp it was decoded under.
+pub type Stamp = (u64, SystemTime);
+
+pub fn stamp(path: &Path) -> Option<Stamp> {
+    let meta = std::fs::metadata(path).ok()?;
+    Some((meta.len(), meta.modified().ok()?))
+}
+
+/// Decoded pictures kept for instant navigation: the one just left and the preloaded neighbor. Bounded in count and in size,
+/// since each entry is a full decoded image (96 MiB for 24 Mpx).
+#[derive(Default)]
+pub struct PictureCache {
+    entries: Vec<(PathBuf, Stamp, Picture)>,
+}
+
+impl PictureCache {
+    const ENTRIES: usize = 2;
+    const ENTRY_BYTES: usize = 256 * 1024 * 1024;
+
+    /// Keeps `picture`, dropping the oldest entry when full. A picture over the size limit is not kept.
+    pub fn put(&mut self, path: PathBuf, stamp: Stamp, picture: Picture) {
+        let bytes: usize = picture.frames().iter().map(|f| f.pixels.as_raw().len()).sum();
+        if bytes > Self::ENTRY_BYTES {
+            return;
+        }
+        self.entries.retain(|e| e.0 != path);
+        if self.entries.len() >= Self::ENTRIES {
+            self.entries.remove(0);
+        }
+        self.entries.push((path, stamp, picture));
+    }
+
+    pub fn contains(&self, path: &Path) -> bool {
+        self.entries.iter().any(|e| e.0 == path)
+    }
+
+    /// Removes and returns the picture of `path` when the file still has the stamp `current`; a stale entry is dropped.
+    pub fn take(&mut self, path: &Path, current: Option<Stamp>) -> Option<(Picture, Stamp)> {
+        let index = self.entries.iter().position(|e| e.0 == path)?;
+        let (_, stamp, picture) = self.entries.remove(index);
+        (Some(stamp) == current).then_some((picture, stamp))
     }
 }
 
@@ -356,6 +401,32 @@ mod tests {
 
     fn png(path: &Path) {
         RgbaImage::from_pixel(3, 2, image::Rgba([1, 2, 3, 255])).save_with_format(path, image::ImageFormat::Png).expect("write png");
+    }
+
+    #[test]
+    fn cache_keeps_two_fresh_pictures() {
+        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
+        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
+        let (a, b, c) = (PathBuf::from("a"), PathBuf::from("b"), PathBuf::from("c"));
+        let mut cache = PictureCache::default();
+        cache.put(a.clone(), stamp(1), pic());
+        cache.put(b.clone(), stamp(2), pic());
+        cache.put(c.clone(), stamp(3), pic());
+        assert!(!cache.contains(&a) && cache.contains(&b) && cache.contains(&c));
+        // The file changed since: the entry is dropped, not returned.
+        assert!(cache.take(&b, Some(stamp(9))).is_none());
+        assert!(!cache.contains(&b));
+        assert!(cache.take(&c, Some(stamp(3))).is_some());
+        assert!(cache.take(&c, Some(stamp(3))).is_none());
+    }
+
+    #[test]
+    fn a_load_finishes_only_once() {
+        let mut doc = Document::default();
+        let g = doc.begin_load();
+        assert!(doc.finish_load(g, Ok(picture::load_from_rgba(RgbaImage::new(1, 1)))));
+        assert!(!doc.finish_load(g, Err(LoadError::Decode("duplicate".into()))));
+        assert!(doc.picture.is_some() && doc.error.is_none());
     }
 
     #[test]

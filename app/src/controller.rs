@@ -17,7 +17,7 @@ use viewer_core::picture::{Flip, LoadError, Picture, Rotate, SaveError};
 use viewer_core::settings::Settings;
 
 use crate::crop::{self, Handle, Sel};
-use crate::document::{CropSession, Document, Loader, Route, Saver, Source, frame_delay, next_icon_index, quality_for, reveal_offset, save_route};
+use crate::document::{CropSession, Document, Loader, PictureCache, Route, Saver, Source, Stamp, frame_delay, next_icon_index, quality_for, reveal_offset, save_route, stamp};
 use crate::file_info;
 use crate::image_host::ImageHost;
 use crate::win::{clipboard, dialogs, locale, shell};
@@ -38,6 +38,15 @@ pub struct Controller {
     host: Rc<ImageHost>,
     doc: RefCell<Document>,
     loader: Loader,
+    /// Decodes the neighbor of the shown file ahead of time, on its own thread so it never delays a real load.
+    preloader: Loader,
+    /// The preload last requested and not yet delivered.
+    preloading: RefCell<Option<(PathBuf, Stamp)>>,
+    cache: RefCell<PictureCache>,
+    /// Stamp of the shown file when its decode started; None when the picture no longer matches a file as decoded (after a save).
+    stamp: Cell<Option<Stamp>>,
+    /// Direction of the last navigation: the preload goes the same way.
+    backward: Cell<bool>,
     saver: Saver,
     /// The window was asked to close during a save: it closes once the save succeeded.
     close_pending: Cell<bool>,
@@ -57,6 +66,11 @@ impl Controller {
             host,
             doc: RefCell::default(),
             loader: Loader::new(),
+            preloader: Loader::new(),
+            preloading: RefCell::new(None),
+            cache: RefCell::default(),
+            stamp: Cell::new(None),
+            backward: Cell::new(false),
             saver: Saver::new(),
             close_pending: Cell::new(false),
             modal: Cell::new(false),
@@ -65,6 +79,14 @@ impl Controller {
             trace: std::env::var_os("IMAGEVIEWER_TRACE").is_some(),
         });
         CURRENT.with(|c| *c.borrow_mut() = Rc::downgrade(&controller));
+        let weak = Rc::downgrade(&controller);
+        controller.host.set_full_source(move || {
+            let c = weak.upgrade()?;
+            // Not available while a caller holds the document or took the picture out: the host then shows a smaller level.
+            let doc = c.doc.try_borrow().ok()?;
+            let pixels = doc.picture.as_ref()?.current();
+            Some(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), pixels.width(), pixels.height()))
+        });
         let commands = ui.global::<Commands>();
         let c = controller.clone();
         // Deferred as 1.x yields before the picker: the dialog does not run inside the key or menu handler.
@@ -210,18 +232,22 @@ impl Controller {
     }
 
     pub fn next(&self) {
+        self.backward.set(false);
         self.navigate(|f| f.next(exists));
     }
 
     pub fn previous(&self) {
+        self.backward.set(true);
         self.navigate(|f| f.prev(exists));
     }
 
     pub fn first(&self) {
+        self.backward.set(false);
         self.navigate(|f| f.first(exists));
     }
 
     pub fn last(&self) {
+        self.backward.set(true);
         self.navigate(|f| f.last(exists));
     }
 
@@ -236,24 +262,99 @@ impl Controller {
     }
 
     /// Starts a load of `path` without touching the folder list. False when the file does not exist.
+    /// The picture being left is kept for a way back, and a picture already decoded (kept, or preloaded) is shown at once.
     fn load(&self, path: &Path) -> bool {
         // A load would replace the picture the running save hands back.
         if self.doc.borrow().saving {
             return false;
         }
-        let started = self.doc.borrow_mut().begin_path(path);
-        if started.is_some() {
-            self.stop_animation();
+        // Only a picture that still is its file as decoded: an edit is not kept.
+        let left = {
+            let mut doc = self.doc.borrow_mut();
+            let keep = !doc.loading && doc.picture.as_ref().is_some_and(|p| !p.modified());
+            match (doc.path.clone(), self.stamp.get()) {
+                (Some(path), Some(stamp)) if keep => doc.picture.take().map(|picture| (path, stamp, picture)),
+                _ => None,
+            }
+        };
+        let Some((generation, path)) = self.doc.borrow_mut().begin_path(path) else {
+            if let Some((_, _, picture)) = left {
+                self.doc.borrow_mut().picture = Some(picture);
+            }
+            return false;
+        };
+        if let Some((path, stamp, picture)) = left {
+            self.cache.borrow_mut().put(path, stamp, picture);
         }
-        let Some((generation, path)) = started else { return false };
-        self.refresh_ui();
+        self.stop_animation();
         let requested = self.trace.then(Instant::now);
+        let cached = self.cache.borrow_mut().take(&path, stamp(&path));
+        if let Some((picture, stamp)) = cached {
+            self.stamp.set(Some(stamp));
+            self.finished(generation, Ok(picture), Duration::ZERO, requested);
+            return true;
+        }
+        self.refresh_ui();
+        // Already decoding as a preload: `preloaded` delivers it to this load.
+        let preloading = self.preloading.borrow().as_ref().filter(|p| p.0 == path).map(|p| p.1);
+        if let Some(stamp) = preloading {
+            self.stamp.set(Some(stamp));
+            return true;
+        }
+        self.stamp.set(stamp(&path));
         self.loader.request(Source::Path(path), generation, move |generation, result, decode| {
             if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
                 c.finished(generation, result, decode, requested);
             }
         });
         true
+    }
+
+    /// Decodes the next file in the direction of the last navigation, so that showing it takes no decode.
+    fn preload_neighbor(&self) {
+        let target = {
+            let doc = self.doc.borrow();
+            let Some(current) = doc.path.as_ref() else { return };
+            // Stepped on a copy: the real position does not move.
+            let Some(mut peek) = doc.folder.clone() else { return };
+            let target = if self.backward.get() { peek.prev(exists) } else { peek.next(exists) };
+            target.filter(|t| t != current)
+        };
+        let Some(target) = target else { return };
+        if self.cache.borrow().contains(&target) || self.preloading.borrow().as_ref().is_some_and(|p| p.0 == target) {
+            return;
+        }
+        let Some(stamp) = stamp(&target) else { return };
+        *self.preloading.borrow_mut() = Some((target.clone(), stamp));
+        let path = target.clone();
+        self.preloader.request(Source::Path(target), 0, move |_, result, _| {
+            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+                c.preloaded(path, stamp, result);
+            }
+        });
+    }
+
+    /// A preload finished: it completes the load waiting for it, or is kept for later.
+    fn preloaded(&self, path: PathBuf, stamp: Stamp, result: Result<Picture, LoadError>) {
+        {
+            let mut preloading = self.preloading.borrow_mut();
+            if preloading.as_ref().is_some_and(|p| p.0 == path) {
+                *preloading = None;
+            }
+        }
+        let (current, waiting) = {
+            let doc = self.doc.borrow();
+            let current = doc.path.as_deref() == Some(path.as_path());
+            (current, (current && doc.loading).then_some(doc.generation))
+        };
+        match (waiting, result) {
+            (Some(generation), result) => {
+                self.stamp.set(Some(stamp));
+                self.finished(generation, result, Duration::ZERO, None);
+            }
+            (None, Ok(picture)) if !current => self.cache.borrow_mut().put(path, stamp, picture),
+            _ => {}
+        }
     }
 
     /// `requested` is set only when tracing.
@@ -284,6 +385,7 @@ impl Controller {
         if animated {
             self.schedule_frame(0);
         }
+        self.preload_neighbor();
     }
 
     /// `ButtonFileInfo_Click` + `PaneOpening`: shows the pane filled from the current file.
@@ -597,6 +699,8 @@ impl Controller {
             doc.saving = false;
             match result {
                 Ok(()) => {
+                    // The file was rewritten (lossy formats differ from the pixels held): this picture is not kept on leaving.
+                    self.stamp.set(None);
                     if let Some(path) = adopt {
                         doc.path = Some(path);
                         doc.list_folder();
