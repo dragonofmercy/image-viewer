@@ -17,6 +17,7 @@ pub struct Inputs {
 pub struct Flags {
     pub image_commands: bool,
     pub save_direct: bool,
+    pub open: bool,
     pub file_info: bool,
     pub navigate: bool,
     pub icon_strip: bool,
@@ -28,6 +29,7 @@ pub fn flags(i: &Inputs) -> Flags {
     Flags {
         image_commands: enabled,
         save_direct: enabled && i.modified,
+        open: !i.saving,
         file_info: enabled && i.has_path,
         navigate: !i.cropping && !i.saving && i.folder_count > 1,
         // Fullscreen hides the strip in main.slint.
@@ -91,6 +93,7 @@ mod tests {
             Flags {
                 image_commands: false,
                 save_direct: false,
+                open: true,
                 file_info: false,
                 navigate: false,
                 icon_strip: false
@@ -137,6 +140,7 @@ mod tests {
             Flags {
                 image_commands: false,
                 save_direct: false,
+                open: true,
                 file_info: false,
                 navigate: false,
                 icon_strip: false
@@ -157,11 +161,13 @@ mod tests {
             Flags {
                 image_commands: false,
                 save_direct: false,
+                open: false,
                 file_info: false,
                 navigate: false,
                 icon_strip: false
             }
         );
+        assert!(flags(&file()).open);
         assert_eq!(title_prefix(&i, "L", "P").as_deref(), Some("\u{25CF} a.png"));
     }
 

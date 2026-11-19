@@ -38,6 +38,7 @@ export global Commands {
 export global AppState {
     in property <bool> image-commands;
     in property <bool> save-direct;
+    in property <bool> open: true;
     in property <bool> file-info;
     // The file information pane is open (the C# SplitView.IsPaneOpen).
     in-out property <bool> info-open;
@@ -69,7 +70,7 @@ export component Footer inherits Rectangle {
                 file-menu.show();
             }
             file-menu := MenuFlyout {
-                MenuItem { glyph: "\u{E7C5}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_OPEN"); shortcut-text: "Ctrl+O"; clicked => { Commands.open(); } }
+                MenuItem { glyph: "\u{E7C5}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_OPEN"); shortcut-text: "Ctrl+O"; enabled: AppState.open; clicked => { Commands.open(); } }
                 MenuSeparator { }
                 MenuItem { glyph: "\u{E946}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_INFO"); shortcut-text: "Ctrl+I"; enabled: AppState.file-info; clicked => { Commands.file-info(); } }
                 MenuItem { glyph: "\u{E74E}"; text: Tr.t("FOOTER_TOOLBAR_MENU_FILE_SAVE"); shortcut-text: "Ctrl+S"; enabled: AppState.save-direct; clicked => { Commands.save(); } }

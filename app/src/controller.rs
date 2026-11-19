@@ -206,7 +206,7 @@ impl Controller {
 
     /// `LoadImageFromPicker`: a file whose extension is not supported is ignored.
     pub fn open_dialog(&self) {
-        if self.dialog_open() {
+        if self.dialog_open() || self.doc.borrow().saving {
             return;
         }
         let Some(hwnd) = self.hwnd() else { return };
@@ -977,6 +977,7 @@ impl Controller {
         let flags = ui_state::flags(&inputs);
         app.set_image_commands(flags.image_commands);
         app.set_save_direct(flags.save_direct);
+        app.set_open(flags.open);
         app.set_file_info(flags.file_info);
         app.set_navigate(flags.navigate);
         app.set_icon_strip(flags.icon_strip);
