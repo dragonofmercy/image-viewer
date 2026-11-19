@@ -184,7 +184,7 @@
     <value>Sans contraintes</value>
   </data>
   <data name="TRANSFORM_CROP_SAME" xml:space="preserve">
-    <value>Proportions d'origne</value>
+    <value>Proportions d'origine</value>
   </data>
   <data name="TRANSFORM_CROP_RESET" xml:space="preserve">
     <value>Ré-initialiser</value>
