@@ -28,8 +28,10 @@ export component Icon inherits Rectangle {
         viewbox-height: root.viewbox-height;
         width: root.size * min(1, root.viewbox-width / root.viewbox-height);
         height: root.size * min(1, root.viewbox-height / root.viewbox-width);
-        x: (root.size - self.width) / 2;
-        y: (root.size - self.height) / 2;
+        // Snapped to whole pixels of the window: an icon centered in an odd-width button would sit on a half pixel and blur
+        // (a font glyph is snapped by the text renderer, a path is not).
+        x: Math.round((root.absolute-position.x + (root.size - self.width) / 2) / 1px) * 1px - root.absolute-position.x;
+        y: Math.round((root.absolute-position.y + (root.size - self.height) / 2) / 1px) * 1px - root.absolute-position.y;
         fill: root.tint;
         fill-rule: evenodd;
     }
