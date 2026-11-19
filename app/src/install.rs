@@ -18,11 +18,20 @@ pub struct Integration {
     root: String,
 }
 
-fn ignore_missing(r: io::Result<()>) -> io::Result<()> {
+/// A missing key, value or folder is `None`: removing or reading something that is already gone is not an error.
+fn optional<T>(r: io::Result<T>) -> io::Result<Option<T>> {
     match r {
-        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
-        other => other,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
+        other => other.map(Some),
     }
+}
+
+fn ignore_missing(r: io::Result<()>) -> io::Result<()> {
+    optional(r).map(drop)
+}
+
+fn exe() -> Option<PathBuf> {
+    std::env::current_exe().map_err(|e| eprintln!("cannot locate the executable: {e}")).ok()
 }
 
 /// `{` + 36 hex digits and dashes + `}`, so the value can never walk out of the CLSID key.
@@ -68,16 +77,8 @@ impl Integration {
 
     /// 1.x registered a Windows App SDK toast activator under the same AUMID: drop its CLSID and the pointer to it.
     pub fn remove_legacy_activator(&self) -> io::Result<()> {
-        let id = match Self::hkcu().open_subkey_with_flags(self.aumid_key(), KEY_READ | KEY_SET_VALUE) {
-            Ok(id) => id,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
-            Err(e) => return Err(e),
-        };
-        let guid = match id.get_value::<String, _>("CustomActivator") {
-            Ok(guid) => guid,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
-            Err(e) => return Err(e),
-        };
+        let Some(id) = optional(Self::hkcu().open_subkey_with_flags(self.aumid_key(), KEY_READ | KEY_SET_VALUE))? else { return Ok(()) };
+        let Some(guid) = optional(id.get_value::<String, _>("CustomActivator"))? else { return Ok(()) };
         if !is_guid(&guid) {
             return Ok(());
         }
@@ -110,20 +111,16 @@ fn legacy_cleanup() {
 }
 
 fn integrate() {
-    match std::env::current_exe() {
-        Ok(exe) => log("register integration", Integration::new("").register(&exe)),
-        Err(e) => eprintln!("cannot locate the executable: {e}"),
+    if let Some(exe) = exe() {
+        log("register integration", Integration::new("").register(&exe));
     }
     log("remove legacy activator", Integration::new("").remove_legacy_activator());
 }
 
 fn uninstall() {
-    match std::env::current_exe().map(|p| p.to_string_lossy().into_owned()) {
-        Ok(exe) => {
-            let plan = FileAssociationPlan::new(&exe, &SUPPORTED_FILE_TYPES);
-            log("unregister file associations", AssociationService::new("", Settings::app()).unregister(&plan));
-        }
-        Err(e) => eprintln!("cannot locate the executable: {e}"),
+    if let Some(exe) = exe() {
+        let plan = FileAssociationPlan::new(&exe.to_string_lossy(), &SUPPORTED_FILE_TYPES);
+        log("unregister file associations", AssociationService::new("", Settings::app()).unregister(&plan));
     }
     log("unregister integration", Integration::new("").unregister());
 }
@@ -150,10 +147,7 @@ pub fn ensure_associations() {
     if !should_register(cfg!(debug_assertions), um.is_some(), um.as_ref().is_some_and(|u| u.get_is_portable())) {
         return;
     }
-    let exe = match std::env::current_exe() {
-        Ok(p) => p,
-        Err(e) => return eprintln!("cannot locate the executable: {e}"),
-    };
+    let Some(exe) = exe() else { return };
     // A lossy path must never reach the registry.
     let Some(exe) = exe.to_str().filter(|e| !e.is_empty()) else {
         return eprintln!("the executable path is not valid Unicode: file associations not written");
