@@ -97,12 +97,6 @@ impl Backend for Velopack {
     }
 }
 
-enum Outcome {
-    Ready,
-    UpToDate,
-    Failed { message: String, during_download: bool },
-}
-
 /// Worker results, delivered on the UI thread.
 enum Msg {
     /// `quiet`: background check, nothing shown but a found update.
@@ -111,7 +105,7 @@ enum Msg {
         quiet: bool,
     },
     Progress(u8),
-    Done(Outcome),
+    Done(State),
 }
 
 type Post = Arc<dyn Fn(Msg) + Send + Sync>;
@@ -254,21 +248,15 @@ impl Updates {
                     self.set_state(State::Downloading(p));
                 }
             }
-            Msg::Done(outcome) => {
+            Msg::Done(state) => {
                 self.downloading.set(false);
                 if self.abandoned.replace(false) {
                     // Nobody is watching: record the outcome without notifying, never apply.
-                    *self.state.borrow_mut() = match outcome {
-                        Outcome::Ready => State::Available,
-                        Outcome::UpToDate => State::UpToDate,
-                        Outcome::Failed { message, during_download } => State::Failed { message, during_download },
-                    };
+                    *self.state.borrow_mut() = state;
                     return;
                 }
-                match outcome {
-                    Outcome::UpToDate => self.set_state(State::UpToDate),
-                    Outcome::Failed { message, during_download } => self.set_state(State::Failed { message, during_download }),
-                    Outcome::Ready => match self.backend.apply() {
+                match state {
+                    State::Available => match self.backend.apply() {
                         Ok(()) => {
                             frame::flush_geometry();
                             crate::win::toast::clear();
@@ -276,6 +264,7 @@ impl Updates {
                         }
                         Err(message) => self.set_state(State::Failed { message, during_download: true }),
                     },
+                    other => self.set_state(other),
                 }
             }
         }
@@ -283,17 +272,17 @@ impl Updates {
 }
 
 /// Worker body of `download_and_restart`.
-fn run_download(backend: &dyn Backend, post: &Post) -> Outcome {
+fn run_download(backend: &dyn Backend, post: &Post) -> State {
     if !backend.has_pending() {
         match backend.check() {
             Ok(true) => {}
-            Ok(false) => return Outcome::UpToDate,
-            Err(message) => return Outcome::Failed { message, during_download: false },
+            Ok(false) => return State::UpToDate,
+            Err(message) => return State::Failed { message, during_download: false },
         }
     }
     match backend.download(&|p| post(Msg::Progress(p))) {
-        Ok(()) => Outcome::Ready,
-        Err(message) => Outcome::Failed { message, during_download: true },
+        Ok(()) => State::Available,
+        Err(message) => State::Failed { message, during_download: true },
     }
 }
 
