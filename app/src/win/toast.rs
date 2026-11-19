@@ -7,16 +7,16 @@ use windows::UI::Notifications::{ToastNotification, ToastNotificationManager};
 use windows::core::{HSTRING, Result};
 
 use crate::install::AUMID;
-use crate::launch::UPDATE_URI;
+use crate::launch::{ABOUT_URI, UPDATE_URI};
 
 fn escape(text: &str) -> String {
     text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&apos;")
 }
 
-/// Toast payload: a text and one protocol button, both activating `UPDATE_URI`.
+/// Toast payload: the body opens About (`ABOUT_URI`), the protocol button starts the update (`UPDATE_URI`).
 fn update_xml(text: &str, button: &str) -> String {
     format!(
-        "<toast launch=\"{UPDATE_URI}\" activationType=\"protocol\"><visual><binding template=\"ToastGeneric\"><text>{}</text></binding></visual><actions><action content=\"{}\" arguments=\"{UPDATE_URI}\" activationType=\"protocol\"/></actions></toast>",
+        "<toast launch=\"{ABOUT_URI}\" activationType=\"protocol\"><visual><binding template=\"ToastGeneric\"><text>{}</text></binding></visual><actions><action content=\"{}\" arguments=\"{UPDATE_URI}\" activationType=\"protocol\"/></actions></toast>",
         escape(text),
         escape(button)
     )
@@ -55,7 +55,7 @@ mod tests {
         let xml = update_xml("A <new> \"version\" & more", "Download");
         assert_eq!(
             xml,
-            "<toast launch=\"dragon-imageviewer:update\" activationType=\"protocol\"><visual><binding template=\"ToastGeneric\"><text>A &lt;new&gt; &quot;version&quot; &amp; more</text></binding></visual><actions><action content=\"Download\" arguments=\"dragon-imageviewer:update\" activationType=\"protocol\"/></actions></toast>"
+            "<toast launch=\"dragon-imageviewer:about\" activationType=\"protocol\"><visual><binding template=\"ToastGeneric\"><text>A &lt;new&gt; &quot;version&quot; &amp; more</text></binding></visual><actions><action content=\"Download\" arguments=\"dragon-imageviewer:update\" activationType=\"protocol\"/></actions></toast>"
         );
     }
 }

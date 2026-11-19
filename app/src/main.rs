@@ -171,6 +171,7 @@ fn main() -> Result<(), slint::PlatformError> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let launch = launch::parse_launch(&args);
     let start_update = matches!(launch, launch::Launch::Update);
+    let from_toast = matches!(launch, launch::Launch::Update | launch::Launch::About);
     if let launch::Launch::File(path) = launch {
         controller.open_startup(path);
     }
@@ -178,15 +179,15 @@ fn main() -> Result<(), slint::PlatformError> {
     let (weak, s, u) = (ui.as_weak(), strings.clone(), updates.clone());
     slint::Timer::single_shot(std::time::Duration::ZERO, move || {
         let s2 = s.clone();
-        // A toast launch skips the quiet check: it would overwrite the download state of the About dialog opened below.
-        if !start_update {
+        // A toast launch skips the quiet check: it would overwrite the state of the About dialog opened below (and show a second toast).
+        if !from_toast {
             u.check_if_due(move || {
                 let tr = |key: &str| s2.borrow().get(key);
                 win::toast::show_update(&tr("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"), &tr("ABOUT_BTN_DOWNLOAD_UPDATE"));
             });
         }
-        if start_update && let Some(ui) = weak.upgrade() {
-            options::show_about(&ui, &s.borrow(), &u, true);
+        if from_toast && let Some(ui) = weak.upgrade() {
+            options::show_about(&ui, &s.borrow(), &u, start_update);
         }
     });
     ui.run()

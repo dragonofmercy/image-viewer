@@ -4,11 +4,13 @@ use std::path::PathBuf;
 
 pub const PROTOCOL: &str = "dragon-imageviewer";
 pub const UPDATE_URI: &str = "dragon-imageviewer:update";
+pub const ABOUT_URI: &str = "dragon-imageviewer:about";
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Launch {
     File(PathBuf),
     Update,
+    About,
     None,
 }
 
@@ -23,7 +25,14 @@ pub fn parse_launch(args: &[OsString]) -> Launch {
     let scheme_len = PROTOCOL.len() + 1;
     if text.len() >= scheme_len && text.is_char_boundary(scheme_len) && text[..scheme_len].eq_ignore_ascii_case(&format!("{PROTOCOL}:")) {
         // Anything else on our protocol is dropped, never opened as a file.
-        return if text[scheme_len..] == UPDATE_URI[scheme_len..] { Launch::Update } else { Launch::None };
+        let rest = &text[scheme_len..];
+        return if rest == &UPDATE_URI[scheme_len..] {
+            Launch::Update
+        } else if rest == &ABOUT_URI[scheme_len..] {
+            Launch::About
+        } else {
+            Launch::None
+        };
     }
     Launch::File(PathBuf::from(arg))
 }
@@ -39,6 +48,9 @@ mod tests {
         assert_eq!(p(&[r"C:\a b\photo.jpg"]), Launch::File(PathBuf::from(r"C:\a b\photo.jpg")));
         assert_eq!(p(&["dragon-imageviewer:update"]), Launch::Update);
         assert_eq!(p(&["DRAGON-IMAGEVIEWER:update"]), Launch::Update);
+        assert_eq!(p(&["dragon-imageviewer:about"]), Launch::About);
+        assert_eq!(p(&["DRAGON-IMAGEVIEWER:about"]), Launch::About);
+        assert_eq!(p(&["dragon-imageviewer:about/"]), Launch::None);
         // Anything else on our protocol is dropped, never opened as a file.
         assert_eq!(p(&["dragon-imageviewer:update/../x"]), Launch::None);
         assert_eq!(p(&[r"dragon-imageviewer:C:\Windows\x.png"]), Launch::None);
