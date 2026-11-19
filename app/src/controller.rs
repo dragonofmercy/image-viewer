@@ -10,6 +10,7 @@ use std::time::{Duration, Instant, SystemTime};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, TimerMode, VecModel};
 use viewer_core::culture::Strings;
+use viewer_core::dib;
 use viewer_core::files::{SAVE_FILE_TYPES, SUPPORTED_FILE_TYPES, is_supported};
 use viewer_core::folder::FolderNav;
 use viewer_core::picture::{Flip, LoadError, Picture, Rotate, SaveError};
@@ -18,7 +19,7 @@ use viewer_core::settings::Settings;
 use crate::document::{Document, Loader, Route, Saver, Source, frame_delay, next_icon_index, quality_for, reveal_offset, save_route};
 use crate::file_info;
 use crate::image_host::ImageHost;
-use crate::win::{dialogs, locale, shell};
+use crate::win::{clipboard, dialogs, locale, shell};
 use crate::{AppState, Commands, IconSizeItem, MainWindow, frame, ui_state, window_title};
 
 thread_local! {
@@ -99,6 +100,10 @@ impl Controller {
         });
         let c = controller.clone();
         commands.on_delete(move || c.delete());
+        let c = controller.clone();
+        commands.on_copy(move || c.copy());
+        let c = controller.clone();
+        commands.on_paste(move || c.paste());
         let c = controller.clone();
         // Task 12 extends this with the rest of the Escape priority (crop, fullscreen).
         commands.on_escape(move || {
@@ -433,6 +438,72 @@ impl Controller {
             self.close_info();
             self.refresh_ui();
         }
+    }
+
+    /// `CopyImageToClipboard`: the shown frame as CF_DIB. A failure is only logged, as in 1.x.
+    fn copy(&self) {
+        let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
+        let dib = {
+            let doc = self.doc.borrow();
+            let Some(picture) = doc.picture.as_ref() else { return };
+            let (bgra, width, height) = picture.bgra_pixels();
+            dib::build_dib(&bgra, width, height)
+        };
+        if !clipboard::set_dib(hwnd, &dib) {
+            eprintln!("cannot copy the image to the clipboard");
+        }
+    }
+
+    /// `Window_Paste`: only reacts when the clipboard holds a bitmap. The DIB is parsed on the decode worker; the current image is
+    /// replaced only once it parsed, so a bad payload changes nothing. Refused while a load or a save runs (the loader keeps only
+    /// the latest request, so a paste would drop the pending load's completion).
+    fn paste(&self) {
+        {
+            let doc = self.doc.borrow();
+            if doc.loading || doc.saving {
+                return;
+            }
+        }
+        let Some(ui) = self.ui.upgrade() else { return };
+        let Some(hwnd) = frame::hwnd_of(ui.window()) else { return };
+        let Some(bytes) = clipboard::get_dib(hwnd) else { return };
+        self.close_info();
+        // Ring only: the document is untouched until the DIB parsed. Any refresh (another load, the failure) sets it back.
+        ui.set_loading(true);
+        let generation = self.doc.borrow().generation;
+        self.loader.request(Source::Dib(bytes), generation, move |generation, result, decode| {
+            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+                c.pasted(generation, result, decode);
+            }
+        });
+    }
+
+    /// `LoadImageFromBuffer`: a parsed DIB becomes an in-memory document with no path (modified from the start). The folder list
+    /// is kept, as 1.x only clears `CurrentFilePath`.
+    fn pasted(&self, generation: u64, result: Result<Picture, LoadError>, decode: Duration) {
+        // A load or a save started meanwhile: it owns the view now.
+        let current = {
+            let doc = self.doc.borrow();
+            doc.generation == generation && !doc.loading && !doc.saving
+        };
+        if !current {
+            return;
+        }
+        let picture = match result {
+            Ok(picture) => picture,
+            Err(e) => {
+                eprintln!("cannot paste the image: {e}");
+                self.refresh_ui();
+                return;
+            }
+        };
+        self.stop_animation();
+        let generation = {
+            let mut doc = self.doc.borrow_mut();
+            doc.path = None;
+            doc.begin_load()
+        };
+        self.finished(generation, Ok(picture), decode, None);
     }
 
     /// `ShowErrorAsync`: one dialog at a time, a second one is dropped.

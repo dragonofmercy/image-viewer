@@ -9,6 +9,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex, mpsc};
 use std::time::{Duration, Instant};
+use viewer_core::dib;
 use viewer_core::files::{SAVE_FILE_TYPES, extension_of, normalize_extension};
 use viewer_core::folder::FolderNav;
 use viewer_core::picture::{self, LoadError, Picture, SaveError};
@@ -16,8 +17,10 @@ use viewer_core::settings::Settings;
 
 pub enum Source {
     Path(PathBuf),
-    #[allow(dead_code)] // first caller: the clipboard task
+    #[allow(dead_code)] // only the worker test builds it; paste hands over the raw DIB so parsing stays off the UI thread
     Pixels(RgbaImage),
+    /// A CF_DIB payload read from the clipboard (untrusted bytes).
+    Dib(Vec<u8>),
 }
 
 #[derive(Default)]
@@ -167,6 +170,12 @@ fn decode(source: Source) -> Result<Picture, LoadError> {
     match source {
         Source::Path(path) => picture::load_path(&path),
         Source::Pixels(pixels) => Ok(picture::load_from_rgba(pixels)),
+        Source::Dib(bytes) => {
+            let parsed = dib::parse_dib(&bytes);
+            // The payload can be 100+ MB: released before the picture is built.
+            drop(bytes);
+            parsed.map(picture::load_from_rgba).map_err(LoadError::Decode)
+        }
     }
 }
 
@@ -447,6 +456,16 @@ mod tests {
         let (pic, result) = save_with_worker(pic, dir.path().join("missing").join("a.png"));
         assert!(result.is_err());
         assert!(pic.modified());
+    }
+
+    #[test]
+    fn pasted_dib_decodes_to_a_modified_picture() {
+        let bgra = [1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255, 10, 11, 12, 255, 13, 14, 15, 255, 16, 17, 18, 255];
+        let pic = decode(Source::Dib(dib::build_dib(&bgra, 3, 2))).expect("valid DIB");
+        assert!(pic.modified());
+        assert_eq!((pic.width(), pic.height()), (3, 2));
+        assert_eq!(pic.current().get_pixel(0, 0).0, [3, 2, 1, 255]);
+        assert!(decode(Source::Dib(vec![0; 8])).is_err());
     }
 
     #[test]

@@ -10,6 +10,7 @@ mod theme;
 mod ui_state;
 mod viewport;
 mod win {
+    pub mod clipboard;
     pub mod dialogs;
     pub mod locale;
     pub mod shell;
