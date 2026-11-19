@@ -21,6 +21,7 @@ export { Tr } from "tr.slint";
 export { Commands, AppState } from "footer.slint";
 export { IconSizeItem } from "icon-strip.slint";
 export { InfoFields } from "info-pane.slint";
+export { CropLayout } from "cropper.slint";
 
 export component MainWindow inherits Window {
     in property <string> title-text;
@@ -110,6 +111,11 @@ export component MainWindow inherits Window {
             // Named keys have no modifier in the XAML accelerators, so Shift must not be held either.
             let bare = plain && !shift;
             let img = AppState.image-commands;
+            // A dropdown left without the keyboard: Enter does nothing and Escape, rejected, makes Slint close the popup.
+            if PopupArea.open && (event.text == Key.Return || event.text == Key.Escape) {
+                return reject;
+            }
+            // Only reached when no control took Enter (a focused button or combo box handles it first).
             if root.cropping && bare && event.text == Key.Return {
                 root.crop-apply();
             } else if ctrl && !alt && !shift && key == "o" {

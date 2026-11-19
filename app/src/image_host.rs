@@ -5,7 +5,7 @@
 //! them off for the cropper.
 
 use crate::viewport::{self, View};
-use crate::{AppState, Commands, MainWindow};
+use crate::{AppState, Commands, CropLayout, MainWindow};
 use image::{ImageBuffer, Rgba, RgbaImage, imageops};
 use slint::{ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer, SharedString};
 use std::cell::{Cell, RefCell};
@@ -185,9 +185,12 @@ impl ImageHost {
         host
     }
 
-    /// Locks zoom and pan while the cropper is open (the controller sets it from the document state).
+    /// Locks zoom and pan while the cropper is open (the controller sets it from the document state). A change refits: while locked
+    /// the image fits above the cropper panel (`CropLayout.bottom-inset`), unlocked the whole view again.
     pub fn set_locked(&self, locked: bool) {
-        self.locked.set(locked);
+        if self.locked.replace(locked) != locked {
+            self.fit();
+        }
     }
 
     /// Current zoom (view px per image px), 1.0 without an image.
@@ -321,7 +324,10 @@ impl ImageHost {
     /// Computes the next view from the current one, clamps it and pushes everything to the UI. No-op without an image.
     fn update(&self, next: impl FnOnce(View, (u32, u32), (f32, f32)) -> View) {
         let Some(ui) = self.ui.upgrade() else { return };
-        let view_size = (ui.get_view_width(), ui.get_view_height());
+        let mut view_size = (ui.get_view_width(), ui.get_view_height());
+        if self.locked.get() {
+            view_size = viewport::inset(view_size, ui.global::<CropLayout>().get_bottom_inset());
+        }
         let scale = ui.window().scale_factor();
         let mut s = self.state.borrow_mut();
         if s.levels.is_empty() {

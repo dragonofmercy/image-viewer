@@ -2,13 +2,18 @@ import { Theme } from "../theme.slint";
 import { Icon } from "icon.slint";
 import { FocusReturn } from "menu-flyout.slint";
 
-// Height of the window, kept by the root window: the dropdown opens upward when it would not fit below the box.
 export global PopupArea {
+    // Height of the window, kept by the root window: the dropdown opens upward when it would not fit below the box.
     in-out property <length> height;
+    // A dropdown is open: the root window leaves Enter and Escape to it.
+    in-out property <bool> open;
 }
 
 // WinUI ComboBox: a 32px box showing the selected entry; the dropdown lists `model` with the selected row marked by an accent pill.
-// Set the builtin `min-width` to size it.
+// Sized to its longest entry (at most 320px) unless the builtin `min-width` is set.
+// Keyboard: Tab reaches it; Up/Down change the selection; Space, Enter, F4 or Alt+Down open the dropdown, where Up/Down move the
+// highlight, Enter or Space selects and Escape closes without a change. The keyboard comes back to the box after the dropdown closes
+// (to the window when the pointer opened it).
 export component ComboBox inherits Rectangle {
     in property <[string]> model;
     in-out property <int> current-index;
@@ -19,14 +24,34 @@ export component ComboBox inherits Rectangle {
     // preferred height of its content.
     property <length> dropdown-height: root.model.length * root.row-height + 2 * 3px;
     property <bool> fits-below: root.absolute-position.y + root.height + 4px + root.dropdown-height <= PopupArea.height;
+    // Row under the keyboard while the dropdown is open.
+    property <int> highlight;
+    property <bool> by-pointer;
 
     property <bool> popup-open: popup.is-open;
     changed popup-open => {
-        if !root.popup-open {
+        PopupArea.open = root.popup-open;
+        // Slint gives the focus back to the item that had it when the popup opened: the box, or the window for a pointer open.
+        if !root.popup-open && root.by-pointer {
             FocusReturn.token += 1;
         }
     }
 
+    function open(pointer: bool) {
+        root.by-pointer = pointer;
+        root.highlight = root.current-index;
+        popup.show();
+    }
+
+    // Selects entry `i` when it exists and differs from the current one.
+    function choose(i: int) {
+        if i >= 0 && i < root.model.length && i != root.current-index {
+            root.current-index = i;
+            root.selected(i);
+        }
+    }
+
+    min-width: min(320px, measure.preferred-width + 2 * 11px + 8px + 12px);
     height: 32px;
     border-radius: Theme.control-radius;
     border-width: 1px;
@@ -35,7 +60,16 @@ export component ComboBox inherits Rectangle {
     accessible-role: combobox;
     accessible-value: root.model[root.current-index];
     accessible-action-default => {
-        popup.show();
+        root.open(false);
+    }
+
+    // Widest entry, never shown.
+    measure := VerticalLayout {
+        visible: false;
+        height: 0px;
+        for label in root.model: Text {
+            text: label;
+        }
     }
 
     HorizontalLayout {
@@ -56,10 +90,40 @@ export component ComboBox inherits Rectangle {
         }
     }
 
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(event) => {
+            let plain = !event.modifiers.control && !event.modifiers.alt && !event.modifiers.shift;
+            if event.modifiers.alt && !event.modifiers.control && event.text == Key.DownArrow {
+                root.open(false);
+            } else if plain && (event.text == Key.Space || event.text == Key.Return || event.text == Key.F4) {
+                root.open(false);
+            } else if plain && event.text == Key.UpArrow {
+                root.choose(root.current-index - 1);
+            } else if plain && event.text == Key.DownArrow {
+                root.choose(root.current-index + 1);
+            } else {
+                return reject;
+            }
+            accept
+        }
+    }
+
     touch := TouchArea {
         clicked => {
-            popup.show();
+            root.open(true);
         }
+    }
+
+    // Focus visual (keyboard only: a click does not focus the box).
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        border-radius: Theme.control-radius + 3px;
+        border-width: 2px;
+        border-color: Theme.text-primary;
     }
 
     popup := PopupWindow {
@@ -67,47 +131,66 @@ export component ComboBox inherits Rectangle {
         x: 0px;
         y: root.fits-below ? root.height + 4px : -root.dropdown-height - 4px;
         width: root.width;
-        Rectangle {
-            background: Theme.combo-dropdown-background;
-            border-width: 1px;
-            border-color: Theme.surface-stroke-flyout;
-            border-radius: Theme.overlay-radius;
-            VerticalLayout {
-                padding: 1px;
-                padding-top: 3px;
-                padding-bottom: 3px;
-                for label[i] in root.model: Rectangle {
-                    height: root.row-height;
-                    // 4px side margin around the highlighted row.
-                    Rectangle {
-                        x: 4px;
-                        y: 2px;
-                        width: parent.width - 8px;
-                        height: parent.height - 4px;
-                        border-radius: Theme.control-radius;
-                        background: row.pressed ? Theme.subtle-fill-tertiary : row.has-hover || i == root.current-index ? Theme.subtle-fill-secondary : transparent;
-                    }
-                    if i == root.current-index: Rectangle {
-                        x: 4px;
-                        y: (parent.height - self.height) / 2;
-                        width: 3px;
-                        height: 16px;
-                        border-radius: 1.5px;
-                        background: Theme.accent;
-                    }
-                    Text {
-                        x: 4px + 12px;
-                        width: parent.width - 2 * (4px + 12px);
-                        text: label;
-                        color: Theme.text-primary;
-                        vertical-alignment: center;
-                        overflow: elide;
-                    }
-                    row := TouchArea {
-                        clicked => {
-                            root.current-index = i;
-                            root.selected(i);
-                            popup.close();
+        // Takes the keyboard while open; key events do not bubble out of a popup, so the window never sees them.
+        keys := FocusScope {
+            init => {
+                self.focus();
+            }
+            key-pressed(event) => {
+                if event.text == Key.UpArrow {
+                    root.highlight = max(0, root.highlight - 1);
+                } else if event.text == Key.DownArrow {
+                    root.highlight = min(root.model.length - 1, root.highlight + 1);
+                } else if event.text == Key.Return || event.text == Key.Space {
+                    root.choose(root.highlight);
+                    popup.close();
+                } else if event.text == Key.Escape {
+                    popup.close();
+                }
+                // Everything else is swallowed: no window shortcut runs under the open dropdown.
+                accept
+            }
+            Rectangle {
+                background: Theme.combo-dropdown-background;
+                border-width: 1px;
+                border-color: Theme.surface-stroke-flyout;
+                border-radius: Theme.overlay-radius;
+                VerticalLayout {
+                    padding: 1px;
+                    padding-top: 3px;
+                    padding-bottom: 3px;
+                    for label[i] in root.model: Rectangle {
+                        height: root.row-height;
+                        // 4px side margin around the highlighted row.
+                        Rectangle {
+                            x: 4px;
+                            y: 2px;
+                            width: parent.width - 8px;
+                            height: parent.height - 4px;
+                            border-radius: Theme.control-radius;
+                            background: row.pressed ? Theme.subtle-fill-tertiary : row.has-hover || i == root.highlight ? Theme.subtle-fill-secondary : transparent;
+                        }
+                        if i == root.current-index: Rectangle {
+                            x: 4px;
+                            y: (parent.height - self.height) / 2;
+                            width: 3px;
+                            height: 16px;
+                            border-radius: 1.5px;
+                            background: Theme.accent;
+                        }
+                        Text {
+                            x: 4px + 12px;
+                            width: parent.width - 2 * (4px + 12px);
+                            text: label;
+                            color: Theme.text-primary;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        row := TouchArea {
+                            clicked => {
+                                root.choose(i);
+                                popup.close();
+                            }
                         }
                     }
                 }

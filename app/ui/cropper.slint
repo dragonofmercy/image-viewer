@@ -3,6 +3,13 @@ import { Tr } from "tr.slint";
 import { Button, AccentButton } from "widgets/button.slint";
 import { ComboBox } from "widgets/combo-box.slint";
 
+// Fixed size of the floating panel: 32px controls plus 5px padding (4px and the 1px border) on each side. While cropping the image
+// view fits the image above `bottom-inset`: the panel, its 16px margin and a 16px gap (image_host.rs reads it).
+export global CropLayout {
+    out property <length> panel-height: 32px + 2 * 5px;
+    out property <length> bottom-inset: root.panel-height + 16px + 16px;
+}
+
 // Reports a left-button drag as the pointer offset from where it began, in window coordinates: the area itself moves with the selection.
 component DragArea inherits TouchArea {
     in property <int> handle;
@@ -32,23 +39,24 @@ component DragArea inherits TouchArea {
     }
 }
 
-// A 7px square thumb (1.x ImageCropper thumb style) centered on (cx, cy), with a 15px hit box.
+// A 7px square thumb (1.x ImageCropper thumb style) centered on (cx, cy), with a `hit` square hit box.
 component Thumb inherits Rectangle {
     in property <length> cx;
     in property <length> cy;
+    in property <length> hit: 15px;
     in property <int> handle;
     in property <MouseCursor> cursor;
     callback drag-start(int);
     callback drag-move(length, length);
 
-    x: root.cx - 7.5px;
-    y: root.cy - 7.5px;
-    width: 15px;
-    height: 15px;
+    x: root.cx - root.hit / 2;
+    y: root.cy - root.hit / 2;
+    width: root.hit;
+    height: root.hit;
 
     Rectangle {
-        x: 4px;
-        y: 4px;
+        x: (root.hit - 7px) / 2;
+        y: (root.hit - 7px) / 2;
         width: 7px;
         height: 7px;
         background: Theme.title-button-pressed;
@@ -95,6 +103,8 @@ export component Cropper inherits Rectangle {
     property <length> sw: root.sel-w * root.unit;
     property <length> sh: root.sel-h * root.unit;
     property <color> dim: #000000.with-alpha(0.5);
+    // Thumb hit boxes shrink on a small selection so the middle third stays a move zone (at least 4px, so corners stay reachable).
+    property <length> hit: max(4px, min(15px, min(root.sw, root.sh) / 3));
 
     // Swallows the pointer and the wheel: zoom and pan are locked while cropping.
     TouchArea {
@@ -139,6 +149,7 @@ export component Cropper inherits Rectangle {
         { handle: 7, cx: root.sx, cy: root.sy + root.sh, cursor: MouseCursor.nesw-resize },
     ]: Thumb {
         handle: t.handle;
+        hit: root.hit;
         cx: t.cx;
         cy: t.cy;
         cursor: t.cursor;
@@ -155,7 +166,7 @@ export component Cropper inherits Rectangle {
         x: (parent.width - self.width) / 2;
         y: parent.height - self.height - 16px;
         width: panel.preferred-width;
-        height: panel.preferred-height;
+        height: CropLayout.panel-height;
         border-radius: Theme.overlay-radius;
         background: Theme.pane-background;
         border-width: 1px;
@@ -170,7 +181,6 @@ export component Cropper inherits Rectangle {
             padding: 5px;
             spacing: 8px;
             ComboBox {
-                min-width: 120px;
                 model: root.ratios;
                 current-index <=> root.ratio-index;
                 selected(i) => {
@@ -185,6 +195,8 @@ export component Cropper inherits Rectangle {
             }
             Button {
                 glyph: "\u{E711}";
+                // 1.x has no cancel or close string (its cancel button had none either): the reset key is the closest.
+                accessible-label: Tr.t("TRANSFORM_CROP_RESET");
                 clicked => {
                     root.cancel();
                 }

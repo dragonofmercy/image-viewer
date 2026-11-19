@@ -360,8 +360,8 @@ impl Controller {
         self.edit(|p| p.rotate_flip(rotate, flip));
     }
 
-    /// `ButtonImageCrop_Click`, inline: the animation stops, the image is fitted and locked (through `refresh_ui`), every command is
-    /// off, the selection covers the whole image with the free ratio.
+    /// `ButtonImageCrop_Click`, inline: the animation stops, the info pane closes, the image is fitted above the panel and locked
+    /// (through `refresh_ui`), every command is off, the selection covers the whole image with the free ratio.
     fn start_crop(&self) {
         let session = {
             let mut doc = self.doc.borrow_mut();
@@ -373,10 +373,12 @@ impl Controller {
             session
         };
         self.stop_animation();
-        self.host.fit();
+        // The pane would cover the right handles.
+        self.close_info();
         if let Some(ui) = self.ui.upgrade() {
             ui.set_crop_ratio_index(0);
         }
+        // Locks the host, which refits the image above the panel.
         self.refresh_ui();
         self.push_crop(session.sel);
     }

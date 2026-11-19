@@ -28,6 +28,11 @@ pub fn fit_zoom(image: (u32, u32), view: Size) -> f32 {
     if iw > view.0 || ih > view.1 { (view.1 / ih).min(view.0 / iw) } else { 1.0 }
 }
 
+/// The view minus a band at the bottom (the cropper panel): fit, clamp and placement then work in the area above it.
+pub fn inset(view: Size, bottom: f32) -> Size {
+    (view.0, (view.1 - bottom).max(0.0))
+}
+
 /// The fit zoom may be below `MIN_ZOOM` for a huge image: it must stay reachable.
 fn min_zoom(image: (u32, u32), view: Size) -> f32 {
     MIN_ZOOM.min(fit_zoom(image, view))
@@ -252,6 +257,20 @@ mod tests {
         assert!(w1 > VIEW.0 && h1 > VIEW.1);
         assert!((x1 + pixel.0 * n.zoom - cursor.0).abs() < 0.5);
         assert!((y1 + pixel.1 * n.zoom - cursor.1).abs() < 0.5);
+    }
+
+    #[test]
+    fn bottom_inset_fits_and_centers_above_it() {
+        let image = (1000, 1000);
+        let area = inset((1000.0, 800.0), 84.0);
+        assert_eq!(area, (1000.0, 716.0));
+        let zoom = fit_zoom(image, area);
+        assert_eq!(zoom, 0.716);
+        let (x, y, w, h) = image_rect(View { zoom, offset_x: 0.0, offset_y: 0.0 }, image, area);
+        assert_eq!((x, y, w, h), (142.0, 0.0, 716.0, 716.0));
+        // A small image is centered in the reduced area, not in the whole view.
+        assert_eq!(image_rect(view(1.0, 0.0, 0.0), (100, 100), area).1, 308.0);
+        assert_eq!(inset((1000.0, 50.0), 84.0), (1000.0, 0.0));
     }
 
     #[test]

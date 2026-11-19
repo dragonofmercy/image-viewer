@@ -15,6 +15,14 @@ component ButtonBase inherits Rectangle {
     border-color: root.accent ? transparent : Theme.control-stroke;
     background: root.accent ? (!root.enabled ? Theme.accent.with-alpha(0.37) : touch.pressed ? Theme.accent-pressed : touch.has-hover ? Theme.accent-hover : Theme.accent)
         : (!root.enabled ? Theme.control-fill : touch.pressed ? Theme.control-fill-pressed : touch.has-hover ? Theme.control-fill-hover : Theme.control-fill);
+    accessible-role: button;
+    // An icon-only button sets its own label.
+    accessible-label: root.text;
+    accessible-action-default => {
+        if root.enabled {
+            root.clicked();
+        }
+    }
 
     HorizontalLayout {
         padding-left: 11px;
@@ -34,11 +42,34 @@ component ButtonBase inherits Rectangle {
         }
     }
 
+    // Tab reaches the button; Enter or Space activates it. A click does not focus it.
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(event) => {
+            if !event.modifiers.control && !event.modifiers.alt && !event.modifiers.shift && (event.text == Key.Return || event.text == Key.Space) {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+
     touch := TouchArea {
         enabled: root.enabled;
         clicked => {
             root.clicked();
         }
+    }
+
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        border-radius: Theme.control-radius + 3px;
+        border-width: 2px;
+        border-color: Theme.text-primary;
     }
 }
 
