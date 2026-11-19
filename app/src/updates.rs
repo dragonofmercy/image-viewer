@@ -130,6 +130,7 @@ pub struct Updates {
     found: RefCell<Option<Box<dyn FnOnce()>>>,
     downloading: Cell<bool>,
     abandoned: Cell<bool>,
+    progress: Cell<u8>,
 }
 
 impl Updates {
@@ -149,6 +150,7 @@ impl Updates {
             found: RefCell::new(None),
             downloading: Cell::new(false),
             abandoned: Cell::new(false),
+            progress: Cell::new(0),
         })
     }
 
@@ -194,6 +196,10 @@ impl Updates {
 
     /// Checks first when nothing is pending.
     pub fn download_and_restart(self: &Rc<Self>) {
+        // About was reopened while the abandoned download still runs: adopt it.
+        if self.downloading.get() && self.abandoned.replace(false) {
+            return self.set_state(State::Downloading(self.progress.get()));
+        }
         if self.busy() {
             return;
         }
@@ -201,7 +207,7 @@ impl Updates {
             return self.set_state(State::UpToDate);
         }
         self.downloading.set(true);
-        self.abandoned.set(false);
+        self.progress.set(0);
         self.set_state(State::Downloading(0));
         let (backend, post) = (self.backend.clone(), self.post.clone());
         std::thread::spawn(move || post(Msg::Done(run_download(&*backend, &post))));
@@ -209,7 +215,7 @@ impl Updates {
 
     /// About closed during a download: the update is not applied.
     pub fn abandon(&self) {
-        if self.downloading.get() && matches!(*self.state.borrow(), State::Downloading(_)) {
+        if self.downloading.get() {
             self.abandoned.set(true);
             *self.state.borrow_mut() = State::Available;
         }
@@ -219,6 +225,10 @@ impl Updates {
         match msg {
             Msg::Checked { result, quiet } => {
                 let found = self.found.borrow_mut().take();
+                // A background check ended while the user started a download: it must not overwrite the download state.
+                if self.downloading.get() {
+                    return;
+                }
                 match result {
                     Ok(true) => {
                         self.set_state(State::Available);
@@ -232,11 +242,21 @@ impl Updates {
                     Err(message) => self.set_state(State::Failed { message, during_download: false }),
                 }
             }
-            Msg::Progress(p) if !self.abandoned.get() => self.set_state(State::Downloading(p)),
-            Msg::Progress(_) => {}
+            Msg::Progress(p) => {
+                self.progress.set(p);
+                if !self.abandoned.get() {
+                    self.set_state(State::Downloading(p));
+                }
+            }
             Msg::Done(outcome) => {
                 self.downloading.set(false);
                 if self.abandoned.replace(false) {
+                    // Nobody is watching: record the outcome without notifying, never apply.
+                    *self.state.borrow_mut() = match outcome {
+                        Outcome::Ready => State::Available,
+                        Outcome::UpToDate => State::UpToDate,
+                        Outcome::Failed { message, during_download } => State::Failed { message, during_download },
+                    };
                     return;
                 }
                 match outcome {
@@ -367,5 +387,29 @@ mod tests {
         pump(&updates, &rx);
         assert_eq!(updates.state(), State::Available);
         assert_eq!(backend.applied.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn quiet_check_during_download_does_not_unabandon_it() {
+        let backend = Fake::new(true, Ok(true));
+        let (updates, rx, _seen) = rig(backend.clone());
+        updates.download_and_restart();
+        updates.on_msg(Msg::Checked { result: Ok(true), quiet: true });
+        assert_eq!(updates.state(), State::Downloading(0));
+        updates.abandon();
+        pump(&updates, &rx);
+        assert_eq!(backend.applied.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn reopening_adopts_an_abandoned_download() {
+        let backend = Fake::new(true, Ok(true));
+        let (updates, rx, _seen) = rig(backend.clone());
+        updates.download_and_restart();
+        updates.abandon();
+        updates.download_and_restart();
+        assert!(matches!(updates.state(), State::Downloading(_)));
+        // The fake's Done(Ready) would now apply and quit the loop: only check the adoption, not the apply.
+        drop(rx);
     }
 }
