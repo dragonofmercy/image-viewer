@@ -24,16 +24,30 @@ export component InfoBar inherits Rectangle {
         spacing: 12px;
         VerticalLayout {
             alignment: center;
-            // The glyphs are the filled discs with the mark cut out, so the glyph colour is the disc colour.
-            Text {
+            // As WinUI: the symbol (F13x) is drawn over the filled disc (F136).
+            Rectangle {
                 width: 16px;
                 height: 16px;
-                text: root.severity == 1 ? "\u{F13E}" : root.severity == 2 ? "\u{F13C}" : root.severity == 3 ? "\u{F13D}" : "\u{F13F}";
-                font-family: "Segoe Fluent Icons";
-                font-size: 16px;
-                color: root.severity == 1 ? (Theme.dark ? #6ccb5f : #0f7b0f) : root.severity == 2 ? (Theme.dark ? #fce100 : #9d5d00) : root.severity == 3 ? (Theme.dark ? #ff99a4 : #c42b1c) : Theme.accent;
-                horizontal-alignment: center;
-                vertical-alignment: center;
+                Text {
+                    width: 16px;
+                    height: 16px;
+                    text: "\u{F136}";
+                    font-family: "Segoe Fluent Icons";
+                    font-size: 16px;
+                    color: root.severity == 1 ? (Theme.dark ? #6ccb5f : #0f7b0f) : root.severity == 2 ? (Theme.dark ? #fce100 : #9d5d00) : root.severity == 3 ? (Theme.dark ? #ff99a4 : #c42b1c) : Theme.accent;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Text {
+                    width: 16px;
+                    height: 16px;
+                    text: root.severity == 1 ? "\u{F13E}" : root.severity == 2 ? "\u{F13C}" : root.severity == 3 ? "\u{F13D}" : "\u{F13F}";
+                    font-family: "Segoe Fluent Icons";
+                    font-size: 16px;
+                    color: Theme.dark ? #000000 : #ffffff;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
             }
         }
         VerticalLayout {
