@@ -7,6 +7,8 @@ mod file_info;
 mod frame;
 mod geometry;
 mod image_host;
+mod install;
+mod launch;
 mod options;
 mod theme;
 mod ui_state;
@@ -21,7 +23,6 @@ mod win {
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 use viewer_core::culture::{Strings, resolve_language};
 use viewer_core::settings::{Settings, Theme as ThemeSetting, WindowState};
@@ -75,6 +76,7 @@ pub(crate) fn choose_theme(ui: &MainWindow, setting: ThemeSetting) {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
+    install::run_hooks();
     let default_backend = || slint::BackendSelector::new().backend_name("winit".into()).renderer_name("skia-software".into()).select();
     // An unforced selector lets Slint read SLINT_BACKEND (for example winit-skia-software).
     if std::env::var_os("SLINT_BACKEND").is_some_and(|v| !v.is_empty()) {
@@ -154,8 +156,12 @@ fn main() -> Result<(), slint::PlatformError> {
         slint::CloseRequestResponse::HideWindow
     });
     // Paths may be relative and non-ASCII: kept as OsString, made absolute by the document.
-    if let Some(arg) = std::env::args_os().nth(1) {
-        controller.open_startup(PathBuf::from(arg));
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let launch = launch::parse_launch(&args);
+    // Consumed by the update flow (Task 5).
+    let _start_update = matches!(launch, launch::Launch::Update);
+    if let launch::Launch::File(path) = launch {
+        controller.open_startup(path);
     }
     ui.run()
 }

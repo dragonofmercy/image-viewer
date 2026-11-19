@@ -14,6 +14,8 @@ raw-window-handle = "0.6.2"
 windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_UI_HiDpi", "Win32_Graphics_Gdi", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_Registry", "Win32_Graphics_Dwm", "Win32_Globalization", "Win32_System_Com", "Win32_System_Ole", "Win32_UI_Shell_Common", "Win32_System_Time", "Win32_System_DataExchange", "Win32_System_Memory"] }
 viewer-core = { path = "../viewer-core" }
 image = { version = "0.25.10", default-features = false }
+velopack = "=1.2.161"
+winreg = "0.56.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"
