@@ -70,6 +70,18 @@ export component ContentDialog inherits Rectangle {
             accept
         }
 
+        // WinUI dialog elevation. On its own rectangle: the card clips its content.
+        Rectangle {
+            x: card.x;
+            y: card.y;
+            width: card.width;
+            height: card.height;
+            border-radius: Theme.overlay-radius;
+            background: Theme.window-background;
+            drop-shadow-blur: 48px;
+            drop-shadow-offset-y: 16px;
+            drop-shadow-color: Theme.dialog-shadow;
+        }
         card := Rectangle {
             width: min(max(744px, min(1280px, content.preferred-width)), root.width - 48px);
             height: min(max(64px, content.preferred-height), root.height - 48px);
@@ -77,7 +89,7 @@ export component ContentDialog inherits Rectangle {
             y: (root.height - self.height) / 2;
             background: Theme.window-background;
             border-width: 1px;
-            border-color: Theme.surface-stroke-flyout;
+            border-color: Theme.dialog-stroke;
             border-radius: Theme.overlay-radius;
             clip: true;
             // Clicks on the card do not fall through to the smoke.
