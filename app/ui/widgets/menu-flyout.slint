@@ -24,9 +24,10 @@ export global FocusReturn {
 }
 
 export component MenuSeparator inherits Rectangle {
-    height: 9px;
+    // WinUI: 1px line with 1px padding above and below; the 2px item margins supply the rest of the gap.
+    height: 3px;
     Rectangle {
-        y: 4px;
+        y: 1px;
         height: 1px;
         background: Theme.menu-separator;
     }
@@ -42,13 +43,15 @@ export component MenuItem inherits Rectangle {
     in property <bool> enabled: true;
     callback clicked;
 
-    height: 36px;
+    // WinUI mouse-invoked metrics: 29px highlighted row (narrow padding) inside a 4px side / 2px vertical margin.
+    height: 33px;
     min-width: 200px;
 
-    // 4px side margin around the highlighted row.
     Rectangle {
         x: 4px;
+        y: 2px;
         width: parent.width - 8px;
+        height: parent.height - 4px;
         border-radius: Theme.control-radius;
         background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
     }
