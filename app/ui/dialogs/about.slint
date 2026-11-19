@@ -66,6 +66,11 @@ export component AboutDialog inherits ContentDialog {
                     }
                 }
             }
+            // Attribution required by the Slint royalty-free license.
+            AboutSlint {
+                width: 150px;
+                height: 96px;
+            }
             VerticalLayout {
                 alignment: start;
                 padding-top: 5px;
@@ -93,15 +98,6 @@ export component AboutDialog inherits ContentDialog {
             padding-top: 4px;
             InfoBar {
                 open: false;
-            }
-        }
-        // Attribution required by the Slint royalty-free license.
-        HorizontalLayout {
-            padding-top: 16px;
-            alignment: center;
-            AboutSlint {
-                width: 150px;
-                height: 96px;
             }
         }
     }
