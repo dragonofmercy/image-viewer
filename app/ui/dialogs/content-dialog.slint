@@ -1,5 +1,6 @@
 import { Theme } from "../theme.slint";
 import { FocusReturn } from "../widgets/menu-flyout.slint";
+import { PopupArea } from "../widgets/combo-box.slint";
 
 // In-window modal host, the WinUI ContentDialog with the 1.x App.xaml sizes (ContentDialogPadding 0, min width 744px, max width 1280px).
 // Place it last in the window, filling it. Showing one dialog at a time is the caller's rule. Escape closes it.
@@ -22,6 +23,8 @@ export component ContentDialog inherits Rectangle {
         if root.open {
             keys.focus();
         } else {
+            // The dialog content is destroyed with a dropdown possibly open, whose own reset never runs.
+            PopupArea.open = false;
             FocusReturn.token += 1;
         }
     }

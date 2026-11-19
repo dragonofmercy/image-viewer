@@ -17,6 +17,7 @@ export global PopupArea {
 export component ComboBox inherits Rectangle {
     in property <[string]> model;
     in-out property <int> current-index;
+    in property <string> label;
     callback selected(int);
 
     property <length> row-height: 36px;
@@ -58,6 +59,7 @@ export component ComboBox inherits Rectangle {
     border-color: Theme.control-stroke;
     background: touch.pressed ? Theme.control-fill-pressed : touch.has-hover ? Theme.control-fill-hover : Theme.control-fill;
     accessible-role: combobox;
+    accessible-label: root.label;
     accessible-value: root.model[root.current-index];
     accessible-action-default => {
         root.open(false);

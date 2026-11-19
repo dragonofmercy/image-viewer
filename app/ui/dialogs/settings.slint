@@ -49,6 +49,7 @@ export component SettingsDialog inherits ContentDialog {
                 label: Tr.t("SETTINGS_FIELD_LANGUAGE");
                 description: Tr.t("SETTINGS_FIELD_LANGUAGE_HELP");
                 ComboBox {
+                    label: Tr.t("SETTINGS_FIELD_LANGUAGE");
                     min-width: 240px;
                     model: SettingsState.language-labels;
                     current-index <=> SettingsState.language-index;
@@ -61,6 +62,7 @@ export component SettingsDialog inherits ContentDialog {
                 glyph: "\u{E790}";
                 label: Tr.t("SETTINGS_FIELD_THEME");
                 ComboBox {
+                    label: Tr.t("SETTINGS_FIELD_THEME");
                     min-width: 240px;
                     model: [Tr.t("SETTINGS_FIELD_THEME_SYSTEM"), Tr.t("SETTINGS_FIELD_THEME_LIGHT"), Tr.t("SETTINGS_FIELD_THEME_DARK")];
                     current-index <=> SettingsState.theme-index;
@@ -73,6 +75,7 @@ export component SettingsDialog inherits ContentDialog {
                 glyph: "\u{E895}";
                 label: Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL");
                 ComboBox {
+                    label: Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL");
                     min-width: 240px;
                     model: [Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_DAY"), Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_WEEK"), Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_MONTH"), Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL")];
                     current-index <=> SettingsState.interval-index;

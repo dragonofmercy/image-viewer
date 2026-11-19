@@ -103,8 +103,10 @@ export component Cropper inherits Rectangle {
     property <length> sw: root.sel-w * root.unit;
     property <length> sh: root.sel-h * root.unit;
     property <color> dim: #000000.with-alpha(0.5);
-    // Thumb hit boxes shrink on a small selection so the middle third stays a move zone (at least 4px, so corners stay reachable).
-    property <length> hit: max(4px, min(15px, min(root.sw, root.sh) / 3));
+    // Thumb hit boxes shrink on a small selection so the middle third stays a move zone (at least 2px, so corners stay reachable).
+    property <length> hit: max(2px, min(15px, min(root.sw, root.sh) / 3));
+    // Edge thumbs go away below 12px so a tiny selection keeps a move zone between the corner thumbs.
+    property <bool> tiny: min(root.sw, root.sh) < 12px;
 
     // Swallows the pointer and the wheel: zoom and pan are locked while cropping.
     TouchArea {
@@ -149,7 +151,7 @@ export component Cropper inherits Rectangle {
         { handle: 7, cx: root.sx, cy: root.sy + root.sh, cursor: MouseCursor.nesw-resize },
     ]: Thumb {
         handle: t.handle;
-        hit: root.hit;
+        hit: t.handle < 4 && root.tiny ? 0px : root.hit;
         cx: t.cx;
         cy: t.cy;
         cursor: t.cursor;
@@ -181,6 +183,7 @@ export component Cropper inherits Rectangle {
             padding: 5px;
             spacing: 8px;
             ComboBox {
+                label: Tr.t("TRANSFORM_CROP_RATIO");
                 model: root.ratios;
                 current-index <=> root.ratio-index;
                 selected(i) => {

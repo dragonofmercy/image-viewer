@@ -267,6 +267,13 @@ mod tests {
         assert!(s.x + s.w <= iw && s.y + s.h <= ih, "{s:?} {image:?} {context}");
     }
 
+    /// A fixed ratio holds up to rounding: one side is off by under 1px of length (on tiny images the sides cannot both be whole and exact).
+    fn assert_ratio(s: Sel, r: Option<f32>, context: &str) {
+        let Some(r) = r else { return };
+        let off = (s.w - s.h * r).abs().min((s.h - s.w / r).abs());
+        assert!(off < 1.0 + 1e-3, "ratio {r}: {s:?} off by {off} ({context})");
+    }
+
     /// Reviewer case: with the image's own ratio, h capped at iw / r gave w = h * r one ulp above iw, and `clamp` panicked.
     #[test]
     fn same_ratio_edge_drags_on_1013x600_do_not_panic() {
@@ -293,11 +300,17 @@ mod tests {
                 let large = apply_ratio(full(image), r, image);
                 let small = drag(large, Handle::SE, -1e5, -1e5, r, image);
                 assert_inside(large, image, "apply_ratio");
+                assert_ratio(large, r, "apply_ratio");
                 assert_inside(small, image, "shrunk");
+                assert_ratio(small, r, "shrunk");
                 for handle in HANDLES {
                     for (dx, dy) in deltas {
                         for from in [large, small] {
-                            assert_inside(drag(from, handle, dx, dy, r, image), image, &format!("{handle:?} {dx} {dy} {r:?}"));
+                            let moved = drag(from, handle, dx, dy, r, image);
+                            assert_inside(moved, image, &format!("{handle:?} {dx} {dy} {r:?}"));
+                            if handle != Handle::Move {
+                                assert_ratio(moved, r, &format!("{handle:?} {dx} {dy} {image:?}"));
+                            }
                         }
                     }
                 }

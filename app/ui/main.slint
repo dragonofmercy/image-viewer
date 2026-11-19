@@ -98,6 +98,13 @@ export component MainWindow inherits Window {
     changed focus-return => {
         scope.focus();
     }
+    // The cropper is destroyed with the focus (and possibly an open dropdown) inside: take both back.
+    changed cropping => {
+        if !root.cropping {
+            PopupArea.open = false;
+            scope.focus();
+        }
+    }
     // The Slint attribution badge of the About dialog follows the app theme.
     property <bool> dark: Theme.dark;
     changed dark => {
