@@ -57,8 +57,11 @@ fn pick_level(present: &[bool], want: usize) -> Option<usize> {
     (0..=want).rev().chain(want + 1..present.len()).find(|&i| present[i])
 }
 
+/// Smallest view (logical px) worth fitting into: a fit against a few pixels would leave a useless zoom.
+const MIN_FIT_VIEW: f32 = 32.0;
+
 fn has_area(view: (f32, f32)) -> bool {
-    view.0 > 0.0 && view.1 > 0.0
+    view.0 >= MIN_FIT_VIEW && view.1 >= MIN_FIT_VIEW
 }
 
 /// A fit asked while the view had no area (before the first layout, minimized) waits for a view with an area.
@@ -431,6 +434,9 @@ mod tests {
         assert_eq!(resolve_pending(true, (800.0, 600.0)), (true, false));
         assert_eq!(resolve_pending(false, (800.0, 600.0)), (false, false));
         assert_eq!(resolve_pending(false, (0.0, 0.0)), (false, false));
+        assert_eq!(resolve_pending(true, (8.0, 8.0)), (false, true));
+        assert_eq!(resolve_pending(true, (32.0, 32.0)), (true, false));
+        assert_eq!(resolve_pending(false, (8.0, 8.0)), (false, false));
     }
 
     #[test]
