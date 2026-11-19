@@ -98,7 +98,11 @@ export component AboutDialog inherits ContentDialog {
         // Attribution required by the Slint royalty-free license.
         HorizontalLayout {
             padding-top: 16px;
-            AboutSlint { }
+            alignment: center;
+            AboutSlint {
+                width: 150px;
+                height: 96px;
+            }
         }
     }
 }

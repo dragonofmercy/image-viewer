@@ -85,10 +85,13 @@ export component ComboBox inherits Rectangle {
             horizontal-stretch: 1;
             overflow: elide;
         }
-        Icon {
-            glyph: "\u{E70D}";
-            size: 12px;
-            tint: Theme.text-secondary;
+        Rectangle {
+            width: 12px;
+            Icon {
+                glyph: "\u{E70D}";
+                size: 12px;
+                tint: Theme.text-secondary;
+            }
         }
     }
 
@@ -112,6 +115,7 @@ export component ComboBox inherits Rectangle {
     }
 
     touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
         clicked => {
             root.open(true);
         }

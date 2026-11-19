@@ -140,20 +140,22 @@ export component Cropper inherits Rectangle {
         }
     }
 
+    // The model must not depend on the selection: a changed model rebuilds every thumb, which ends the drag in progress.
+    // (fx, fy): position of the thumb as a fraction of the selection.
     for t in [
-        { handle: 0, cx: root.sx + root.sw / 2, cy: root.sy, cursor: MouseCursor.ns-resize },
-        { handle: 1, cx: root.sx + root.sw / 2, cy: root.sy + root.sh, cursor: MouseCursor.ns-resize },
-        { handle: 2, cx: root.sx + root.sw, cy: root.sy + root.sh / 2, cursor: MouseCursor.ew-resize },
-        { handle: 3, cx: root.sx, cy: root.sy + root.sh / 2, cursor: MouseCursor.ew-resize },
-        { handle: 4, cx: root.sx + root.sw, cy: root.sy, cursor: MouseCursor.nesw-resize },
-        { handle: 5, cx: root.sx, cy: root.sy, cursor: MouseCursor.nwse-resize },
-        { handle: 6, cx: root.sx + root.sw, cy: root.sy + root.sh, cursor: MouseCursor.nwse-resize },
-        { handle: 7, cx: root.sx, cy: root.sy + root.sh, cursor: MouseCursor.nesw-resize },
+        { handle: 0, fx: 0.5, fy: 0.0, cursor: MouseCursor.ns-resize },
+        { handle: 1, fx: 0.5, fy: 1.0, cursor: MouseCursor.ns-resize },
+        { handle: 2, fx: 1.0, fy: 0.5, cursor: MouseCursor.ew-resize },
+        { handle: 3, fx: 0.0, fy: 0.5, cursor: MouseCursor.ew-resize },
+        { handle: 4, fx: 1.0, fy: 0.0, cursor: MouseCursor.nesw-resize },
+        { handle: 5, fx: 0.0, fy: 0.0, cursor: MouseCursor.nwse-resize },
+        { handle: 6, fx: 1.0, fy: 1.0, cursor: MouseCursor.nwse-resize },
+        { handle: 7, fx: 0.0, fy: 1.0, cursor: MouseCursor.nesw-resize },
     ]: Thumb {
         handle: t.handle;
         hit: t.handle < 4 && root.tiny ? 0px : root.hit;
-        cx: t.cx;
-        cy: t.cy;
+        cx: root.sx + root.sw * t.fx;
+        cy: root.sy + root.sh * t.fy;
         cursor: t.cursor;
         drag-start(h) => {
             root.drag-start(h);

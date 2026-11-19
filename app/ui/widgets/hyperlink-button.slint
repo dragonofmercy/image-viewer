@@ -40,6 +40,7 @@ export component HyperlinkButton inherits Rectangle {
 
     touch := TouchArea {
         enabled: root.enabled;
+        mouse-cursor: MouseCursor.pointer;
         clicked => {
             root.clicked();
         }

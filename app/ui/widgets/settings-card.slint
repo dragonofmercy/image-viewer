@@ -51,13 +51,13 @@ export component SettingsCard inherits Rectangle {
     }
 }
 
-// A titled stack of cards, 2px apart. The title row is kept when empty, as in 1.x (margin 1,32,0,8, no extra spacing to the first card).
+// A titled stack of cards, 2px apart. Without a title the title row is collapsed, as in 1.x (margin 1,32,0,8, no extra spacing to the first card).
 export component SettingsGroup inherits VerticalLayout {
     in property <string> title;
 
     spacing: 2px;
     // A 20px line with 32px above and 8px below, less the 2px spacing that follows.
-    Rectangle {
+    if root.title != "": Rectangle {
         height: 20px + 32px + 8px - 2px;
         Text {
             x: 1px;
