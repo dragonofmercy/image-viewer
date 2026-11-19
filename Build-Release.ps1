@@ -41,8 +41,8 @@ try {
         throw 'vpk not found on PATH. Install it with: dotnet tool install -g vpk --version 1.2.161'
     }
 
-    # The app pins velopack = "=1.2.161"; vpk may print a build suffix ("1.2.161+abc").
-    $vpkVersion = ((vpk --version | Select-Object -First 1) -split '\+')[0].Trim()
+    # The app pins velopack = "=1.2.161". vpk has no --version: the help banner reads "Velopack CLI 1.2.161, ...".
+    $vpkVersion = if ((vpk -h | Out-String) -match 'Velopack CLI ([\d.]+\d)') { $Matches[1] } else { 'unknown' }
     if ($vpkVersion -ne '1.2.161') {
         throw "vpk $vpkVersion found, 1.2.161 required. Run: dotnet tool update -g vpk --version 1.2.161"
     }
