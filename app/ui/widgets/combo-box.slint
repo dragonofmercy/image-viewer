@@ -15,7 +15,8 @@ export component ComboBox inherits Rectangle {
     callback selected(int);
 
     property <length> row-height: 36px;
-    // Rows plus the 2px padding and the 1px border at the top and bottom.
+    // Rows plus the 2px padding and the 1px border at the top and bottom. Only decides above or below: the popup itself takes the
+    // preferred height of its content.
     property <length> dropdown-height: root.model.length * root.row-height + 2 * 3px;
     property <bool> fits-below: root.absolute-position.y + root.height + 4px + root.dropdown-height <= PopupArea.height;
 
@@ -66,7 +67,6 @@ export component ComboBox inherits Rectangle {
         x: 0px;
         y: root.fits-below ? root.height + 4px : -root.dropdown-height - 4px;
         width: root.width;
-        height: root.dropdown-height;
         Rectangle {
             background: Theme.combo-dropdown-background;
             border-width: 1px;
