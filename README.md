@@ -48,8 +48,6 @@ This project stands on the shoulders of these open-source libraries:
 - [libheif](https://github.com/strukturag/libheif) with [libde265](https://github.com/strukturag/libde265) and [aom](https://aomedia.googlesource.com/aom/) - HEIC, HEIF and AVIF decoding
 - [Velopack](https://github.com/velopack/velopack) - installer and auto-updates
 
-<a href="https://slint.dev"><img src="https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png" alt="Made with Slint" width="160"></a>
-
 ## Support
 
 If this project helps to increase your productivity, you can give me a cup of coffee :)
