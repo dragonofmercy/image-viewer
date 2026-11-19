@@ -1,0 +1,76 @@
+import { Theme } from "../theme.slint";
+import { FocusReturn } from "../widgets/menu-flyout.slint";
+
+// In-window modal host, the WinUI ContentDialog with the 1.x App.xaml sizes (ContentDialogPadding 0, min width 744px, max width 1280px).
+// Place it last in the window, filling it. Showing one dialog at a time is the caller's rule. Escape closes it.
+// The smoke leaves the caption buttons uncovered; the native hit-test keeps them and the caption drag working over it.
+export component ContentDialog inherits Rectangle {
+    in-out property <bool> open;
+    // The uncovered caption button block: the title bar height and the buttons width (zero in fullscreen).
+    in property <length> caption-height;
+    in property <length> caption-width;
+    callback closed;
+
+    public function close() {
+        root.open = false;
+        root.closed();
+    }
+
+    visible: root.open;
+
+    changed open => {
+        if root.open {
+            keys.focus();
+        } else {
+            FocusReturn.token += 1;
+        }
+    }
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: root.width - root.caption-width;
+        height: root.caption-height;
+        background: Theme.smoke;
+    }
+    Rectangle {
+        x: 0px;
+        y: root.caption-height;
+        width: root.width;
+        height: root.height - root.caption-height;
+        background: Theme.smoke;
+    }
+    // Swallows pointer and wheel events over the content and the footer.
+    TouchArea {
+        scroll-event(event) => {
+            EventResult.accept
+        }
+    }
+
+    // Keys of the content bubble up here and stop: none reaches the window shortcuts.
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                root.close();
+            }
+            accept
+        }
+
+        card := Rectangle {
+            width: min(max(744px, min(1280px, content.preferred-width)), root.width - 48px);
+            height: min(max(64px, content.preferred-height), root.height - 48px);
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height) / 2;
+            background: Theme.window-background;
+            border-width: 1px;
+            border-color: Theme.surface-stroke-flyout;
+            border-radius: Theme.overlay-radius;
+            clip: true;
+            // Clicks on the card do not fall through to the smoke.
+            TouchArea { }
+            content := VerticalLayout {
+                @children
+            }
+        }
+    }
+}

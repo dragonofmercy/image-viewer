@@ -2,21 +2,23 @@
 //!
 //! Rule: no `RefCell` borrow of the document is held across a call into Slint or `ImageHost`.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
+use slint::platform::WindowEvent;
 use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, TimerMode, VecModel};
 use viewer_core::culture::Strings;
-use viewer_core::files::{SUPPORTED_FILE_TYPES, is_supported};
+use viewer_core::files::{SAVE_FILE_TYPES, SUPPORTED_FILE_TYPES, is_supported};
 use viewer_core::folder::FolderNav;
-use viewer_core::picture::{LoadError, Picture};
+use viewer_core::picture::{Flip, LoadError, Picture, Rotate, SaveError};
+use viewer_core::settings::Settings;
 
-use crate::document::{Document, Loader, Source, frame_delay, next_icon_index, reveal_offset};
+use crate::document::{Document, Loader, Route, Saver, Source, frame_delay, next_icon_index, quality_for, reveal_offset, save_route};
 use crate::file_info;
 use crate::image_host::ImageHost;
-use crate::win::{dialogs, shell};
+use crate::win::{dialogs, locale, shell};
 use crate::{AppState, Commands, IconSizeItem, MainWindow, frame, ui_state, window_title};
 
 thread_local! {
@@ -34,6 +36,9 @@ pub struct Controller {
     host: Rc<ImageHost>,
     doc: RefCell<Document>,
     loader: Loader,
+    saver: Saver,
+    /// The window was asked to close during a save: it closes once the save succeeded.
+    close_pending: Cell<bool>,
     strings: Rc<Strings>,
     /// Frame timer of the playing animation. Held here so the controller dropping (or `stop_animation`) ends it.
     anim: slint::Timer,
@@ -48,6 +53,8 @@ impl Controller {
             host,
             doc: RefCell::default(),
             loader: Loader::new(),
+            saver: Saver::new(),
+            close_pending: Cell::new(false),
             strings,
             anim: slint::Timer::default(),
             trace: std::env::var_os("IMAGEVIEWER_TRACE").is_some(),
@@ -70,6 +77,28 @@ impl Controller {
         commands.on_last(move || c.last());
         let c = controller.clone();
         commands.on_file_info(move || c.open_info());
+        // `MainWindow.xaml.cs` button handlers: the flip buttons pass the opposite ImageSharp mode, kept as is.
+        let c = controller.clone();
+        commands.on_rotate_left(move || c.rotate_flip(Rotate::Rotate270, Flip::None));
+        let c = controller.clone();
+        commands.on_rotate_right(move || c.rotate_flip(Rotate::Rotate90, Flip::None));
+        let c = controller.clone();
+        commands.on_flip_horizontal(move || c.rotate_flip(Rotate::None, Flip::Vertical));
+        let c = controller.clone();
+        commands.on_flip_vertical(move || c.rotate_flip(Rotate::None, Flip::Horizontal));
+        // Deferred like open: the save dialog does not run inside the key or menu handler.
+        let c = controller.clone();
+        commands.on_save(move || {
+            let c = c.clone();
+            slint::Timer::single_shot(Duration::ZERO, move || c.save());
+        });
+        let c = controller.clone();
+        commands.on_save_as(move || {
+            let c = c.clone();
+            slint::Timer::single_shot(Duration::ZERO, move || c.save_as());
+        });
+        let c = controller.clone();
+        commands.on_delete(move || c.delete());
         let c = controller.clone();
         // Task 12 extends this with the rest of the Escape priority (crop, fullscreen).
         commands.on_escape(move || {
@@ -165,6 +194,10 @@ impl Controller {
 
     /// Starts a load of `path` without touching the folder list. False when the file does not exist.
     fn load(&self, path: &Path) -> bool {
+        // A load would replace the picture the running save hands back.
+        if self.doc.borrow().saving {
+            return false;
+        }
         let started = self.doc.borrow_mut().begin_path(path);
         if started.is_some() {
             self.stop_animation();
@@ -234,6 +267,10 @@ impl Controller {
         }
         let info = {
             let doc = self.doc.borrow();
+            // The save worker holds the picture: the pane keeps what it shows until the save hands it back.
+            if doc.saving && doc.picture.is_none() {
+                return;
+            }
             file_info::describe(doc.path.as_deref(), doc.picture.as_ref())
         };
         ui.set_info(info);
@@ -245,6 +282,167 @@ impl Controller {
         if let Some(folder) = folder {
             shell::open_in_explorer(&folder);
         }
+    }
+
+    /// `Context.RotateFlip` + `ReloadImageView`: the view is rebuilt and fitted; an animation restarts from its first frame.
+    fn rotate_flip(&self, rotate: Rotate, flip: Flip) {
+        let Some(mut picture) = self.doc.borrow_mut().picture.take() else { return };
+        picture.rotate_flip(rotate, flip);
+        let animated = picture.is_animated();
+        if animated {
+            self.stop_animation();
+            self.host.show_animated(picture.current());
+        } else {
+            self.host.show(picture.current());
+        }
+        self.doc.borrow_mut().picture = Some(picture);
+        self.refresh_ui();
+        self.update_info();
+        if animated {
+            self.schedule_frame(0);
+        }
+    }
+
+    /// `Context.Save`: overwrites the file in place, or routes to Save As (pasted content, svg, ico).
+    fn save(&self) {
+        let route = {
+            let doc = self.doc.borrow();
+            save_route(doc.picture.as_ref().is_some_and(Picture::modified), doc.path.as_deref())
+        };
+        match route {
+            Route::Nothing => {}
+            Route::SaveAs => self.save_as(),
+            Route::Direct(ext) => {
+                let path = self.doc.borrow().path.clone();
+                if let Some(path) = path {
+                    self.start_save(path, ext, false);
+                }
+            }
+        }
+    }
+
+    /// `Context.SaveAs`: the saved file becomes the current document and its folder is listed.
+    fn save_as(&self) {
+        let suggested = {
+            let doc = self.doc.borrow();
+            if doc.picture.is_none() {
+                return;
+            }
+            doc.path.as_deref().and_then(Path::file_stem).map(|s| s.to_string_lossy().into_owned())
+        };
+        let suggested = suggested.unwrap_or_else(|| locale::save_stamp(SystemTime::now()));
+        let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
+        // Modal: no borrow is held while it pumps messages.
+        let Some((path, ext)) = dialogs::pick_save(hwnd, &suggested, &SAVE_FILE_TYPES, &self.strings.get("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT")) else {
+            return;
+        };
+        self.start_save(path, ext, true);
+    }
+
+    /// Hands the picture to the save worker. Until it comes back, image commands, navigation and loads are off and the UI keeps
+    /// showing the state it had (title bullet included).
+    fn start_save(&self, path: PathBuf, ext: String, adopt: bool) {
+        let quality = quality_for(&ext, &Settings::app());
+        {
+            let mut doc = self.doc.borrow_mut();
+            if doc.saving || doc.picture.is_none() {
+                return;
+            }
+            doc.saving = true;
+        }
+        // Refreshed while the picture is still in the document, so the flags turn off and the rest stays as is.
+        self.refresh_ui();
+        self.stop_animation();
+        let Some(picture) = self.doc.borrow_mut().picture.take() else { return };
+        let target = adopt.then(|| path.clone());
+        let sent = self.saver.request(picture, path, ext, quality, move |picture, result| {
+            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+                c.saved(picture, result, target);
+            }
+        });
+        if let Err(picture) = sent {
+            self.saved(picture, Err(SaveError::Encode("the save thread is not running".into())), None);
+        }
+    }
+
+    /// The worker handed the picture back. `adopt` is the Save As target.
+    fn saved(&self, picture: Picture, result: Result<(), SaveError>, adopt: Option<PathBuf>) {
+        let animated = picture.is_animated();
+        let ok = result.is_ok();
+        {
+            let mut doc = self.doc.borrow_mut();
+            doc.picture = Some(picture);
+            doc.saving = false;
+            match result {
+                Ok(()) => {
+                    if let Some(path) = adopt {
+                        doc.path = Some(path);
+                        doc.list_folder();
+                    }
+                }
+                Err(e) => eprintln!("cannot save the image: {e}"),
+            }
+        }
+        self.refresh_ui();
+        self.update_info();
+        if animated {
+            self.schedule_frame(0);
+        }
+        // A failed save keeps the window open so the edit is not lost.
+        let close = self.close_pending.replace(false) && ok;
+        if !ok {
+            self.show_error("SYSTEM_SAVING_ERROR");
+        } else if close && let Some(ui) = self.ui.upgrade() {
+            ui.window().dispatch_event(WindowEvent::CloseRequested);
+        }
+    }
+
+    /// Close handler: true (keep the window) while a save runs; the window then closes once the save succeeded.
+    pub fn defer_close(&self) -> bool {
+        let saving = self.doc.borrow().saving;
+        if saving {
+            self.close_pending.set(true);
+        }
+        saving
+    }
+
+    /// `Context.DeleteImage`: recycles the file, then shows the next file of the folder, or clears the view when none is left.
+    /// Pasted content has no file: nothing is recycled. A failed recycle changes nothing (1.x swallows the exception).
+    fn delete(&self) {
+        let path = self.doc.borrow().path.clone();
+        if let Some(path) = path {
+            if !shell::recycle(&path) {
+                return;
+            }
+            let mut doc = self.doc.borrow_mut();
+            doc.path = None;
+            if let Some(folder) = doc.folder.as_mut() {
+                folder.remove_current();
+            }
+        }
+        let has_files = self.doc.borrow().folder.as_ref().is_some_and(|f| !f.files.is_empty());
+        if has_files {
+            self.next();
+        }
+        // Also when every remaining file failed to open: 1.x would keep showing the deleted picture.
+        if self.doc.borrow().path.is_none() {
+            self.stop_animation();
+            self.doc.borrow_mut().picture = None;
+            self.host.clear();
+            self.set_icon_sizes(None);
+            self.close_info();
+            self.refresh_ui();
+        }
+    }
+
+    /// `ShowErrorAsync`: one dialog at a time, a second one is dropped.
+    fn show_error(&self, key: &str) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        if ui.get_dialog_open() {
+            return;
+        }
+        ui.set_error_message(self.strings.get(key).into());
+        ui.set_error_open(true);
     }
 
     /// Stops the frame timer: new load, crop start, window close.
@@ -333,6 +531,10 @@ impl Controller {
         let app = ui.global::<AppState>();
         let (inputs, dimensions, error) = {
             let doc = self.doc.borrow();
+            // The save worker holds the picture: keep the state set when the save started.
+            if doc.saving && doc.picture.is_none() {
+                return;
+            }
             let inputs = ui_state::Inputs {
                 fullscreen: app.get_fullscreen(),
                 ..doc.inputs()

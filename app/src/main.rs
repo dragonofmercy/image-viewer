@@ -130,6 +130,10 @@ fn main() -> Result<(), slint::PlatformError> {
     let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings);
     let c = controller.clone();
     ui.window().on_close_requested(move || {
+        // Closing now would lose the edit being written: the controller closes the window once the save succeeded.
+        if c.defer_close() {
+            return slint::CloseRequestResponse::KeepWindowShown;
+        }
         c.stop_animation();
         frame::flush_geometry();
         slint::CloseRequestResponse::HideWindow

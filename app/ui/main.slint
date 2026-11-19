@@ -12,6 +12,7 @@ import { Footer, Commands, AppState } from "footer.slint";
 import { ImageView } from "image-view.slint";
 import { IconStrip, IconSizeItem } from "icon-strip.slint";
 import { InfoPane, InfoFields } from "info-pane.slint";
+import { ErrorDialog } from "dialogs/error.slint";
 
 export { Theme } from "theme.slint";
 export { Tr } from "tr.slint";
@@ -53,6 +54,11 @@ export component MainWindow inherits Window {
     callback icon-size-step(int);
     in property <InfoFields> info;
     callback info-folder-clicked();
+    // `ShowErrorAsync`, driven by controller.rs.
+    in-out property <bool> error-open;
+    in property <string> error-message;
+    // A dialog is up: a new one is dropped (later dialogs join this expression).
+    out property <bool> dialog-open: root.error-open;
 
     title: root.title-text;
     icon: @image-url("../assets/ImageViewer.ico");
@@ -235,6 +241,13 @@ export component MainWindow inherits Window {
                 }
             }
             if !AppState.fullscreen: Footer { }
+        }
+
+        ErrorDialog {
+            open <=> root.error-open;
+            message: root.error-message;
+            caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
+            caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
         }
     }
 }

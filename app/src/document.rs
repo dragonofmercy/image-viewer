@@ -7,10 +7,12 @@ use crate::ui_state::Inputs;
 use image::RgbaImage;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, mpsc};
 use std::time::{Duration, Instant};
+use viewer_core::files::{SAVE_FILE_TYPES, extension_of, normalize_extension};
 use viewer_core::folder::FolderNav;
-use viewer_core::picture::{self, LoadError, Picture};
+use viewer_core::picture::{self, LoadError, Picture, SaveError};
+use viewer_core::settings::Settings;
 
 pub enum Source {
     Path(PathBuf),
@@ -25,6 +27,8 @@ pub struct Document {
     pub folder: Option<FolderNav>,
     pub generation: u64,
     pub loading: bool,
+    /// A save runs: the worker owns the picture until it hands it back, so `picture` is None meanwhile.
+    pub saving: bool,
     /// File line of the error panel after a failed load (1.x shows the full path; empty for pasted content).
     pub error: Option<String>,
 }
@@ -76,6 +80,7 @@ impl Document {
         Inputs {
             loaded: picture.is_some(),
             loading: self.loading,
+            saving: self.saving,
             modified: picture.is_some_and(Picture::modified),
             has_path: self.path.is_some(),
             folder_count: self.folder.as_ref().map_or(0, |f| f.files.len()),
@@ -83,6 +88,33 @@ impl Document {
             file_name: self.path.as_ref().and_then(|p| p.file_name()).map(|n| n.to_string_lossy().into_owned()),
             ..Inputs::default()
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Route {
+    Nothing,
+    /// Overwrite the file in place, with its normalized save type.
+    Direct(String),
+    SaveAs,
+}
+
+/// `Context.Save`: unmodified does nothing; pasted content and formats that cannot be written back (svg, ico) go through Save As.
+pub fn save_route(modified: bool, path: Option<&Path>) -> Route {
+    if !modified {
+        return Route::Nothing;
+    }
+    let Some(path) = path else { return Route::SaveAs };
+    let ext = normalize_extension(&extension_of(path).unwrap_or_default());
+    if SAVE_FILE_TYPES.contains(&ext.as_str()) { Route::Direct(ext) } else { Route::SaveAs }
+}
+
+/// `SaveService.QualityForType`: JPEG and WebP use their configured quality, other formats ignore it.
+pub fn quality_for(ext: &str, settings: &Settings) -> Option<u8> {
+    match ext {
+        ".jpg" => Some(settings.jpeg_quality()),
+        ".webp" => Some(settings.webp_quality()),
+        _ => None,
     }
 }
 
@@ -203,9 +235,67 @@ impl Drop for Loader {
     }
 }
 
+/// Receives the picture back with the save result.
+type SaveDone = Box<dyn FnOnce(Picture, Result<(), SaveError>) + Send>;
+/// Delivers a finished save to the UI thread.
+type Post = Box<dyn Fn(Box<dyn FnOnce() + Send>) + Send>;
+
+struct SaveJob {
+    picture: Picture,
+    path: PathBuf,
+    ext: String,
+    quality: Option<u8>,
+    done: SaveDone,
+}
+
+/// Encodes on its own long-lived thread, separate from the `Loader` so a save is never replaced by a newer load request. The picture
+/// is moved to the worker and back (no pixel copy): `Picture::save` needs `&mut` to clear the modified flag.
+pub struct Saver {
+    jobs: mpsc::Sender<SaveJob>,
+}
+
+impl Saver {
+    pub fn new() -> Self {
+        Self::with_poster(|f| {
+            // Fails only once the event loop is gone: nothing left to show the result in.
+            let _ = slint::invoke_from_event_loop(f);
+        })
+    }
+
+    fn with_poster(post: impl Fn(Box<dyn FnOnce() + Send>) + Send + 'static) -> Self {
+        let (jobs, queue) = mpsc::channel::<SaveJob>();
+        let post: Post = Box::new(post);
+        let spawned = std::thread::Builder::new().name("save".into()).spawn(move || {
+            for job in queue {
+                let SaveJob { mut picture, path, ext, quality, done } = job;
+                // The picture is only borrowed by the closure: an encoder panic still hands it back, edit included.
+                let result = panic::catch_unwind(AssertUnwindSafe(|| picture.save(&path, &ext, quality))).unwrap_or_else(|_| Err(SaveError::Encode("encoder panicked".into())));
+                post(Box::new(move || done(picture, result)));
+            }
+        });
+        if let Err(e) = spawned {
+            eprintln!("cannot start the save thread: {e}");
+        }
+        Self { jobs }
+    }
+
+    /// Queues a save. Gives the picture back when the worker is not running.
+    pub fn request(&self, picture: Picture, path: PathBuf, ext: String, quality: Option<u8>, done: impl FnOnce(Picture, Result<(), SaveError>) + Send + 'static) -> Result<(), Picture> {
+        let job = SaveJob {
+            picture,
+            path,
+            ext,
+            quality,
+            done: Box::new(done),
+        };
+        self.jobs.send(job).map_err(|e| e.0.picture)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use viewer_core::picture::{Flip, Rotate};
 
     fn png(path: &Path) {
         RgbaImage::from_pixel(3, 2, image::Rgba([1, 2, 3, 255])).save_with_format(path, image::ImageFormat::Png).expect("write png");
@@ -298,6 +388,65 @@ mod tests {
         let _ = open_gate.send(());
         assert_eq!(started.recv_timeout(wait).ok(), Some(4));
         assert!(started.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+
+    #[test]
+    fn quality_only_for_jpeg_and_webp() {
+        // A key that does not exist: the getters return their defaults, nothing is written.
+        let settings = Settings::at(r"SOFTWARE\Dragon Industries\Image Viewer Tests\app-quality-missing");
+        assert_eq!(quality_for(".jpg", &settings), Some(settings.jpeg_quality()));
+        assert_eq!(quality_for(".webp", &settings), Some(settings.webp_quality()));
+        for ext in [".png", ".bmp", ".gif", ".tiff", ".tga", ".jxl"] {
+            assert_eq!(quality_for(ext, &settings), None, "{ext}");
+        }
+    }
+
+    #[test]
+    fn save_routing_follows_context_save() {
+        let dir = Path::new(r"C:\Pictures");
+        assert_eq!(save_route(false, Some(&dir.join("a.png"))), Route::Nothing);
+        assert_eq!(save_route(false, None), Route::Nothing);
+        assert_eq!(save_route(true, None), Route::SaveAs);
+        assert_eq!(save_route(true, Some(&dir.join("a.svg"))), Route::SaveAs);
+        assert_eq!(save_route(true, Some(&dir.join("a.ico"))), Route::SaveAs);
+        assert_eq!(save_route(true, Some(&dir.join("noext"))), Route::SaveAs);
+        assert_eq!(save_route(true, Some(&dir.join("photo.JPEG"))), Route::Direct(".jpg".into()));
+        assert_eq!(save_route(true, Some(&dir.join("scan.TIF"))), Route::Direct(".tiff".into()));
+        assert_eq!(save_route(true, Some(&dir.join("Été \u{5199}.webp"))), Route::Direct(".webp".into()));
+    }
+
+    type Saved = (Picture, Result<(), SaveError>);
+
+    /// Runs the done callback on the worker itself (no event loop in tests) and waits for it.
+    fn save_with_worker(pic: Picture, path: PathBuf) -> Saved {
+        let saver = Saver::with_poster(|f| f());
+        let (tx, rx) = std::sync::mpsc::channel::<Saved>();
+        assert!(saver.request(pic, path, ".png".into(), None, move |p, r| tx.send((p, r)).expect("send")).is_ok());
+        rx.recv_timeout(Duration::from_secs(10)).expect("save finished")
+    }
+
+    #[test]
+    fn saver_writes_and_hands_the_picture_back() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let target = dir.path().join("Été \u{5199}.PNG");
+        let mut pic = picture::load_from_rgba(RgbaImage::from_pixel(3, 2, image::Rgba([1, 2, 3, 255])));
+        pic.rotate_flip(Rotate::Rotate90, Flip::None);
+        let (pic, result) = save_with_worker(pic, target.clone());
+        assert!(result.is_ok(), "{result:?}");
+        assert!(!pic.modified());
+        assert_eq!((pic.width(), pic.height()), (2, 3));
+        let saved = picture::load_path(&target).expect("saved file");
+        assert_eq!((saved.width(), saved.height()), (2, 3));
+    }
+
+    #[test]
+    fn failed_save_keeps_the_picture_and_its_edit() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut pic = picture::load_from_rgba(RgbaImage::new(3, 2));
+        pic.rotate_flip(Rotate::Rotate90, Flip::None);
+        let (pic, result) = save_with_worker(pic, dir.path().join("missing").join("a.png"));
+        assert!(result.is_err());
+        assert!(pic.modified());
     }
 
     #[test]

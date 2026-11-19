@@ -4,6 +4,7 @@
 pub struct Inputs {
     pub loaded: bool,
     pub loading: bool,
+    pub saving: bool,
     pub cropping: bool,
     pub modified: bool,
     pub has_path: bool,
@@ -22,14 +23,14 @@ pub struct Flags {
     pub icon_strip: bool,
 }
 
-/// The open cropper owns the whole surface: while it is up every image command is off.
+/// The open cropper owns the whole surface: while it is up every image command is off. A running save turns them off too.
 pub fn flags(i: &Inputs) -> Flags {
-    let enabled = i.loaded && !i.cropping;
+    let enabled = i.loaded && !i.cropping && !i.saving;
     Flags {
         image_commands: enabled,
         save_direct: enabled && i.modified,
         file_info: enabled && i.has_path,
-        navigate: !i.cropping && i.folder_count > 1,
+        navigate: !i.cropping && !i.saving && i.folder_count > 1,
         icon_strip: enabled && !i.fullscreen && i.has_icon_sizes,
     }
 }
@@ -119,6 +120,27 @@ mod tests {
                 icon_strip: false
             }
         );
+    }
+
+    #[test]
+    fn saving_disables_everything_and_keeps_the_title() {
+        let i = Inputs {
+            saving: true,
+            modified: true,
+            has_icon_sizes: true,
+            ..file()
+        };
+        assert_eq!(
+            flags(&i),
+            Flags {
+                image_commands: false,
+                save_direct: false,
+                file_info: false,
+                navigate: false,
+                icon_strip: false
+            }
+        );
+        assert_eq!(title_prefix(&i, "L", "P").as_deref(), Some("\u{25CF} a.png"));
     }
 
     #[test]

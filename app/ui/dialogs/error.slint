@@ -1,0 +1,39 @@
+import { Theme } from "../theme.slint";
+import { Tr } from "../tr.slint";
+import { Button } from "../widgets/button.slint";
+import { ContentDialog } from "content-dialog.slint";
+
+// `ShowErrorAsync`: a message and a single close button (SYSTEM_OK).
+export component ErrorDialog inherits ContentDialog {
+    in property <string> message;
+
+    // ContentDialogContentPadding, as the other 1.x dialogs.
+    VerticalLayout {
+        padding: 24px;
+        Text {
+            text: root.message;
+            wrap: word-wrap;
+            color: Theme.text-primary;
+        }
+    }
+    // WinUI command area: the close button alone takes the right half. Placed by hand so its width never feeds the card width.
+    Rectangle {
+        height: 32px + 2 * 24px;
+        background: Theme.app-bar-background;
+        Rectangle {
+            y: 0px;
+            height: 1px;
+            background: Theme.app-bar-border;
+        }
+        Button {
+            x: parent.width / 2 + 4px;
+            y: 24px;
+            width: parent.width / 2 - 4px - 24px;
+            height: 32px;
+            text: Tr.t("SYSTEM_OK");
+            clicked => {
+                root.close();
+            }
+        }
+    }
+}

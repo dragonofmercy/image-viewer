@@ -47,9 +47,38 @@ pub fn format_file_time(t: SystemTime) -> String {
     format!("{} {}", wide_to_string(&date, d), wide_to_string(&time, t)).trim().to_string()
 }
 
+/// `DateTime.Now.ToString("yyyy-MM-dd-hh-mm-ss")` in local time, 12-hour clock as in 1.x: the Save As name suggested for pasted content.
+pub fn save_stamp(t: SystemTime) -> String {
+    to_local_system_time(t).map(|local| stamp(&local)).unwrap_or_default()
+}
+
+fn stamp(t: &SYSTEMTIME) -> String {
+    let hour = match t.wHour % 12 {
+        0 => 12,
+        h => h,
+    };
+    format!("{:04}-{:02}-{:02}-{hour:02}-{:02}-{:02}", t.wYear, t.wMonth, t.wDay, t.wMinute, t.wSecond)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stamp_uses_a_12_hour_clock() {
+        let at = |h| SYSTEMTIME {
+            wYear: 2024,
+            wMonth: 6,
+            wDay: 5,
+            wHour: h,
+            wMinute: 7,
+            wSecond: 9,
+            ..Default::default()
+        };
+        assert_eq!(stamp(&at(0)), "2024-06-05-12-07-09");
+        assert_eq!(stamp(&at(9)), "2024-06-05-09-07-09");
+        assert_eq!(stamp(&at(13)), "2024-06-05-01-07-09");
+    }
 
     #[test]
     fn known_timestamp_formats_to_digits() {
