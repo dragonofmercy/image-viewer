@@ -34,7 +34,7 @@ impl Drop for Open {
 
 /// Replaces the clipboard content with `dib` as CF_DIB (the 1.x format, always written) and `dib_v5` as CF_DIBV5 for readers that
 /// take the alpha channel from it. False when the clipboard could not be opened or CF_DIB could not be written; a failed CF_DIBV5
-/// write is only logged.
+/// write is only logged. `file` adds the file itself as CF_HDROP, for targets that paste files; a failure there is only logged too.
 pub fn set_dibs(owner: HWND, dib_v5: &[u8], dib: &[u8], file: Option<&Path>) -> bool {
     let Some(_open) = Open::new(owner) else { return false };
     // The clipboard is open on this thread.

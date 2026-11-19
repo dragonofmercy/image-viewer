@@ -780,7 +780,7 @@ impl Controller {
     }
 
     /// `CopyImageToClipboard`: the shown frame as CF_DIB (1.x) and CF_DIBV5 (an explicit alpha mask for readers that use it).
-    /// A failure is only logged, as in 1.x.
+    /// A failure is only logged, as in 1.x. An unchanged animated picture also carries its file (CF_HDROP), so file targets paste the animation.
     fn copy(&self) {
         let Some(hwnd) = self.hwnd() else { return };
         let (v5, dib, file) = {
