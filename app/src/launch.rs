@@ -23,7 +23,7 @@ pub fn parse_launch(args: &[OsString]) -> Launch {
         return Launch::None;
     }
     let scheme_len = PROTOCOL.len() + 1;
-    if text.len() >= scheme_len && text.is_char_boundary(scheme_len) && text[..scheme_len].eq_ignore_ascii_case(&format!("{PROTOCOL}:")) {
+    if text.get(..scheme_len).is_some_and(|s| s.eq_ignore_ascii_case(&format!("{PROTOCOL}:"))) {
         // Anything else on our protocol is dropped, never opened as a file.
         let rest = &text[scheme_len..];
         return if rest == &UPDATE_URI[scheme_len..] {
