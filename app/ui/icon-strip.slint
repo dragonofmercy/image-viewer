@@ -58,6 +58,11 @@ export component IconStrip inherits Rectangle {
     changed selected => {
         root.reveal();
     }
+    // A new file replaces the list while the selection can stay at the same index.
+    property <int> count: root.sizes.length;
+    changed count => {
+        root.reveal();
+    }
     init => {
         root.reveal();
     }
