@@ -173,7 +173,7 @@ export component MainWindow inherits Window {
                 root.crop-apply();
             } else if ctrl && !alt && !shift && key == "o" {
                 if AppState.open { Commands.open(); }
-            } else if bare && event.text == Key.F10 {
+            } else if bare && !root.cropping && event.text == Key.F10 {
                 Commands.settings();
             } else if ctrl && !alt && !shift && key == "i" {
                 if AppState.file-info { Commands.file-info(); }
