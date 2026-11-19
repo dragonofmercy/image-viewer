@@ -41,6 +41,11 @@ fn dims(image: (u32, u32)) -> (f32, f32) {
     (image.0.max(1) as f32, image.1.max(1) as f32)
 }
 
+/// `v` limited to `lo..=hi`; `lo` wins when float rounding leaves `hi < lo` (`f32::clamp` would panic).
+fn between(v: f32, lo: f32, hi: f32) -> f32 {
+    v.min(hi).max(lo)
+}
+
 fn finite(v: f32) -> f32 {
     if v.is_finite() { v } else { 0.0 }
 }
@@ -48,10 +53,10 @@ fn finite(v: f32) -> f32 {
 /// Clamps `s` inside the image, at least 1x1.
 fn fit(s: Sel, image: (u32, u32)) -> Sel {
     let (iw, ih) = dims(image);
-    let (w, h) = (finite(s.w).clamp(1.0, iw), finite(s.h).clamp(1.0, ih));
+    let (w, h) = (between(finite(s.w), 1.0, iw), between(finite(s.h), 1.0, ih));
     Sel {
-        x: finite(s.x).clamp(0.0, iw - w),
-        y: finite(s.y).clamp(0.0, ih - h),
+        x: between(finite(s.x), 0.0, iw - w),
+        y: between(finite(s.y), 0.0, ih - h),
         w,
         h,
     }
@@ -82,10 +87,10 @@ fn free_axis(pos: f32, len: f32, side: i8, d: f32, limit: f32) -> (f32, f32) {
     let end = pos + len;
     match side {
         -1 => {
-            let pos = (pos + d).clamp(0.0, end - 1.0);
+            let pos = between(pos + d, 0.0, end - 1.0);
             (pos, end - pos)
         }
-        1 => (pos, (end + d).clamp(pos + 1.0, limit) - pos),
+        1 => (pos, between(end + d, pos + 1.0, limit) - pos),
         _ => (pos, len),
     }
 }
@@ -130,13 +135,13 @@ pub fn drag(start: Sel, handle: Handle, dx: f32, dy: f32, ratio: Option<f32>, im
     } else if sx != 0 {
         // Left or right edge: the opposite edge stays, the height follows centered on the selection.
         let w = (s.w + f32::from(sx) * dx).max(min_w).min(room(s.x, s.w, sx, iw).min(ih * r));
-        let h = w / r;
-        let y = (s.y + (s.h - h) / 2.0).clamp(0.0, ih - h);
+        let h = (w / r).min(ih);
+        let y = between(s.y + (s.h - h) / 2.0, 0.0, ih - h);
         Sel { x: anchored(s.x, s.w, w, sx), y, w, h }
     } else {
         let h = (s.h + f32::from(sy) * dy).max(min_w / r).min(room(s.y, s.h, sy, ih).min(iw / r));
-        let w = h * r;
-        let x = (s.x + (s.w - w) / 2.0).clamp(0.0, iw - w);
+        let w = (h * r).min(iw);
+        let x = between(s.x + (s.w - w) / 2.0, 0.0, iw - w);
         Sel { x, y: anchored(s.y, s.h, h, sy), w, h }
     };
     fit(sel, image)
@@ -166,7 +171,7 @@ pub fn to_pixels(sel: Sel, image: (u32, u32)) -> (u32, u32, u32, u32) {
     let (iw, ih) = dims(image);
     let axis = |pos: f32, len: f32, limit: f32| {
         let start = pos.round().min(limit - 1.0);
-        let end = (pos + len).round().clamp(start + 1.0, limit);
+        let end = between((pos + len).round(), start + 1.0, limit);
         (start as u32, (end - start) as u32)
     };
     let (x, w) = axis(s.x, s.w, iw);
@@ -254,6 +259,52 @@ mod tests {
         assert_eq!(drag(full(IMAGE), Handle::Move, f32::NAN, 0.0, None, IMAGE), full(IMAGE));
     }
 
+    const HANDLES: [Handle; 9] = [Handle::N, Handle::S, Handle::E, Handle::W, Handle::NE, Handle::NW, Handle::SE, Handle::SW, Handle::Move];
+
+    fn assert_inside(s: Sel, image: (u32, u32), context: &str) {
+        let (iw, ih) = (image.0 as f32, image.1 as f32);
+        assert!(s.x >= 0.0 && s.y >= 0.0 && s.w >= 1.0 && s.h >= 1.0, "{s:?} {image:?} {context}");
+        assert!(s.x + s.w <= iw && s.y + s.h <= ih, "{s:?} {image:?} {context}");
+    }
+
+    /// Reviewer case: with the image's own ratio, h capped at iw / r gave w = h * r one ulp above iw, and `clamp` panicked.
+    #[test]
+    fn same_ratio_edge_drags_on_1013x600_do_not_panic() {
+        let image = (1013, 600);
+        let r = ratio(1, image);
+        let start = apply_ratio(full(image), r, image);
+        let small = apply_ratio(Sel { x: 400.0, y: 250.0, w: 100.0, h: 100.0 }, None, image);
+        for handle in HANDLES {
+            for (dx, dy) in [(-1000.0, -1000.0), (1000.0, 1000.0), (-1000.0, 1000.0), (1000.0, -1000.0), (0.0, -1000.0), (0.0, 1000.0), (-1000.0, 0.0), (1000.0, 0.0)] {
+                for from in [start, drag(small, Handle::SE, 0.0, 0.0, r, image)] {
+                    assert_inside(drag(from, handle, dx, dy, r, image), image, &format!("{handle:?} {dx} {dy}"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_size_ratio_and_handle_stays_inside() {
+        let awkward = [(3, 21), (1013, 600), (1013, 1200), (1015, 600), (4284, 5712), (7680, 5200)];
+        let sizes = (1..=64u32).flat_map(|w| (1..=64u32).map(move |h| (w, h))).chain(awkward);
+        let deltas = [(-1e5, -1e5), (1e5, 1e5), (-1e5, 1e5), (1e5, -1e5), (0.0, -1e5), (0.0, 1e5), (-1e5, 0.0), (1e5, 0.0)];
+        for image in sizes {
+            for r in [ratio(1, image), Some(1.0), Some(16.0 / 9.0), Some(9.0 / 16.0), Some(0.1), Some(10.0)] {
+                let large = apply_ratio(full(image), r, image);
+                let small = drag(large, Handle::SE, -1e5, -1e5, r, image);
+                assert_inside(large, image, "apply_ratio");
+                assert_inside(small, image, "shrunk");
+                for handle in HANDLES {
+                    for (dx, dy) in deltas {
+                        for from in [large, small] {
+                            assert_inside(drag(from, handle, dx, dy, r, image), image, &format!("{handle:?} {dx} {dy} {r:?}"));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn random_drags_stay_valid() {
         let mut seed: u32 = 12345;
@@ -261,20 +312,30 @@ mod tests {
             seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
             seed >> 8
         };
-        let handles = [Handle::N, Handle::S, Handle::E, Handle::W, Handle::NE, Handle::NW, Handle::SE, Handle::SW, Handle::Move];
-        let ratios = [None, Some(1.0), Some(16.0 / 9.0), Some(4.0 / 3.0), Some(0.25)];
-        let mut s = full(IMAGE);
-        for _ in 0..200 {
-            let ratio = ratios[next() as usize % ratios.len()];
-            let handle = handles[next() as usize % handles.len()];
-            let dx = (next() % 1200) as f32 - 600.0;
-            let dy = (next() % 1200) as f32 - 600.0;
-            let start = apply_ratio(s, ratio, IMAGE);
-            s = drag(start, handle, dx, dy, ratio, IMAGE);
-            assert!(s.x >= 0.0 && s.y >= 0.0 && s.w >= 1.0 && s.h >= 1.0, "{s:?}");
-            assert!(s.x + s.w <= 400.0 && s.y + s.h <= 300.0, "{s:?}");
-            if let Some(r) = ratio {
-                assert!((s.w - s.h * r).abs() <= 1.0, "{s:?} {r} {handle:?}");
+        // Index 0 is free, 1 the image's own ratio (as `RATIOS`), the rest fixed.
+        let fixed = [1.0, 16.0 / 9.0, 4.0 / 3.0, 0.25];
+        for _ in 0..10 {
+            let image = (16 + next() % 2000, 16 + next() % 2000);
+            let (iw, ih) = (image.0 as f32, image.1 as f32);
+            let mut choice = 0;
+            let mut s = full(image);
+            for _ in 0..200 {
+                // The ratio changes now and then; the selection is only re-fitted to it then, as the combo does.
+                if next() % 8 == 0 {
+                    choice = next() as usize % (fixed.len() + 2);
+                    let r = if choice < 2 { ratio(choice, image) } else { Some(fixed[choice - 2]) };
+                    s = apply_ratio(s, r, image);
+                }
+                let r = if choice < 2 { ratio(choice, image) } else { Some(fixed[choice - 2]) };
+                let handle = HANDLES[next() as usize % HANDLES.len()];
+                let dx = (next() % 4000) as f32 - 2000.0 + 0.37;
+                let dy = (next() % 4000) as f32 - 2000.0 - 0.61;
+                s = drag(s, handle, dx, dy, r, image);
+                assert!(s.x >= 0.0 && s.y >= 0.0 && s.w >= 1.0 && s.h >= 1.0, "{s:?} {image:?}");
+                assert!(s.x + s.w <= iw && s.y + s.h <= ih, "{s:?} {image:?}");
+                if let Some(r) = r {
+                    assert!((s.w - s.h * r).abs() <= 1.0, "{s:?} {r} {handle:?} {image:?}");
+                }
             }
         }
     }
