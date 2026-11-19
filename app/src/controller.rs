@@ -43,7 +43,7 @@ pub struct Controller {
     close_pending: Cell<bool>,
     /// A Save As dialog or the shell's recycle UI is up (`SavingProcess` in 1.x): a second save or delete queued meanwhile is dropped.
     modal: Cell<bool>,
-    strings: Rc<Strings>,
+    strings: Rc<RefCell<Strings>>,
     /// Frame timer of the playing animation. Held here so the controller dropping (or `stop_animation`) ends it.
     anim: slint::Timer,
     /// IMAGEVIEWER_TRACE set at startup: one timing line per load on stderr.
@@ -51,7 +51,7 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn new(ui: &MainWindow, host: Rc<ImageHost>, strings: Rc<Strings>) -> Rc<Self> {
+    pub fn new(ui: &MainWindow, host: Rc<ImageHost>, strings: Rc<RefCell<Strings>>) -> Rc<Self> {
         let controller = Rc::new(Self {
             ui: ui.as_weak(),
             host,
@@ -126,8 +126,7 @@ impl Controller {
         ui.on_crop_apply(move || c.crop_apply());
         let c = controller.clone();
         ui.on_crop_cancel(move || c.crop_cancel());
-        let labels: Vec<SharedString> = crop::RATIOS.iter().enumerate().map(|(i, (label, _))| if i < 2 { controller.strings.get(label).into() } else { (*label).into() }).collect();
-        ui.set_crop_ratios(ModelRc::new(VecModel::from(labels)));
+        controller.push_crop_ratios();
         let c = controller.clone();
         ui.on_info_folder_clicked(move || c.open_info_folder());
         let c = controller.clone();
@@ -559,7 +558,7 @@ impl Controller {
         let suggested = suggested.unwrap_or_else(|| locale::save_stamp(SystemTime::now()));
         let hwnd = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window()))?;
         // Modal: no borrow is held while it pumps messages.
-        dialogs::pick_save(hwnd, &suggested, &SAVE_FILE_TYPES, &self.strings.get("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT"))
+        dialogs::pick_save(hwnd, &suggested, &SAVE_FILE_TYPES, &self.strings.borrow().get("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT"))
     }
 
     /// Hands the picture to the save worker. Until it comes back, image commands, navigation and loads are off and the UI keeps
@@ -745,7 +744,7 @@ impl Controller {
         if ui.get_dialog_open() {
             return;
         }
-        ui.set_error_message(self.strings.get(key).into());
+        ui.set_error_message(self.strings.borrow().get(key).into());
         ui.set_error_open(true);
     }
 
@@ -830,6 +829,19 @@ impl Controller {
     }
 
     /// `UpdateButtonsAccessiblity` + `LoadingDisplay`: command flags, title, dimensions, ring and error panel.
+    /// The texts Rust pushes itself, after the language changed: the crop ratio names and the window title.
+    pub fn language_changed(&self) {
+        self.push_crop_ratios();
+        self.refresh_ui();
+    }
+
+    fn push_crop_ratios(&self) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        let strings = self.strings.borrow();
+        let labels: Vec<SharedString> = crop::RATIOS.iter().enumerate().map(|(i, (label, _))| if i < 2 { strings.get(label).into() } else { (*label).into() }).collect();
+        ui.set_crop_ratios(ModelRc::new(VecModel::from(labels)));
+    }
+
     pub fn refresh_ui(&self) {
         let Some(ui) = self.ui.upgrade() else { return };
         let app = ui.global::<AppState>();
@@ -855,7 +867,7 @@ impl Controller {
         app.set_navigate(flags.navigate);
         app.set_icon_strip(flags.icon_strip);
         app.set_dimensions_text(dimensions.into());
-        let prefix = ui_state::title_prefix(&inputs, &self.strings.get("SYSTEM_LOADING"), &self.strings.get("SYSTEM_PASTED_CONTENT"));
+        let prefix = ui_state::title_prefix(&inputs, &self.strings.borrow().get("SYSTEM_LOADING"), &self.strings.borrow().get("SYSTEM_PASTED_CONTENT"));
         ui.set_title_text(window_title(prefix.as_deref()).into());
         ui.set_loading(inputs.loading);
         ui.set_error_visible(error.is_some());

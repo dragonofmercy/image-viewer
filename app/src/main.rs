@@ -20,6 +20,7 @@ mod win {
 
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use viewer_core::culture::{Strings, resolve_language};
@@ -40,7 +41,7 @@ fn window_title(prefix: Option<&str>) -> String {
 }
 
 /// UI language tags in preference order (BCP-47), empty when the query fails.
-fn system_ui_languages() -> Vec<String> {
+pub(crate) fn system_ui_languages() -> Vec<String> {
     let mut count = 0u32;
     let mut len = 0u32;
     if unsafe { GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &mut count, None, &mut len) }.is_err() || len == 0 {
@@ -82,10 +83,10 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.set_title_text(window_title(None).into());
     let settings = Settings::app();
     apply_theme(&ui, settings.theme());
-    // The language is fixed for the session: a change applies at next start, as in 1.x.
-    let strings = Rc::new(Strings::load(resolve_language(&settings.language(), &system_ui_languages())));
+    // Swapped by the Settings dialog when the language changes (options.rs).
+    let strings = Rc::new(RefCell::new(Strings::load(resolve_language(&settings.language(), &system_ui_languages()))));
     let tr = strings.clone();
-    ui.global::<Tr>().on_t(move |key| tr.get(&key).into());
+    ui.global::<Tr>().on_lookup(move |key, _| tr.borrow().get(&key).into());
     let saved = geometry::load(&settings);
     geometry::apply(ui.window(), &saved);
     // As 1.x: a saved Minimized state comes back as Normal.
@@ -130,8 +131,9 @@ fn main() -> Result<(), slint::PlatformError> {
             apply_theme(&ui, setting);
         }
     });
-    options::install(&ui, &strings);
-    let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings);
+    let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings.clone());
+    let c = controller.clone();
+    options::install(&ui, &strings, move || c.language_changed());
     let c = controller.clone();
     ui.window().on_close_requested(move || {
         // Closing now would lose the edit being written: the controller closes the window once the save succeeded.

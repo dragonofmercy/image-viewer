@@ -1,10 +1,11 @@
 //! Settings and About dialogs: the entries of the dropdowns and the wiring between the dialogs and `Settings`.
 
 use crate::win::locale::format_file_time;
-use crate::{AboutState, Commands, MainWindow, SettingsState, apply_theme};
+use crate::{AboutState, Commands, MainWindow, SettingsState, Tr, apply_theme};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use std::cell::RefCell;
 use std::rc::Rc;
-use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, index_of, native_name};
+use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, index_of, native_name, resolve_language};
 use viewer_core::settings::{Settings, Theme as ThemeSetting};
 
 const REPOSITORY_URL: &str = "https://github.com/dragonofmercy/image-viewer";
@@ -45,7 +46,8 @@ fn save<E: std::fmt::Display>(what: &str, result: Result<(), E>) {
 }
 
 /// Opens the Settings and About dialogs on their commands (dropped while another dialog is up, as `ShowDialogAsync`) and saves each change at once.
-pub fn install(ui: &MainWindow, strings: &Rc<Strings>) {
+/// A language change applies at once: the strings are reloaded, every `Tr.t` binding re-evaluates and `language_changed` runs.
+pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, language_changed: impl Fn() + 'static) {
     let state = ui.global::<SettingsState>();
     let weak = ui.as_weak();
     let s = strings.clone();
@@ -55,7 +57,7 @@ pub fn install(ui: &MainWindow, strings: &Rc<Strings>) {
             return;
         }
         let stored = Settings::app();
-        ui.global::<SettingsState>().set_language_labels(model(language_entries(&s.get("DEFAULT_SYSTEM_LANGUAGE")).into_iter().map(|(label, _)| label)));
+        ui.global::<SettingsState>().set_language_labels(model(language_entries(&s.borrow().get("DEFAULT_SYSTEM_LANGUAGE")).into_iter().map(|(label, _)| label)));
         ui.global::<SettingsState>().set_language_index(index_of_language(&stored.language()) as i32);
         ui.global::<SettingsState>().set_theme_index(THEMES.iter().position(|t| *t == stored.theme()).unwrap_or(0) as i32);
         ui.global::<SettingsState>().set_interval_index(index_of_interval(&stored.update_interval()) as i32);
@@ -63,9 +65,22 @@ pub fn install(ui: &MainWindow, strings: &Rc<Strings>) {
         ui.global::<SettingsState>().set_webp_quality(i32::from(stored.webp_quality()));
         ui.set_settings_open(true);
     });
-    state.on_language_chosen(|i| {
+    let weak = ui.as_weak();
+    let s = strings.clone();
+    let language_changed = Rc::new(language_changed);
+    state.on_language_chosen(move |i| {
         let tag = language_entries("").get(i as usize).map(|(_, tag)| tag.clone()).unwrap_or_default();
         save("language", Settings::app().set_language(&tag));
+        // Deferred: this runs inside the dropdown row that is about to be rebuilt with the new labels.
+        let (weak, s, language_changed) = (weak.clone(), s.clone(), language_changed.clone());
+        slint::Timer::single_shot(std::time::Duration::ZERO, move || {
+            let Some(ui) = weak.upgrade() else { return };
+            *s.borrow_mut() = Strings::load(resolve_language(&tag, &crate::system_ui_languages()));
+            let tr = ui.global::<Tr>();
+            tr.set_revision(tr.get_revision().wrapping_add(1));
+            ui.global::<SettingsState>().set_language_labels(model(language_entries(&s.borrow().get("DEFAULT_SYSTEM_LANGUAGE")).into_iter().map(|(label, _)| label)));
+            language_changed();
+        });
     });
     let weak = ui.as_weak();
     state.on_theme_chosen(move |i| {
@@ -86,9 +101,9 @@ pub fn install(ui: &MainWindow, strings: &Rc<Strings>) {
         if ui.get_dialog_open() {
             return;
         }
-        let last = Settings::app().last_update_check_time().map(format_file_time).filter(|t| !t.is_empty()).unwrap_or_else(|| s.get("ABOUT_LABEL_LAST_UPDATE_NEVER"));
+        let last = Settings::app().last_update_check_time().map(format_file_time).filter(|t| !t.is_empty()).unwrap_or_else(|| s.borrow().get("ABOUT_LABEL_LAST_UPDATE_NEVER"));
         ui.global::<AboutState>().set_version(format!("v{}", env!("CARGO_PKG_VERSION")).into());
-        ui.global::<AboutState>().set_last_check(format!("{}{last}", s.get("ABOUT_LABEL_LAST_UPDATE")).into());
+        ui.global::<AboutState>().set_last_check(format!("{}{last}", s.borrow().get("ABOUT_LABEL_LAST_UPDATE")).into());
         ui.set_about_open(true);
     });
     ui.global::<AboutState>().on_open_url(|release| {

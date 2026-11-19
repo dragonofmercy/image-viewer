@@ -1,4 +1,9 @@
-// Filled once by Rust from viewer_core::culture::Strings; returns "[KEY]" for a missing key.
+// Answered by Rust from viewer_core::culture::Strings; returns "[KEY]" for a missing key.
+// Every binding calling `t` reads `revision`, so bumping it after a language change re-evaluates all of them.
 export global Tr {
-    pure callback t(string) -> string;
+    in property <int> revision;
+    pure callback lookup(string, int) -> string;
+    public pure function t(key: string) -> string {
+        return root.lookup(key, root.revision);
+    }
 }
