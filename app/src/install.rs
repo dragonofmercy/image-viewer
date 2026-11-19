@@ -10,6 +10,7 @@ use winreg::enums::*;
 
 use crate::launch::PROTOCOL;
 
+pub const REPOSITORY_URL: &str = "https://github.com/dragonofmercy/image-viewer";
 pub const AUMID: &str = "velopack.Dragon.ImageViewer";
 
 /// `root` is "" in production; tests pass a sandbox prefix prepended to every key path.
@@ -127,6 +128,33 @@ fn uninstall() {
     log("unregister integration", Integration::new("").unregister());
 }
 
+/// Update manager of this install, `None` for a debug run or a loose copy.
+pub fn installed() -> Option<velopack::UpdateManager> {
+    velopack::UpdateManager::new(velopack::sources::GithubSource::new(REPOSITORY_URL, None, false), None, None).ok()
+}
+
+/// Only a real release install owns the associations: not a debug build, a loose copy or the portable zip.
+fn should_register(debug: bool, installed: bool, portable: bool) -> bool {
+    !debug && installed && !portable
+}
+
+/// Re-registers the file associations when the stamp or the exe path changed (cheap no-op otherwise).
+pub fn ensure_associations() {
+    let um = installed();
+    if !should_register(cfg!(debug_assertions), um.is_some(), um.as_ref().is_some_and(|u| u.get_is_portable())) {
+        return;
+    }
+    let exe = match std::env::current_exe() {
+        Ok(p) => p.to_string_lossy().into_owned(),
+        Err(e) => return eprintln!("cannot locate the executable: {e}"),
+    };
+    if exe.is_empty() {
+        return;
+    }
+    let plan = FileAssociationPlan::new(&exe, &SUPPORTED_FILE_TYPES);
+    log("register file associations", AssociationService::new("", Settings::app()).ensure_registered(&plan).map(drop));
+}
+
 /// First statement of `main`. Velopack does nothing when the exe is not an installed copy.
 pub fn run_hooks() {
     velopack::VelopackApp::build()
@@ -212,6 +240,14 @@ mod tests {
         assert!(!exists(&root, &format!(r"AppUserModelId\{AUMID}")));
         it.unregister().unwrap();
         let _ = Integration::hkcu().delete_subkey_all(&root);
+    }
+
+    #[test]
+    fn associations_only_for_a_real_release_install() {
+        assert!(should_register(false, true, false));
+        assert!(!should_register(true, true, false)); // debug build
+        assert!(!should_register(false, false, false)); // loose copy
+        assert!(!should_register(false, true, true)); // portable zip
     }
 
     #[test]

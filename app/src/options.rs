@@ -1,5 +1,6 @@
 //! Settings and About dialogs: the entries of the dropdowns and the wiring between the dialogs and `Settings`.
 
+use crate::install::REPOSITORY_URL;
 use crate::win::locale::format_file_time;
 use crate::{AboutState, Commands, MainWindow, SettingsState, Tr, choose_theme};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -9,7 +10,6 @@ use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, index_of, native_name, 
 use viewer_core::format::uc_first;
 use viewer_core::settings::{Settings, Theme as ThemeSetting};
 
-const REPOSITORY_URL: &str = "https://github.com/dragonofmercy/image-viewer";
 const UPDATE_INTERVALS: [&str; 4] = ["day", "week", "month", ""];
 const THEMES: [ThemeSetting; 3] = [ThemeSetting::Default, ThemeSetting::Light, ThemeSetting::Dark];
 

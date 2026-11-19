@@ -127,6 +127,8 @@ fn main() -> Result<(), slint::PlatformError> {
     });
     // Shown here so the native window exists: the frame hides it until its first frame is painted (no white flash).
     ui.show()?;
+    // Off the UI thread, after the window is up (as 1.x does after the first frame).
+    std::thread::spawn(install::ensure_associations);
     let weak = ui.as_weak();
     frame::install_when_ready(&ui, move |_| {
         if let Some(ui) = weak.upgrade() {
