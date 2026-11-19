@@ -1,4 +1,6 @@
 * text=auto eol=lf
-*.dll binary
-*.ttf binary
+*.png binary
+*.webp binary
 *.ico binary
+*.ttf binary
+*.dll binary
