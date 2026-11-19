@@ -1,0 +1,200 @@
+import { Theme } from "theme.slint";
+import { Tr } from "tr.slint";
+import { Button, AccentButton } from "widgets/button.slint";
+import { ComboBox } from "widgets/combo-box.slint";
+
+// Reports a left-button drag as the pointer offset from where it began, in window coordinates: the area itself moves with the selection.
+component DragArea inherits TouchArea {
+    in property <int> handle;
+    callback drag-start(int);
+    callback drag-move(length, length);
+
+    property <bool> dragging;
+    property <length> start-x;
+    property <length> start-y;
+
+    pointer-event(event) => {
+        if event.button == PointerEventButton.left {
+            if event.kind == PointerEventKind.down {
+                self.dragging = true;
+                self.start-x = self.absolute-position.x + self.mouse-x;
+                self.start-y = self.absolute-position.y + self.mouse-y;
+                root.drag-start(root.handle);
+            } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel {
+                self.dragging = false;
+            }
+        }
+    }
+    moved => {
+        if self.dragging {
+            root.drag-move(self.absolute-position.x + self.mouse-x - self.start-x, self.absolute-position.y + self.mouse-y - self.start-y);
+        }
+    }
+}
+
+// A 7px square thumb (1.x ImageCropper thumb style) centered on (cx, cy), with a 15px hit box.
+component Thumb inherits Rectangle {
+    in property <length> cx;
+    in property <length> cy;
+    in property <int> handle;
+    in property <MouseCursor> cursor;
+    callback drag-start(int);
+    callback drag-move(length, length);
+
+    x: root.cx - 7.5px;
+    y: root.cy - 7.5px;
+    width: 15px;
+    height: 15px;
+
+    Rectangle {
+        x: 4px;
+        y: 4px;
+        width: 7px;
+        height: 7px;
+        background: Theme.title-button-pressed;
+        border-width: 1px;
+        border-color: Theme.crop-thumb-border;
+    }
+    DragArea {
+        handle: root.handle;
+        mouse-cursor: root.cursor;
+        drag-start(h) => {
+            root.drag-start(h);
+        }
+        drag-move(dx, dy) => {
+            root.drag-move(dx, dy);
+        }
+    }
+}
+
+// Inline crop tool, filling the image view. The selection comes in image pixels (sel-*) and is mapped onto the image rectangle (img-*,
+// view px) for drawing only; drags go back as view px offsets. Handles: 0 N, 1 S, 2 E, 3 W, 4 NE, 5 NW, 6 SE, 7 SW, 8 the inside.
+export component Cropper inherits Rectangle {
+    in property <length> img-x;
+    in property <length> img-y;
+    in property <length> img-w;
+    in property <length> img-h;
+    in property <float> image-width;
+    in property <float> sel-x;
+    in property <float> sel-y;
+    in property <float> sel-w;
+    in property <float> sel-h;
+    in property <[string]> ratios;
+    in-out property <int> ratio-index;
+    callback drag-start(int);
+    callback drag-move(length, length);
+    callback ratio-chosen(int);
+    callback reset();
+    callback cancel();
+    callback apply();
+
+    // View px per image pixel.
+    property <length> unit: root.image-width > 0 ? root.img-w / root.image-width : 1px;
+    property <length> sx: root.img-x + root.sel-x * root.unit;
+    property <length> sy: root.img-y + root.sel-y * root.unit;
+    property <length> sw: root.sel-w * root.unit;
+    property <length> sh: root.sel-h * root.unit;
+    property <color> dim: #000000.with-alpha(0.5);
+
+    // Swallows the pointer and the wheel: zoom and pan are locked while cropping.
+    TouchArea {
+        scroll-event(event) => {
+            EventResult.accept
+        }
+    }
+
+    // Dim mask over the image around the selection: above, below, left, right.
+    Rectangle { x: root.img-x; y: root.img-y; width: root.img-w; height: root.sy - root.img-y; background: root.dim; }
+    Rectangle { x: root.img-x; y: root.sy + root.sh; width: root.img-w; height: root.img-y + root.img-h - root.sy - root.sh; background: root.dim; }
+    Rectangle { x: root.img-x; y: root.sy; width: root.sx - root.img-x; height: root.sh; background: root.dim; }
+    Rectangle { x: root.sx + root.sw; y: root.sy; width: root.img-x + root.img-w - root.sx - root.sw; height: root.sh; background: root.dim; }
+
+    Rectangle {
+        x: root.sx;
+        y: root.sy;
+        width: root.sw;
+        height: root.sh;
+        border-width: 1px;
+        border-color: #ffffff;
+        DragArea {
+            handle: 8;
+            mouse-cursor: MouseCursor.move;
+            drag-start(h) => {
+                root.drag-start(h);
+            }
+            drag-move(dx, dy) => {
+                root.drag-move(dx, dy);
+            }
+        }
+    }
+
+    for t in [
+        { handle: 0, cx: root.sx + root.sw / 2, cy: root.sy, cursor: MouseCursor.ns-resize },
+        { handle: 1, cx: root.sx + root.sw / 2, cy: root.sy + root.sh, cursor: MouseCursor.ns-resize },
+        { handle: 2, cx: root.sx + root.sw, cy: root.sy + root.sh / 2, cursor: MouseCursor.ew-resize },
+        { handle: 3, cx: root.sx, cy: root.sy + root.sh / 2, cursor: MouseCursor.ew-resize },
+        { handle: 4, cx: root.sx + root.sw, cy: root.sy, cursor: MouseCursor.nesw-resize },
+        { handle: 5, cx: root.sx, cy: root.sy, cursor: MouseCursor.nwse-resize },
+        { handle: 6, cx: root.sx + root.sw, cy: root.sy + root.sh, cursor: MouseCursor.nwse-resize },
+        { handle: 7, cx: root.sx, cy: root.sy + root.sh, cursor: MouseCursor.nesw-resize },
+    ]: Thumb {
+        handle: t.handle;
+        cx: t.cx;
+        cy: t.cy;
+        cursor: t.cursor;
+        drag-start(h) => {
+            root.drag-start(h);
+        }
+        drag-move(dx, dy) => {
+            root.drag-move(dx, dy);
+        }
+    }
+
+    // Floating controls, bottom-centered 16px clear of the edges, with the chrome of the icon size picker.
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - 16px;
+        width: panel.preferred-width;
+        height: panel.preferred-height;
+        border-radius: Theme.overlay-radius;
+        background: Theme.pane-background;
+        border-width: 1px;
+        border-color: Theme.app-bar-border;
+        // Swallows what the controls do not take, so nothing reaches the selection under the panel.
+        TouchArea {
+            scroll-event(event) => {
+                EventResult.accept
+            }
+        }
+        panel := HorizontalLayout {
+            padding: 5px;
+            spacing: 8px;
+            ComboBox {
+                min-width: 120px;
+                model: root.ratios;
+                current-index <=> root.ratio-index;
+                selected(i) => {
+                    root.ratio-chosen(i);
+                }
+            }
+            Button {
+                text: Tr.t("TRANSFORM_CROP_RESET");
+                clicked => {
+                    root.reset();
+                }
+            }
+            Button {
+                glyph: "\u{E711}";
+                clicked => {
+                    root.cancel();
+                }
+            }
+            AccentButton {
+                text: Tr.t("TRANSFORM_CROP_VALIDATE");
+                clicked => {
+                    root.apply();
+                }
+            }
+        }
+    }
+}

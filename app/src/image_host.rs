@@ -1,7 +1,8 @@
 //! View controller of the image area: owns the `View` (zoom and offset), the display pyramid, and pushes the result to the Slint properties.
 //!
 //! Interface for the loading and editing tasks: `ImageHost::new(&ui)`, `show(&RgbaImage)` (displays at the fit zoom), `clear()`, `fit()`, `fit_after_resize()`.
-//! Zoom and pan callbacks (wheel, drag, resize, `Commands.adjust/zoom-full/zoom-in/zoom-out`) are registered by `new`.
+//! Zoom and pan callbacks (wheel, drag, resize, `Commands.adjust/zoom-full/zoom-in/zoom-out`) are registered by `new`; `set_locked` turns
+//! them off for the cropper.
 
 use crate::viewport::{self, View};
 use crate::{AppState, Commands, MainWindow};
@@ -138,6 +139,8 @@ pub struct ImageHost {
     token: Arc<AtomicU64>,
     /// Wheel delta below one unit (touchpads), carried to the next event.
     wheel_rest: Cell<f32>,
+    /// The cropper is open: zoom and pan do not move, a resize refits.
+    locked: Cell<bool>,
 }
 
 impl ImageHost {
@@ -147,10 +150,14 @@ impl ImageHost {
             state: RefCell::default(),
             token: Arc::new(AtomicU64::new(0)),
             wheel_rest: Cell::new(0.0),
+            locked: Cell::new(false),
         });
         CURRENT.with(|c| *c.borrow_mut() = Rc::downgrade(&host));
         let h = host.clone();
         ui.on_view_wheel(move |delta, x, y| {
+            if h.locked.get() {
+                return;
+            }
             let total = h.wheel_rest.get() + delta;
             let whole = total.trunc();
             h.wheel_rest.set(total - whole);
@@ -159,19 +166,40 @@ impl ImageHost {
             }
         });
         let h = host.clone();
-        ui.on_view_drag(move |dx, dy| h.update(|v, image, view| viewport::pan(v, dx, dy, image, view)));
+        ui.on_view_drag(move |dx, dy| h.unlocked_update(|v, image, view| viewport::pan(v, dx, dy, image, view)));
         let h = host.clone();
         ui.on_view_resized(move || h.resized());
         let commands = ui.global::<Commands>();
         let h = host.clone();
-        commands.on_adjust(move || h.fit());
+        commands.on_adjust(move || {
+            if !h.locked.get() {
+                h.fit();
+            }
+        });
         let h = host.clone();
-        commands.on_zoom_full(move || h.update(|_, image, view| viewport::centered(1.0, image, view)));
+        commands.on_zoom_full(move || h.unlocked_update(|_, image, view| viewport::centered(1.0, image, view)));
         let h = host.clone();
-        commands.on_zoom_in(move || h.update(|v, image, view| viewport::step(v, 0.1, image, view)));
+        commands.on_zoom_in(move || h.unlocked_update(|v, image, view| viewport::step(v, 0.1, image, view)));
         let h = host.clone();
-        commands.on_zoom_out(move || h.update(|v, image, view| viewport::step(v, -0.1, image, view)));
+        commands.on_zoom_out(move || h.unlocked_update(|v, image, view| viewport::step(v, -0.1, image, view)));
         host
+    }
+
+    /// Locks zoom and pan while the cropper is open (the controller sets it from the document state).
+    pub fn set_locked(&self, locked: bool) {
+        self.locked.set(locked);
+    }
+
+    /// Current zoom (view px per image px), 1.0 without an image.
+    pub fn zoom(&self) -> f32 {
+        self.state.borrow().view.map_or(1.0, |v| v.zoom)
+    }
+
+    /// A user zoom or pan: ignored while locked.
+    fn unlocked_update(&self, next: impl FnOnce(View, (u32, u32), (f32, f32)) -> View) {
+        if !self.locked.get() {
+            self.update(next);
+        }
     }
 
     /// Displays `pixels` at the fit zoom. Smaller levels are built on a worker thread and attached when ready.
@@ -271,7 +299,8 @@ impl ImageHost {
         let Some(ui) = self.ui.upgrade() else { return };
         let (fit_now, pending) = resolve_pending(self.state.borrow().fit_pending, (ui.get_view_width(), ui.get_view_height()));
         self.state.borrow_mut().fit_pending = pending;
-        if fit_now { self.fit() } else { self.update(viewport::clamp) }
+        // The cropper keeps the image fitted: its selection is in image pixels, so the overlay follows.
+        if fit_now || self.locked.get() { self.fit() } else { self.update(viewport::clamp) }
     }
 
     fn attach(&self, token: u64, index: usize, buffer: Buffer) {

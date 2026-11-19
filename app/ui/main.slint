@@ -13,6 +13,8 @@ import { ImageView } from "image-view.slint";
 import { IconStrip, IconSizeItem } from "icon-strip.slint";
 import { InfoPane, InfoFields } from "info-pane.slint";
 import { ErrorDialog } from "dialogs/error.slint";
+import { Cropper } from "cropper.slint";
+import { PopupArea } from "widgets/combo-box.slint";
 
 export { Theme } from "theme.slint";
 export { Tr } from "tr.slint";
@@ -54,6 +56,21 @@ export component MainWindow inherits Window {
     callback icon-size-step(int);
     in property <InfoFields> info;
     callback info-folder-clicked();
+    // Inline cropper, driven by controller.rs: the selection is in image pixels, drags come back in view px from their start.
+    in property <bool> cropping;
+    in property <float> crop-image-width;
+    in property <float> crop-x;
+    in property <float> crop-y;
+    in property <float> crop-w;
+    in property <float> crop-h;
+    in property <[string]> crop-ratios;
+    in-out property <int> crop-ratio-index;
+    callback crop-drag-start(int);
+    callback crop-drag-move(length, length);
+    callback crop-ratio-chosen(int);
+    callback crop-reset();
+    callback crop-cancel();
+    callback crop-apply();
     // `ShowErrorAsync`, driven by controller.rs.
     in-out property <bool> error-open;
     in property <string> error-message;
@@ -72,6 +89,12 @@ export component MainWindow inherits Window {
     changed focus-return => {
         scope.focus();
     }
+    init => {
+        PopupArea.height = self.height;
+    }
+    changed height => {
+        PopupArea.height = self.height;
+    }
 
     scope := FocusScope {
         init => {
@@ -87,7 +110,9 @@ export component MainWindow inherits Window {
             // Named keys have no modifier in the XAML accelerators, so Shift must not be held either.
             let bare = plain && !shift;
             let img = AppState.image-commands;
-            if ctrl && !alt && !shift && key == "o" {
+            if root.cropping && bare && event.text == Key.Return {
+                root.crop-apply();
+            } else if ctrl && !alt && !shift && key == "o" {
                 Commands.open();
             } else if ctrl && alt && key == "o" {
                 Commands.settings();
@@ -199,6 +224,39 @@ export component MainWindow inherits Window {
                     }
                     step(d) => {
                         root.icon-size-step(d);
+                    }
+                }
+                if root.cropping: Cropper {
+                    width: parent.width;
+                    height: parent.height;
+                    img-x: root.view-x;
+                    img-y: root.view-y;
+                    img-w: root.view-w;
+                    img-h: root.view-h;
+                    image-width: root.crop-image-width;
+                    sel-x: root.crop-x;
+                    sel-y: root.crop-y;
+                    sel-w: root.crop-w;
+                    sel-h: root.crop-h;
+                    ratios: root.crop-ratios;
+                    ratio-index <=> root.crop-ratio-index;
+                    drag-start(h) => {
+                        root.crop-drag-start(h);
+                    }
+                    drag-move(dx, dy) => {
+                        root.crop-drag-move(dx, dy);
+                    }
+                    ratio-chosen(i) => {
+                        root.crop-ratio-chosen(i);
+                    }
+                    reset => {
+                        root.crop-reset();
+                    }
+                    cancel => {
+                        root.crop-cancel();
+                    }
+                    apply => {
+                        root.crop-apply();
                     }
                 }
                 // XAML SplitView pane: overlays the right edge, slides in over the image.

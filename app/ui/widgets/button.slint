@@ -1,7 +1,10 @@
 import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
 
 component ButtonBase inherits Rectangle {
     in property <string> text;
+    // Optional 16px glyph before the text (an icon-only button leaves `text` empty).
+    in property <string> glyph;
     in property <bool> enabled: true;
     in property <bool> accent: false;
     callback clicked;
@@ -19,7 +22,12 @@ component ButtonBase inherits Rectangle {
         padding-top: 5px;
         padding-bottom: 5px;
         alignment: center;
-        Text {
+        if root.glyph != "": Icon {
+            glyph: root.glyph;
+            size: 16px;
+            tint: !root.enabled ? Theme.text-disabled : root.accent ? Theme.text-on-accent : Theme.text-primary;
+        }
+        if root.text != "": Text {
             text: root.text;
             vertical-alignment: center;
             color: !root.enabled ? Theme.text-disabled : root.accent ? Theme.text-on-accent : Theme.text-primary;

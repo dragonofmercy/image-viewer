@@ -8,7 +8,7 @@ use std::rc::{Rc, Weak};
 use std::time::{Duration, Instant, SystemTime};
 
 use slint::platform::WindowEvent;
-use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, TimerMode, VecModel};
+use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, TimerMode, VecModel};
 use viewer_core::culture::Strings;
 use viewer_core::dib;
 use viewer_core::files::{SAVE_FILE_TYPES, SUPPORTED_FILE_TYPES, is_supported};
@@ -16,7 +16,8 @@ use viewer_core::folder::FolderNav;
 use viewer_core::picture::{Flip, LoadError, Picture, Rotate, SaveError};
 use viewer_core::settings::Settings;
 
-use crate::document::{Document, Loader, Route, Saver, Source, frame_delay, next_icon_index, quality_for, reveal_offset, save_route};
+use crate::crop::{self, Handle, Sel};
+use crate::document::{CropSession, Document, Loader, Route, Saver, Source, frame_delay, next_icon_index, quality_for, reveal_offset, save_route};
 use crate::file_info;
 use crate::image_host::ImageHost;
 use crate::win::{clipboard, dialogs, locale, shell};
@@ -111,6 +112,22 @@ impl Controller {
         commands.on_escape(move || c.escape());
         let c = controller.clone();
         commands.on_toggle_fullscreen(move || c.toggle_fullscreen());
+        let c = controller.clone();
+        commands.on_crop(move || c.start_crop());
+        let c = controller.clone();
+        ui.on_crop_drag_start(move |handle| c.crop_drag_start(handle));
+        let c = controller.clone();
+        ui.on_crop_drag_move(move |dx, dy| c.crop_drag_move(dx, dy));
+        let c = controller.clone();
+        ui.on_crop_ratio_chosen(move |index| c.crop_ratio_chosen(index));
+        let c = controller.clone();
+        ui.on_crop_reset(move || c.crop_reset());
+        let c = controller.clone();
+        ui.on_crop_apply(move || c.crop_apply());
+        let c = controller.clone();
+        ui.on_crop_cancel(move || c.crop_cancel());
+        let labels: Vec<SharedString> = crop::RATIOS.iter().enumerate().map(|(i, (label, _))| if i < 2 { controller.strings.get(label).into() } else { (*label).into() }).collect();
+        ui.set_crop_ratios(ModelRc::new(VecModel::from(labels)));
         let c = controller.clone();
         ui.on_info_folder_clicked(move || c.open_info_folder());
         let c = controller.clone();
@@ -268,13 +285,11 @@ impl Controller {
     fn escape(&self) {
         let Some(ui) = self.ui.upgrade() else { return };
         let app = ui.global::<AppState>();
-        // Task 13: `cropping` comes from the cropper state.
-        let cropping = false;
+        let cropping = self.doc.borrow().crop.is_some();
         match ui_state::escape_target(ui.get_dialog_open(), cropping, app.get_info_open(), app.get_fullscreen()) {
             // The dialog's own FocusScope closes it on Escape; one reaching the window must not close what lies behind it.
             ui_state::Target::Dialog => {}
-            // Task 13: close the cropper here.
-            ui_state::Target::Cropper => {}
+            ui_state::Target::Cropper => self.crop_cancel(),
             ui_state::Target::InfoPane => self.close_info(),
             ui_state::Target::Fullscreen => self.set_fullscreen(false),
             ui_state::Target::Nothing => {}
@@ -327,10 +342,106 @@ impl Controller {
         }
     }
 
-    /// `Context.RotateFlip` + `ReloadImageView`: the view is rebuilt and fitted; an animation restarts from its first frame.
+    /// `Context.RotateFlip`.
     fn rotate_flip(&self, rotate: Rotate, flip: Flip) {
+        self.edit(|p| p.rotate_flip(rotate, flip));
+    }
+
+    /// `ButtonImageCrop_Click`, inline: the animation stops, the image is fitted and locked (through `refresh_ui`), every command is
+    /// off, the selection covers the whole image with the free ratio.
+    fn start_crop(&self) {
+        let session = {
+            let mut doc = self.doc.borrow_mut();
+            let Some(image) = doc.picture.as_ref().filter(|_| doc.crop.is_none() && !doc.loading && !doc.saving).map(|p| (p.width(), p.height())) else {
+                return;
+            };
+            let session = CropSession::new(image);
+            doc.crop = Some(session);
+            session
+        };
+        self.stop_animation();
+        self.host.fit();
+        if let Some(ui) = self.ui.upgrade() {
+            ui.set_crop_ratio_index(0);
+        }
+        self.refresh_ui();
+        self.push_crop(session.sel);
+    }
+
+    /// The selection, in image pixels, to the overlay (which maps it onto the image rectangle).
+    fn push_crop(&self, sel: Sel) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        let width = self.doc.borrow().picture.as_ref().map_or(1, Picture::width);
+        ui.set_crop_image_width(width as f32);
+        ui.set_crop_x(sel.x);
+        ui.set_crop_y(sel.y);
+        ui.set_crop_w(sel.w);
+        ui.set_crop_h(sel.h);
+    }
+
+    /// Changes the open session and pushes its selection. Does nothing when the cropper is closed.
+    fn update_crop(&self, change: impl FnOnce(&mut CropSession, (u32, u32))) {
+        let sel = {
+            let mut doc = self.doc.borrow_mut();
+            let Some(image) = doc.picture.as_ref().map(|p| (p.width(), p.height())) else { return };
+            let Some(session) = doc.crop.as_mut() else { return };
+            change(session, image);
+            session.sel
+        };
+        self.push_crop(sel);
+    }
+
+    /// Handle order of the overlay: N, S, E, W, NE, NW, SE, SW, then the inside of the selection.
+    fn crop_drag_start(&self, handle: i32) {
+        let handles = [Handle::N, Handle::S, Handle::E, Handle::W, Handle::NE, Handle::NW, Handle::SE, Handle::SW, Handle::Move];
+        let Some(&handle) = usize::try_from(handle).ok().and_then(|i| handles.get(i)) else { return };
+        self.update_crop(|s, _| s.drag = (s.sel, handle));
+    }
+
+    /// (dx, dy): view pixels from the point where the drag began.
+    fn crop_drag_move(&self, dx: f32, dy: f32) {
+        let zoom = self.host.zoom();
+        self.update_crop(|s, image| s.sel = crop::drag(s.drag.0, s.drag.1, dx / zoom, dy / zoom, crop::ratio(s.ratio, image), image));
+    }
+
+    fn crop_ratio_chosen(&self, index: i32) {
+        let Ok(index) = usize::try_from(index) else { return };
+        self.update_crop(|s, image| {
+            s.ratio = index;
+            s.sel = crop::apply_ratio(s.sel, crop::ratio(index, image), image);
+        });
+    }
+
+    fn crop_reset(&self) {
+        self.update_crop(|s, image| s.sel = crop::apply_ratio(crop::full(image), crop::ratio(s.ratio, image), image));
+    }
+
+    /// `ButtonCropValidate_Click` + `Context.Crop`: crops, closes the cropper, then the transform refresh.
+    fn crop_apply(&self) {
+        let rect = {
+            let mut doc = self.doc.borrow_mut();
+            let Some(image) = doc.picture.as_ref().map(|p| (p.width(), p.height())) else { return };
+            let Some(session) = doc.crop.take() else { return };
+            crop::to_pixels(session.sel, image)
+        };
+        self.edit(|p| p.crop(rect.0, rect.1, rect.2, rect.3));
+    }
+
+    /// `Context.CloseCropper` without a change: the animation resumes.
+    fn crop_cancel(&self) {
+        if self.doc.borrow_mut().crop.take().is_none() {
+            return;
+        }
+        self.refresh_ui();
+        if self.doc.borrow().picture.as_ref().is_some_and(Picture::is_animated) {
+            self.schedule_frame(0);
+        }
+    }
+
+    /// `ReloadImageView` after an edit: the view is rebuilt and fitted; an animation restarts from its first frame.
+    fn edit(&self, change: impl FnOnce(&mut Picture)) {
         let Some(mut picture) = self.doc.borrow_mut().picture.take() else { return };
-        picture.rotate_flip(rotate, flip);
+        change(&mut picture);
         let animated = picture.is_animated();
         if animated {
             self.stop_animation();
@@ -676,6 +787,8 @@ impl Controller {
             let dimensions = doc.picture.as_ref().map(|p| format!("{}x{}", p.width(), p.height())).unwrap_or_default();
             (inputs, dimensions, doc.error.clone())
         };
+        self.host.set_locked(inputs.cropping);
+        ui.set_cropping(inputs.cropping);
         let flags = ui_state::flags(&inputs);
         app.set_image_commands(flags.image_commands);
         app.set_save_direct(flags.save_direct);

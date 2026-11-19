@@ -3,6 +3,7 @@
 //! `Document` lives on the UI thread. Each load gets a generation number: a result whose generation is not the current one is dropped,
 //! so a slow decode never replaces a newer image (or a newer failure).
 
+use crate::crop::{self, Handle, Sel};
 use crate::ui_state::Inputs;
 use image::RgbaImage;
 use std::panic::{self, AssertUnwindSafe};
@@ -36,6 +37,25 @@ pub struct Document {
     pub error: Option<String>,
     /// A paste is parsing: the picture and error panel it replaced, put back when the DIB fails to parse.
     paste_backup: Option<(Option<Picture>, Option<String>)>,
+    /// The inline cropper is open. A new load or paste closes it, as `OpenImage` closes the 1.x cropper.
+    pub crop: Option<CropSession>,
+}
+
+/// State of the open cropper, in image pixels.
+#[derive(Debug, Clone, Copy)]
+pub struct CropSession {
+    pub sel: Sel,
+    /// Entry of `crop::RATIOS`.
+    pub ratio: usize,
+    /// Selection and handle when the current drag began: drag deltas are measured from it.
+    pub drag: (Sel, Handle),
+}
+
+impl CropSession {
+    pub fn new(image: (u32, u32)) -> Self {
+        let sel = crop::full(image);
+        Self { sel, ratio: 0, drag: (sel, Handle::Move) }
+    }
 }
 
 impl Document {
@@ -46,6 +66,7 @@ impl Document {
         self.picture = None;
         self.error = None;
         self.paste_backup = None;
+        self.crop = None;
         self.generation
     }
 
@@ -108,6 +129,7 @@ impl Document {
             loaded: picture.is_some(),
             loading: self.loading,
             saving: self.saving,
+            cropping: self.crop.is_some(),
             modified: picture.is_some_and(Picture::modified),
             has_path: self.path.is_some(),
             folder_count: self.folder.as_ref().map_or(0, |f| f.files.len()),
@@ -561,6 +583,17 @@ mod tests {
         assert!(doc.error.is_none());
         assert!(doc.cancel_paste(paste));
         assert_eq!(doc.error.as_deref(), Some("x"));
+    }
+
+    #[test]
+    fn a_new_load_closes_the_cropper() {
+        let mut doc = Document {
+            crop: Some(CropSession::new((4, 3))),
+            ..Document::default()
+        };
+        assert!(doc.inputs().cropping);
+        doc.begin_paste();
+        assert!(doc.crop.is_none() && !doc.inputs().cropping);
     }
 
     #[test]

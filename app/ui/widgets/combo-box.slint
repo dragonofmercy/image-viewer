@@ -1,0 +1,117 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+import { FocusReturn } from "menu-flyout.slint";
+
+// Height of the window, kept by the root window: the dropdown opens upward when it would not fit below the box.
+export global PopupArea {
+    in-out property <length> height;
+}
+
+// WinUI ComboBox: a 32px box showing the selected entry; the dropdown lists `model` with the selected row marked by an accent pill.
+// Set the builtin `min-width` to size it.
+export component ComboBox inherits Rectangle {
+    in property <[string]> model;
+    in-out property <int> current-index;
+    callback selected(int);
+
+    property <length> row-height: 36px;
+    // Rows plus the 2px padding and the 1px border at the top and bottom.
+    property <length> dropdown-height: root.model.length * root.row-height + 2 * 3px;
+    property <bool> fits-below: root.absolute-position.y + root.height + 4px + root.dropdown-height <= PopupArea.height;
+
+    property <bool> popup-open: popup.is-open;
+    changed popup-open => {
+        if !root.popup-open {
+            FocusReturn.token += 1;
+        }
+    }
+
+    height: 32px;
+    border-radius: Theme.control-radius;
+    border-width: 1px;
+    border-color: Theme.control-stroke;
+    background: touch.pressed ? Theme.control-fill-pressed : touch.has-hover ? Theme.control-fill-hover : Theme.control-fill;
+    accessible-role: combobox;
+    accessible-value: root.model[root.current-index];
+    accessible-action-default => {
+        popup.show();
+    }
+
+    HorizontalLayout {
+        padding-left: 11px;
+        padding-right: 11px;
+        spacing: 8px;
+        Text {
+            text: root.model[root.current-index];
+            color: Theme.text-primary;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        Icon {
+            glyph: "\u{E70D}";
+            size: 12px;
+            tint: Theme.text-secondary;
+        }
+    }
+
+    touch := TouchArea {
+        clicked => {
+            popup.show();
+        }
+    }
+
+    popup := PopupWindow {
+        close-policy: close-on-click-outside;
+        x: 0px;
+        y: root.fits-below ? root.height + 4px : -root.dropdown-height - 4px;
+        width: root.width;
+        height: root.dropdown-height;
+        Rectangle {
+            background: Theme.combo-dropdown-background;
+            border-width: 1px;
+            border-color: Theme.surface-stroke-flyout;
+            border-radius: Theme.overlay-radius;
+            VerticalLayout {
+                padding: 1px;
+                padding-top: 3px;
+                padding-bottom: 3px;
+                for label[i] in root.model: Rectangle {
+                    height: root.row-height;
+                    // 4px side margin around the highlighted row.
+                    Rectangle {
+                        x: 4px;
+                        y: 2px;
+                        width: parent.width - 8px;
+                        height: parent.height - 4px;
+                        border-radius: Theme.control-radius;
+                        background: row.pressed ? Theme.subtle-fill-tertiary : row.has-hover || i == root.current-index ? Theme.subtle-fill-secondary : transparent;
+                    }
+                    if i == root.current-index: Rectangle {
+                        x: 4px;
+                        y: (parent.height - self.height) / 2;
+                        width: 3px;
+                        height: 16px;
+                        border-radius: 1.5px;
+                        background: Theme.accent;
+                    }
+                    Text {
+                        x: 4px + 12px;
+                        width: parent.width - 2 * (4px + 12px);
+                        text: label;
+                        color: Theme.text-primary;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    row := TouchArea {
+                        clicked => {
+                            root.current-index = i;
+                            root.selected(i);
+                            popup.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
