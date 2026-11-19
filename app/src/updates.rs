@@ -180,7 +180,6 @@ impl Updates {
     }
 
     /// Background check at startup: `found` runs on the UI thread when an update exists.
-    #[allow(dead_code)] // Task 5 calls it at startup
     pub fn check_if_due(self: &Rc<Self>, found: impl FnOnce() + 'static) {
         if self.busy() || !self.backend.installed() || !Settings::app().update_check_due() {
             return;
@@ -265,7 +264,7 @@ impl Updates {
                     Outcome::Ready => match self.backend.apply() {
                         Ok(()) => {
                             frame::flush_geometry();
-                            // Task 5: clear the toast here, just before quitting.
+                            crate::win::toast::clear();
                             let _ = slint::quit_event_loop();
                         }
                         Err(message) => self.set_state(State::Failed { message, during_download: true }),

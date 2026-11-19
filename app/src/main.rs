@@ -19,6 +19,7 @@ mod win {
     pub mod dialogs;
     pub mod locale;
     pub mod shell;
+    pub mod toast;
 }
 
 use slint::ComponentHandle;
@@ -162,16 +163,28 @@ fn main() -> Result<(), slint::PlatformError> {
         }
         c.stop_animation();
         frame::flush_geometry();
+        win::toast::clear();
         slint::CloseRequestResponse::HideWindow
     });
     // Paths may be relative and non-ASCII: kept as OsString, made absolute by the document.
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let launch = launch::parse_launch(&args);
-    // Consumed by the update flow (Task 5).
-    let _start_update = matches!(launch, launch::Launch::Update);
+    let start_update = matches!(launch, launch::Launch::Update);
     if let launch::Launch::File(path) = launch {
         controller.open_startup(path);
     }
+    // Once the window is up: the background check (toast when an update exists), and the About download when launched from the toast.
+    let (weak, s, u) = (ui.as_weak(), strings.clone(), updates.clone());
+    slint::Timer::single_shot(std::time::Duration::ZERO, move || {
+        let s2 = s.clone();
+        u.check_if_due(move || {
+            let tr = |key: &str| s2.borrow().get(key);
+            win::toast::show_update(&tr("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"), &tr("ABOUT_BTN_DOWNLOAD_UPDATE"));
+        });
+        if start_update && let Some(ui) = weak.upgrade() {
+            options::show_about(&ui, &s.borrow(), &u, true);
+        }
+    });
     ui.run()
 }
 
