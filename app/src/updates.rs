@@ -23,6 +23,14 @@ pub enum State {
     },
 }
 
+/// The worker download, with its last reported percentage; `Abandoned` when About was closed meanwhile.
+#[derive(Clone, Copy, PartialEq)]
+enum Download {
+    None,
+    Active(u8),
+    Abandoned(u8),
+}
+
 /// Blocking operations of one update source. Errors are the UI message: empty for a network failure.
 trait Backend: Send + Sync {
     fn installed(&self) -> bool;
@@ -129,9 +137,7 @@ pub struct Updates {
     on_state: Box<dyn Fn(State)>,
     state: RefCell<State>,
     found: RefCell<Option<Box<dyn FnOnce()>>>,
-    downloading: Cell<bool>,
-    abandoned: Cell<bool>,
-    progress: Cell<u8>,
+    download: Cell<Download>,
 }
 
 impl Updates {
@@ -149,9 +155,7 @@ impl Updates {
             on_state,
             state: RefCell::new(State::Idle),
             found: RefCell::new(None),
-            downloading: Cell::new(false),
-            abandoned: Cell::new(false),
-            progress: Cell::new(0),
+            download: Cell::new(Download::None),
         })
     }
 
@@ -165,7 +169,7 @@ impl Updates {
     }
 
     fn busy(&self) -> bool {
-        self.downloading.get() || *self.state.borrow() == State::Checking
+        self.download.get() != Download::None || *self.state.borrow() == State::Checking
     }
 
     /// Manual check (About button).
@@ -197,8 +201,9 @@ impl Updates {
     /// Checks first when nothing is pending.
     pub fn download_and_restart(self: &Rc<Self>) {
         // About was reopened while the abandoned download still runs: adopt it.
-        if self.downloading.get() && self.abandoned.replace(false) {
-            return self.set_state(State::Downloading(self.progress.get()));
+        if let Download::Abandoned(p) = self.download.get() {
+            self.download.set(Download::Active(p));
+            return self.set_state(State::Downloading(p));
         }
         if self.busy() {
             return;
@@ -206,8 +211,7 @@ impl Updates {
         if !self.backend.installed() {
             return self.set_state(State::UpToDate);
         }
-        self.downloading.set(true);
-        self.progress.set(0);
+        self.download.set(Download::Active(0));
         self.set_state(State::Downloading(0));
         let (backend, post) = (self.backend.clone(), self.post.clone());
         std::thread::spawn(move || post(Msg::Done(run_download(&*backend, &post))));
@@ -215,8 +219,8 @@ impl Updates {
 
     /// About closed during a download: the update is not applied.
     pub fn abandon(&self) {
-        if self.downloading.get() {
-            self.abandoned.set(true);
+        if let Download::Active(p) | Download::Abandoned(p) = self.download.get() {
+            self.download.set(Download::Abandoned(p));
             *self.state.borrow_mut() = State::Available;
         }
     }
@@ -226,7 +230,7 @@ impl Updates {
             Msg::Checked { result, quiet } => {
                 let found = self.found.borrow_mut().take();
                 // A background check ended while the user started a download: it must not overwrite the download state.
-                if self.downloading.get() {
+                if self.download.get() != Download::None {
                     return;
                 }
                 match result {
@@ -242,15 +246,16 @@ impl Updates {
                     Err(message) => self.set_state(State::Failed { message, during_download: false }),
                 }
             }
-            Msg::Progress(p) => {
-                self.progress.set(p);
-                if !self.abandoned.get() {
+            Msg::Progress(p) => match self.download.get() {
+                Download::Active(_) => {
+                    self.download.set(Download::Active(p));
                     self.set_state(State::Downloading(p));
                 }
-            }
+                Download::Abandoned(_) => self.download.set(Download::Abandoned(p)),
+                Download::None => {}
+            },
             Msg::Done(state) => {
-                self.downloading.set(false);
-                if self.abandoned.replace(false) {
+                if matches!(self.download.replace(Download::None), Download::Abandoned(_)) {
                     // Nobody is watching: record the outcome without notifying, never apply.
                     *self.state.borrow_mut() = state;
                     return;
