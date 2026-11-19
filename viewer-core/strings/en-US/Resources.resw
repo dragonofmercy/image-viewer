@@ -189,6 +189,9 @@
   <data name="TRANSFORM_CROP_RESET" xml:space="preserve">
     <value>Reset</value>
   </data>
+  <data name="TRANSFORM_CROP_CANCEL" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="TRANSFORM_CROP_VALIDATE" xml:space="preserve">
     <value>Validate</value>
   </data>

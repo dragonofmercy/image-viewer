@@ -195,8 +195,7 @@ export component Cropper inherits Rectangle {
             }
             Button {
                 glyph: "\u{E711}";
-                // 1.x has no cancel or close string (its cancel button had none either): the reset key is the closest.
-                accessible-label: Tr.t("TRANSFORM_CROP_RESET");
+                accessible-label: Tr.t("TRANSFORM_CROP_CANCEL");
                 clicked => {
                     root.cancel();
                 }
