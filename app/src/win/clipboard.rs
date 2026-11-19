@@ -1,11 +1,13 @@
 //! CF_DIBV5 / CF_DIB on the Win32 clipboard (`Utilities/ClipboardHelper.cs` in 1.x, plus the paste side).
 
+use std::os::windows::ffi::OsStrExt;
+use std::path::Path;
 use std::time::Duration;
 
 use windows::Win32::Foundation::{GlobalFree, HANDLE, HGLOBAL, HWND};
 use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, EnumClipboardFormats, GetClipboardData, IsClipboardFormatAvailable, OpenClipboard, SetClipboardData};
 use windows::Win32::System::Memory::{GMEM_MOVEABLE, GlobalAlloc, GlobalLock, GlobalSize, GlobalUnlock};
-use windows::Win32::System::Ole::{CF_BITMAP, CF_DIB, CF_DIBV5};
+use windows::Win32::System::Ole::{CF_BITMAP, CF_DIB, CF_DIBV5, CF_HDROP};
 
 /// Open clipboard; closed on drop, so every path after a successful open closes it.
 struct Open;
@@ -33,7 +35,7 @@ impl Drop for Open {
 /// Replaces the clipboard content with `dib` as CF_DIB (the 1.x format, always written) and `dib_v5` as CF_DIBV5 for readers that
 /// take the alpha channel from it. False when the clipboard could not be opened or CF_DIB could not be written; a failed CF_DIBV5
 /// write is only logged.
-pub fn set_dibs(owner: HWND, dib_v5: &[u8], dib: &[u8]) -> bool {
+pub fn set_dibs(owner: HWND, dib_v5: &[u8], dib: &[u8], file: Option<&Path>) -> bool {
     let Some(_open) = Open::new(owner) else { return false };
     // The clipboard is open on this thread.
     if unsafe { EmptyClipboard() }.is_err() {
@@ -45,7 +47,23 @@ pub fn set_dibs(owner: HWND, dib_v5: &[u8], dib: &[u8]) -> bool {
     if !put(CF_DIBV5.0, dib_v5) {
         eprintln!("cannot put CF_DIBV5 on the clipboard, CF_DIB only");
     }
+    if let Some(file) = file
+        && !put(CF_HDROP.0, &build_hdrop(file))
+    {
+        eprintln!("cannot put CF_HDROP on the clipboard, image only");
+    }
     true
+}
+
+/// A `DROPFILES` block for one file (wide characters), built by hand: header of 20 bytes, then the path and the list terminator.
+pub fn build_hdrop(path: &Path) -> Vec<u8> {
+    let mut block = vec![0u8; 20];
+    block[0] = 20; // pFiles: offset of the file list; pt and fNC stay zero
+    block[16] = 1; // fWide
+    for unit in path.as_os_str().encode_wide().chain([0, 0]) {
+        block.extend_from_slice(&unit.to_le_bytes());
+    }
+    block
 }
 
 /// Adds one format to the open clipboard.
@@ -130,9 +148,21 @@ mod tests {
     fn dib_round_trips_through_the_clipboard() {
         let bgra: Vec<u8> = (0..16).collect();
         let (v5, dib) = (viewer_core::dib::build_dib_v5(&bgra, 2, 2), viewer_core::dib::build_dib(&bgra, 2, 2));
-        assert!(set_dibs(HWND::default(), &v5, &dib));
+        assert!(set_dibs(HWND::default(), &v5, &dib, None));
         // CF_DIB is placed first, so it is the one read back.
         assert_eq!(get_dib(HWND::default()).as_deref(), Some(dib.as_slice()));
+    }
+
+    #[test]
+    fn hdrop_block_holds_one_wide_path() {
+        let path = Path::new(r"C:\a.gif");
+        let block = build_hdrop(path);
+        assert_eq!(block.len(), 20 + (8 + 2) * 2);
+        assert_eq!(block[..4], [20, 0, 0, 0]);
+        assert_eq!(block[16..20], [1, 0, 0, 0]);
+        assert_eq!(block[block.len() - 4..], [0, 0, 0, 0]);
+        let units: Vec<u16> = block[20..block.len() - 4].chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        assert_eq!(String::from_utf16(&units).unwrap(), r"C:\a.gif");
     }
 
     #[test]

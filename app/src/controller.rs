@@ -34,6 +34,11 @@ fn exists(path: &Path) -> bool {
     path.is_file()
 }
 
+/// The file to put on the clipboard next to the image: only an animated picture, unchanged, loaded from a file that is still there.
+fn clipboard_file(animated: bool, modified: bool, path: Option<&Path>, exists: bool) -> Option<&Path> {
+    path.filter(|_| animated && !modified && exists)
+}
+
 /// The controller, from a worker callback.
 fn current() -> Option<Rc<Controller>> {
     CURRENT.with(|c| c.borrow().upgrade())
@@ -778,13 +783,15 @@ impl Controller {
     /// A failure is only logged, as in 1.x.
     fn copy(&self) {
         let Some(hwnd) = self.hwnd() else { return };
-        let (v5, dib) = {
+        let (v5, dib, file) = {
             let doc = self.doc.borrow();
             let Some(picture) = doc.picture.as_ref() else { return };
             let (bgra, width, height) = picture.bgra_pixels();
-            (dib::build_dib_v5(&bgra, width, height), dib::build_dib(&bgra, width, height))
+            let exists = doc.path.as_deref().is_some_and(exists);
+            let file = clipboard_file(picture.is_animated(), picture.modified(), doc.path.as_deref(), exists).map(Path::to_path_buf);
+            (dib::build_dib_v5(&bgra, width, height), dib::build_dib(&bgra, width, height), file)
         };
-        if !clipboard::set_dibs(hwnd, &v5, &dib) {
+        if !clipboard::set_dibs(hwnd, &v5, &dib, file.as_deref()) {
             eprintln!("cannot copy the image to the clipboard");
         }
     }
@@ -983,5 +990,20 @@ impl Controller {
         ui.set_loading(inputs.loading);
         ui.set_error_visible(error.is_some());
         ui.set_error_file(error.unwrap_or_default().into());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clipboard_file_needs_an_unchanged_animated_picture_whose_file_exists() {
+        let path = Path::new(r"C:\a.gif");
+        assert_eq!(clipboard_file(true, false, Some(path), true), Some(path));
+        assert_eq!(clipboard_file(false, false, Some(path), true), None);
+        assert_eq!(clipboard_file(true, true, Some(path), true), None);
+        assert_eq!(clipboard_file(true, false, None, true), None);
+        assert_eq!(clipboard_file(true, false, Some(path), false), None);
     }
 }
