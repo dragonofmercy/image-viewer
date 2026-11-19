@@ -26,7 +26,7 @@ const NATIVE_NAMES: [&str; 8] = [
     "\u{440}\u{443}\u{441}\u{441}\u{43a}\u{438}\u{439} (\u{420}\u{43e}\u{441}\u{441}\u{438}\u{44f})",
 ];
 
-fn index_of(tag: &str) -> Option<usize> {
+pub fn index_of(tag: &str) -> Option<usize> {
     AVAILABLE_LANGUAGES.iter().position(|t| t.eq_ignore_ascii_case(tag))
 }
 

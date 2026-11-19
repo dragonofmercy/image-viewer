@@ -4,7 +4,7 @@ use crate::win::locale::format_file_time;
 use crate::{AboutState, Commands, MainWindow, SettingsState, apply_theme};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
-use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, native_name};
+use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, index_of, native_name};
 use viewer_core::settings::{Settings, Theme as ThemeSetting};
 
 const REPOSITORY_URL: &str = "https://github.com/dragonofmercy/image-viewer";
@@ -26,7 +26,7 @@ fn language_entries(system_label: &str) -> Vec<(String, String)> {
 
 /// Dropdown index of a stored language tag; 0 (system default) for an empty or unknown one.
 fn index_of_language(tag: &str) -> usize {
-    AVAILABLE_LANGUAGES.iter().position(|t| t.eq_ignore_ascii_case(tag)).map_or(0, |i| i + 1)
+    index_of(tag).map_or(0, |i| i + 1)
 }
 
 /// Unknown values read as manual, the last entry.

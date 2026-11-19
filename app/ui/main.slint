@@ -1,12 +1,8 @@
 import { TitleBar } from "titlebar.slint";
 import { Theme } from "theme.slint";
 import { Tr } from "tr.slint";
-import { AppBarButton } from "widgets/app-bar-button.slint";
-import { FocusReturn, MenuFlyout, MenuItem, MenuSeparator } from "widgets/menu-flyout.slint";
-import { ToolTip } from "widgets/tooltip.slint";
+import { FocusReturn } from "widgets/menu-flyout.slint";
 import { ProgressRing } from "widgets/progress-ring.slint";
-import { Button, AccentButton } from "widgets/button.slint";
-import { HyperlinkButton } from "widgets/hyperlink-button.slint";
 import { Icon } from "widgets/icon.slint";
 import { Footer, Commands, AppState } from "footer.slint";
 import { ImageView } from "image-view.slint";
@@ -317,21 +313,6 @@ export component MainWindow inherits Window {
                         root.crop-apply();
                     }
                 }
-                // XAML SplitView pane: overlays the right edge, slides in over the image.
-                InfoPane {
-                    x: AppState.info-open ? parent.width - self.width : parent.width;
-                    y: 0px;
-                    height: parent.height;
-                    visible: self.x < parent.width;
-                    animate x { duration: 200ms; easing: ease-out; }
-                    info: root.info;
-                    close => {
-                        AppState.info-open = false;
-                    }
-                    folder-clicked => {
-                        root.info-folder-clicked();
-                    }
-                }
                 // XAML GlobalErrorMessage (the Store link is not ported: JXL decodes without the Store codec).
                 if root.error-visible: VerticalLayout {
                     alignment: center;
@@ -353,6 +334,21 @@ export component MainWindow inherits Window {
                         color: Theme.text-tertiary;
                         wrap: word-wrap;
                         horizontal-alignment: center;
+                    }
+                }
+                // XAML SplitView pane: overlays the right edge, slides in over the image.
+                InfoPane {
+                    x: AppState.info-open ? parent.width - self.width : parent.width;
+                    y: 0px;
+                    height: parent.height;
+                    visible: self.x < parent.width;
+                    animate x { duration: 200ms; easing: ease-out; }
+                    info: root.info;
+                    close => {
+                        AppState.info-open = false;
+                    }
+                    folder-clicked => {
+                        root.info-folder-clicked();
                     }
                 }
             }

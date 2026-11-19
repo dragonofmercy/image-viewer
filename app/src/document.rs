@@ -5,6 +5,7 @@
 
 use crate::crop::{self, Handle, Sel};
 use crate::ui_state::Inputs;
+#[cfg(test)]
 use image::RgbaImage;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
@@ -18,7 +19,7 @@ use viewer_core::settings::Settings;
 
 pub enum Source {
     Path(PathBuf),
-    #[allow(dead_code)] // only the worker test builds it; paste hands over the raw DIB so parsing stays off the UI thread
+    #[cfg(test)] // only the worker test builds it
     Pixels(RgbaImage),
     /// A CF_DIBV5 or CF_DIB payload read from the clipboard (untrusted bytes).
     Dib(Vec<u8>),
@@ -215,6 +216,7 @@ type Shared = Arc<(Mutex<Slot>, Condvar)>;
 fn decode(source: Source) -> Result<Picture, LoadError> {
     match source {
         Source::Path(path) => picture::load_path(&path),
+        #[cfg(test)]
         Source::Pixels(pixels) => Ok(picture::load_from_rgba(pixels)),
         Source::Dib(bytes) => {
             let parsed = dib::parse_dib(&bytes);

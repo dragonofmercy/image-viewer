@@ -145,6 +145,7 @@ impl Controller {
         frame::on_file_dropped(move |path| {
             if let Some(c) = weak.upgrade()
                 && !c.dialog_open()
+                && !c.modal.get()
             {
                 c.open_path(&path);
             }
