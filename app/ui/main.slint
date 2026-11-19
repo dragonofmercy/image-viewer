@@ -1,4 +1,4 @@
-import { TitleBar } from "titlebar.slint";
+import { TitleBar, CaptionButtons } from "titlebar.slint";
 import { Theme } from "theme.slint";
 import { Tr } from "tr.slint";
 import { FocusReturn } from "widgets/menu-flyout.slint";
@@ -228,9 +228,6 @@ export component MainWindow inherits Window {
             if !AppState.fullscreen: TitleBar {
                 height: root.title-bar-height;
                 title-text: root.title-text;
-                maximized: root.maximized;
-                caption-hover: root.caption-hover;
-                caption-pressed: root.caption-pressed;
             }
             // Spacer row (XAML Auto row), filled by later tasks.
             Rectangle { vertical-stretch: 0; }
@@ -360,18 +357,19 @@ export component MainWindow inherits Window {
         error-dialog := ErrorDialog {
             open <=> root.error-open;
             message: root.error-message;
-            caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
-            caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
         }
         settings-dialog := SettingsDialog {
             open <=> root.settings-open;
-            caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
-            caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
         }
         about-dialog := AboutDialog {
             open <=> root.about-open;
-            caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
-            caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
+        }
+        if !AppState.fullscreen: CaptionButtons {
+            x: parent.width - self.width;
+            y: 0px;
+            maximized: root.maximized;
+            caption-hover: root.caption-hover;
+            caption-pressed: root.caption-pressed;
         }
     }
 }

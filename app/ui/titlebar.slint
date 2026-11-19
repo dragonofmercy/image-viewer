@@ -18,12 +18,21 @@ component CaptionButton inherits Rectangle {
     }
 }
 
-export component TitleBar inherits Rectangle {
-    in property <string> title-text;
+// Drawn by the window above everything, dialogs included: like the 1.x system buttons, the smoke of a dialog passes under them.
+export component CaptionButtons inherits HorizontalLayout {
     in property <bool> maximized;
     // 0 = none, 1 = minimize, 2 = maximize, 3 = close
     in property <int> caption-hover;
     in property <int> caption-pressed;
+    width: 3 * 46px;
+    height: 48px;
+    CaptionButton { glyph: "\u{E921}"; hover: root.caption-hover == 1; pressed: root.caption-pressed == 1; }
+    CaptionButton { glyph: root.maximized ? "\u{E923}" : "\u{E922}"; hover: root.caption-hover == 2; pressed: root.caption-pressed == 2; }
+    CaptionButton { glyph: "\u{E8BB}"; hover: root.caption-hover == 3; pressed: root.caption-pressed == 3; is-close: true; }
+}
+
+export component TitleBar inherits Rectangle {
+    in property <string> title-text;
     background: Theme.app-bar-background;
 
     VerticalLayout {
@@ -47,23 +56,12 @@ export component TitleBar inherits Rectangle {
                 overflow: elide;
                 horizontal-stretch: 1;
             }
-            // Same 144px column as the 1.x XAML; the buttons are overlaid below.
+            // Same 144px column as the 1.x XAML; the window overlays the buttons.
             Rectangle { width: 144px; }
         }
         Rectangle {
             height: 1px;
             background: Theme.app-bar-border;
         }
-    }
-
-    // Full title bar height, drawn over the bottom border like the 1.x system caption buttons.
-    HorizontalLayout {
-        x: root.width - self.width;
-        width: 3 * 46px;
-        height: 48px;
-        y: 0px;
-        CaptionButton { glyph: "\u{E921}"; hover: root.caption-hover == 1; pressed: root.caption-pressed == 1; }
-        CaptionButton { glyph: root.maximized ? "\u{E923}" : "\u{E922}"; hover: root.caption-hover == 2; pressed: root.caption-pressed == 2; }
-        CaptionButton { glyph: "\u{E8BB}"; hover: root.caption-hover == 3; pressed: root.caption-pressed == 3; is-close: true; }
     }
 }

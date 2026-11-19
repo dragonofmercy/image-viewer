@@ -4,12 +4,9 @@ import { PopupArea } from "../widgets/combo-box.slint";
 
 // In-window modal host, the WinUI ContentDialog with the 1.x App.xaml sizes (ContentDialogPadding 0, min width 744px, max width 1280px).
 // Place it last in the window, filling it. Showing one dialog at a time is the caller's rule. Escape closes it.
-// The smoke leaves the caption buttons uncovered; the native hit-test keeps them and the caption drag working over it.
+// The smoke covers the whole window; the native hit-test keeps the caption buttons and the caption drag working over it.
 export component ContentDialog inherits Rectangle {
     in-out property <bool> open;
-    // The uncovered caption button block: the title bar height and the buttons width (zero in fullscreen).
-    in property <length> caption-height;
-    in property <length> caption-width;
     // WinUI default button: Enter closes a dialog whose only command is Close.
     in property <bool> close-on-enter: false;
     callback closed;
@@ -37,17 +34,6 @@ export component ContentDialog inherits Rectangle {
     }
 
     Rectangle {
-        x: 0px;
-        y: 0px;
-        width: root.width - root.caption-width;
-        height: root.caption-height;
-        background: Theme.smoke;
-    }
-    Rectangle {
-        x: 0px;
-        y: root.caption-height;
-        width: root.width;
-        height: root.height - root.caption-height;
         background: Theme.smoke;
     }
     // Swallows pointer and wheel events over the content and the footer.
