@@ -38,6 +38,8 @@ export component MenuItem inherits Rectangle {
     in property <string> path-data;
     in property <float> viewbox-width: 16;
     in property <float> viewbox-height: 16;
+    // Drawn size inside the 16px icon box: a path filling its viewbox looks heavier than the font glyphs at 16px.
+    in property <length> icon-size: 16px;
     in property <string> text;
     in property <string> shortcut-text;
     in property <bool> enabled: true;
@@ -67,7 +69,7 @@ export component MenuItem inherits Rectangle {
                 path-data: root.path-data;
                 viewbox-width: root.viewbox-width;
                 viewbox-height: root.viewbox-height;
-                size: 16px;
+                size: root.icon-size;
                 tint: root.enabled ? Theme.text-primary : Theme.text-disabled;
             }
         }
