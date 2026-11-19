@@ -40,6 +40,8 @@ pub struct Document {
     paste_backup: Option<(Option<Picture>, Option<String>)>,
     /// The inline cropper is open. A new load or paste closes it, as `OpenImage` closes the 1.x cropper.
     pub crop: Option<CropSession>,
+    /// Message key of an error raised while another dialog was open: shown when that dialog closes.
+    pending_error: Option<String>,
 }
 
 /// State of the open cropper, in image pixels.
@@ -123,6 +125,43 @@ impl Document {
     /// `LoadDirectoryFiles`: an unreadable folder disables navigation and keeps the image.
     pub fn list_folder(&mut self) {
         self.folder = self.path.as_deref().and_then(FolderNav::list);
+    }
+
+    /// Keeps the first error raised behind an open dialog; a later one does not replace it.
+    pub fn defer_error(&mut self, key: &str) {
+        self.pending_error.get_or_insert_with(|| key.to_owned());
+    }
+
+    pub fn take_error(&mut self) -> Option<String> {
+        self.pending_error.take()
+    }
+
+    /// Save As needs a picture in hand: none while a save runs (the worker owns it) or nothing is open.
+    pub fn can_save_as(&self) -> bool {
+        !self.saving && self.picture.is_some()
+    }
+
+    /// Delete also applies to pasted content (no path: nothing is recycled, the view clears), but never during a load or a save.
+    pub fn can_delete(&self) -> bool {
+        !self.saving && !self.loading && self.picture.is_some()
+    }
+
+    /// The worker handed the picture back. A successful save adopts `adopt` (the Save As target) and lists its folder.
+    pub fn finish_save(&mut self, picture: Picture, ok: bool, adopt: Option<PathBuf>) {
+        self.picture = Some(picture);
+        self.saving = false;
+        if ok && let Some(path) = adopt {
+            self.path = Some(path);
+            self.list_folder();
+        }
+    }
+
+    /// After the current file was recycled: no current path, and the folder list loses it. `next` then lands on its successor.
+    pub fn remove_deleted(&mut self) {
+        self.path = None;
+        if let Some(folder) = self.folder.as_mut() {
+            folder.remove_current();
+        }
     }
 
     pub fn inputs(&self) -> Inputs {
@@ -674,5 +713,99 @@ mod tests {
         assert_eq!(folder_nav.index, 1);
         assert!(doc.finish_load(g, picture::load_path(&path)));
         assert_eq!(doc.inputs().file_name.as_deref(), Some("photo.PNG"));
+    }
+
+    #[test]
+    fn a_deferred_error_is_taken_once_and_the_first_one_wins() {
+        let mut doc = Document::default();
+        assert_eq!(doc.take_error(), None);
+        doc.defer_error("A");
+        doc.defer_error("B");
+        assert_eq!(doc.take_error().as_deref(), Some("A"));
+        assert_eq!(doc.take_error(), None);
+    }
+
+    #[test]
+    fn save_as_and_delete_refuse_while_saving_or_without_a_picture() {
+        let mut doc = Document::default();
+        assert!(!doc.can_save_as() && !doc.can_delete());
+        doc.picture = Some(picture::load_from_rgba(RgbaImage::new(2, 2)));
+        // Pasted content: no path, still deletable (the view clears).
+        assert!(doc.can_save_as() && doc.can_delete());
+        doc.loading = true;
+        assert!(doc.can_save_as() && !doc.can_delete());
+        doc.loading = false;
+        doc.saving = true;
+        assert!(!doc.can_save_as() && !doc.can_delete());
+    }
+
+    fn folder_doc(dir: &Path, names: &[&str], current: usize) -> Document {
+        for n in names {
+            png(&dir.join(n));
+        }
+        let mut doc = Document {
+            path: Some(dir.join(names[current])),
+            ..Document::default()
+        };
+        doc.list_folder();
+        doc
+    }
+
+    #[test]
+    fn delete_in_the_middle_shows_the_next_entry() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut doc = folder_doc(dir.path(), &["a.png", "b.png", "c.png"], 1);
+        doc.remove_deleted();
+        assert!(doc.path.is_none());
+        let next = doc.folder.as_mut().and_then(|f| f.next(|_| true));
+        assert_eq!(next, Some(dir.path().join("c.png")));
+    }
+
+    #[test]
+    fn delete_of_the_last_entry_wraps_to_the_first() {
+        // FolderNav wraps around, as 1.x does: the previous entry is not chosen.
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut doc = folder_doc(dir.path(), &["a.png", "b.png", "c.png"], 2);
+        doc.remove_deleted();
+        let next = doc.folder.as_mut().and_then(|f| f.next(|_| true));
+        assert_eq!(next, Some(dir.path().join("a.png")));
+    }
+
+    #[test]
+    fn delete_of_the_only_entry_leaves_no_picture() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut doc = folder_doc(dir.path(), &["a.png"], 0);
+        doc.remove_deleted();
+        assert!(doc.path.is_none());
+        assert_eq!(doc.folder.as_mut().and_then(|f| f.next(|_| true)), None);
+    }
+
+    #[test]
+    fn a_failed_save_keeps_the_edit_and_the_old_path() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut doc = folder_doc(dir.path(), &["a.png"], 0);
+        let old = doc.path.clone();
+        let mut pic = picture::load_from_rgba(RgbaImage::new(3, 2));
+        pic.rotate_flip(Rotate::Rotate90, Flip::None);
+        doc.saving = true;
+        doc.finish_save(pic, false, Some(dir.path().join("b.png")));
+        assert!(!doc.saving && doc.picture.as_ref().is_some_and(Picture::modified));
+        assert_eq!(doc.path, old);
+    }
+
+    #[test]
+    fn a_successful_save_as_adopts_the_new_path_and_clears_the_edit() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut doc = folder_doc(dir.path(), &["a.png"], 0);
+        let target = dir.path().join("b.png");
+        let mut pic = picture::load_from_rgba(RgbaImage::new(3, 2));
+        pic.rotate_flip(Rotate::Rotate90, Flip::None);
+        doc.saving = true;
+        let (pic, result) = save_with_worker(pic, target.clone());
+        assert!(result.is_ok());
+        doc.finish_save(pic, true, Some(target.clone()));
+        assert!(!doc.saving && doc.picture.as_ref().is_some_and(|p| !p.modified()));
+        assert_eq!(doc.path.as_deref(), Some(target.as_path()));
+        assert_eq!(doc.folder.as_ref().map(|f| (f.files.len(), f.index)), Some((2, 1)));
     }
 }

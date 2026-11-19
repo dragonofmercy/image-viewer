@@ -73,6 +73,8 @@ export component MainWindow inherits Window {
     callback crop-reset();
     callback crop-cancel();
     callback crop-apply();
+    // The last open dialog closed: the controller shows an error that was raised behind it.
+    callback dialog-closed();
     // `ShowErrorAsync`, driven by controller.rs.
     in-out property <bool> error-open;
     in property <string> error-message;
@@ -123,6 +125,11 @@ export component MainWindow inherits Window {
     init => {
         PopupArea.height = self.height;
         Palette.color-scheme = root.dark ? ColorScheme.dark : ColorScheme.light;
+    }
+    changed dialog-open => {
+        if !root.dialog-open {
+            root.dialog-closed();
+        }
     }
     changed height => {
         PopupArea.height = self.height;

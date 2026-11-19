@@ -130,6 +130,7 @@ impl Controller {
         commands.on_escape(bind(c, Self::escape));
         commands.on_toggle_fullscreen(bind(c, Self::toggle_fullscreen));
         commands.on_crop(bind(c, Self::start_crop));
+        ui.on_dialog_closed(deferred(c, Self::dialog_closed));
         ui.on_crop_reset(bind(c, Self::crop_reset));
         ui.on_crop_apply(bind(c, Self::crop_apply));
         ui.on_crop_cancel(bind(c, Self::crop_cancel));
@@ -633,7 +634,7 @@ impl Controller {
 
     /// `Context.SaveAs`: the saved file becomes the current document and its folder is listed.
     fn save_as(&self) {
-        if self.dialog_open() {
+        if self.dialog_open() || !self.doc.borrow().can_save_as() {
             return;
         }
         // Exclusive through the dialog; once a save starts, `doc.saving` takes over until the worker hands the picture back.
@@ -690,21 +691,11 @@ impl Controller {
     fn saved(&self, picture: Picture, result: Result<(), SaveError>, adopt: Option<PathBuf>) {
         let animated = picture.is_animated();
         let ok = result.is_ok();
-        {
-            let mut doc = self.doc.borrow_mut();
-            doc.picture = Some(picture);
-            doc.saving = false;
-            match result {
-                Ok(()) => {
-                    // The file was rewritten (lossy formats differ from the pixels held): this picture is not kept on leaving.
-                    self.stamp.set(None);
-                    if let Some(path) = adopt {
-                        doc.path = Some(path);
-                        doc.list_folder();
-                    }
-                }
-                Err(e) => eprintln!("cannot save the image: {e}"),
-            }
+        self.doc.borrow_mut().finish_save(picture, ok, adopt);
+        match result {
+            // The file was rewritten (lossy formats differ from the pixels held): this picture is not kept on leaving.
+            Ok(()) => self.stamp.set(None),
+            Err(e) => eprintln!("cannot save the image: {e}"),
         }
         self.refresh_ui();
         self.update_info();
@@ -732,7 +723,7 @@ impl Controller {
     /// `Context.DeleteImage`: recycles the file, then shows the next file of the folder, or clears the view when none is left.
     /// Pasted content has no file: nothing is recycled. A failed recycle changes nothing (1.x swallows the exception).
     fn delete(&self) {
-        if self.dialog_open() {
+        if self.dialog_open() || !self.doc.borrow().can_delete() {
             return;
         }
         if self.modal.get() {
@@ -745,11 +736,7 @@ impl Controller {
             if self.exclusive(|| shell::recycle(hwnd, &path)) != Some(true) {
                 return;
             }
-            let mut doc = self.doc.borrow_mut();
-            doc.path = None;
-            if let Some(folder) = doc.folder.as_mut() {
-                folder.remove_current();
-            }
+            self.doc.borrow_mut().remove_deleted();
         }
         let has_files = self.doc.borrow().folder.as_ref().is_some_and(|f| !f.files.is_empty());
         if has_files {
@@ -856,14 +843,23 @@ impl Controller {
         }
     }
 
-    /// `ShowErrorAsync`: one dialog at a time, a second one is dropped.
+    /// `ShowErrorAsync`: one dialog at a time, a second one waits for the open one to close.
     fn show_error(&self, key: &str) {
         let Some(ui) = self.ui.upgrade() else { return };
         if ui.get_dialog_open() {
+            self.doc.borrow_mut().defer_error(key);
             return;
         }
         ui.set_error_message(self.strings.borrow().get(key).into());
         ui.set_error_open(true);
+    }
+
+    /// A dialog closed: shows the error that was raised behind it, if any.
+    fn dialog_closed(&self) {
+        let key = self.doc.borrow_mut().take_error();
+        if let Some(key) = key {
+            self.show_error(&key);
+        }
     }
 
     /// Stops the frame timer: new load, crop start, window close.
