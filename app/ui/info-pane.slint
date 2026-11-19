@@ -60,17 +60,18 @@ export component InfoPane inherits Rectangle {
                 }
             }
         }
+        // Rows 1 and 2: the 16px icon centered on one 20px text line (Margin="4,0"); rows 3 and 4: icon at the top (Margin="4,2"). Both land at y 2px.
+        // No right padding: the text keeps its 248px MaxWidth as in XAML, where it may run into the pane padding.
         // File name.
         HorizontalLayout {
             padding-top: 8px;
             padding-bottom: 8px;
             Rectangle {
                 width: 24px;
-                Icon { glyph: "\u{E91B}"; size: 16px; tint: Theme.text-primary; }
+                Icon { y: 2px; glyph: "\u{E91B}"; size: 16px; tint: Theme.text-primary; }
             }
             HorizontalLayout {
                 padding-left: 12px;
-                padding-right: 12px;
                 Text { text: root.info.name; max-width: 248px; overflow: elide; wrap: no-wrap; color: Theme.text-primary; }
             }
         }
@@ -80,11 +81,10 @@ export component InfoPane inherits Rectangle {
             padding-bottom: 8px;
             Rectangle {
                 width: 24px;
-                Icon { glyph: "\u{E787}"; size: 16px; tint: Theme.text-primary; }
+                Icon { y: 2px; glyph: "\u{E787}"; size: 16px; tint: Theme.text-primary; }
             }
             HorizontalLayout {
                 padding-left: 12px;
-                padding-right: 12px;
                 Text { text: root.info.date; max-width: 248px; wrap: word-wrap; color: Theme.text-primary; }
             }
         }
@@ -98,7 +98,6 @@ export component InfoPane inherits Rectangle {
             }
             VerticalLayout {
                 padding-left: 12px;
-                padding-right: 12px;
                 spacing: 8px;
                 Text { text: Tr.t("FILE_INFORMATION_DIMENSIONS"); max-width: 248px; color: Theme.text-primary; }
                 HorizontalLayout {
@@ -120,18 +119,16 @@ export component InfoPane inherits Rectangle {
             }
             VerticalLayout {
                 padding-left: 12px;
-                padding-right: 12px;
                 spacing: 8px;
                 Text { text: Tr.t("FILE_INFORMATION_FOLDER_PATH"); max-width: 248px; color: Theme.text-primary; }
-                Rectangle {
-                    max-width: 248px;
-                    Text {
-                        width: parent.width;
-                        text: root.info.folder;
-                        font-size: 12px;
-                        wrap: word-wrap;
-                        color: Theme.accent;
-                    }
+                // Only as wide as the text, so the click area ends where the link does.
+                Text {
+                    width: min(self.preferred-width, 248px);
+                    text: root.info.folder;
+                    font-size: 12px;
+                    // Breaks at word boundaries, or anywhere in a path with none (char-wrap is not supported by Skia).
+                    wrap: word-wrap;
+                    color: Theme.accent;
                     TouchArea {
                         mouse-cursor: MouseCursor.pointer;
                         clicked => {
