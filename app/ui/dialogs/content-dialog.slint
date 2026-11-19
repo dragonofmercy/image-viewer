@@ -17,6 +17,11 @@ export component ContentDialog inherits Rectangle {
         root.closed();
     }
 
+    // Gives the keyboard (back) to the dialog.
+    public function focus-keys() {
+        keys.focus();
+    }
+
     visible: root.open;
 
     changed open => {

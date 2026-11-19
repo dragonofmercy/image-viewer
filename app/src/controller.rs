@@ -143,7 +143,9 @@ impl Controller {
         });
         let weak = Rc::downgrade(&controller);
         frame::on_file_dropped(move |path| {
-            if let Some(c) = weak.upgrade() {
+            if let Some(c) = weak.upgrade()
+                && !c.dialog_open()
+            {
                 c.open_path(&path);
             }
         });
@@ -191,12 +193,20 @@ impl Controller {
 
     /// `LoadImageFromPicker`: a file whose extension is not supported is ignored.
     pub fn open_dialog(&self) {
+        if self.dialog_open() {
+            return;
+        }
         let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
         if let Some(path) = dialogs::pick_open(hwnd, &SUPPORTED_FILE_TYPES)
             && is_supported(&path)
         {
             self.open_path(&path);
         }
+    }
+
+    /// A dialog (settings, about, error) is up: commands that mutate or open things are dropped, whatever delivered them.
+    fn dialog_open(&self) -> bool {
+        self.ui.upgrade().is_some_and(|ui| ui.get_dialog_open())
     }
 
     pub fn next(&self) {
@@ -216,6 +226,9 @@ impl Controller {
     }
 
     fn navigate(&self, step: impl FnOnce(&mut FolderNav) -> Option<PathBuf>) {
+        if self.dialog_open() {
+            return;
+        }
         let target = self.doc.borrow_mut().folder.as_mut().and_then(step);
         if let Some(path) = target {
             self.load(&path);
@@ -275,6 +288,9 @@ impl Controller {
 
     /// `ButtonFileInfo_Click` + `PaneOpening`: shows the pane filled from the current file.
     fn open_info(&self) {
+        if self.dialog_open() {
+            return;
+        }
         let Some(ui) = self.ui.upgrade() else { return };
         ui.global::<AppState>().set_info_open(true);
         self.update_info();
@@ -357,12 +373,18 @@ impl Controller {
 
     /// `Context.RotateFlip`.
     fn rotate_flip(&self, rotate: Rotate, flip: Flip) {
+        if self.dialog_open() {
+            return;
+        }
         self.edit(|p| p.rotate_flip(rotate, flip));
     }
 
     /// `ButtonImageCrop_Click`, inline: the animation stops, the info pane closes, the image is fitted above the panel and locked
     /// (through `refresh_ui`), every command is off, the selection covers the whole image with the free ratio.
     fn start_crop(&self) {
+        if self.dialog_open() {
+            return;
+        }
         let session = {
             let mut doc = self.doc.borrow_mut();
             let Some(image) = doc.picture.as_ref().filter(|_| doc.crop.is_none() && !doc.loading && !doc.saving).map(|p| (p.width(), p.height())) else {
@@ -474,6 +496,9 @@ impl Controller {
 
     /// `Context.Save`: overwrites the file in place, or routes to Save As (pasted content, svg, ico).
     fn save(&self) {
+        if self.dialog_open() {
+            return;
+        }
         if self.modal.get() {
             return;
         }
@@ -495,6 +520,9 @@ impl Controller {
 
     /// `Context.SaveAs`: the saved file becomes the current document and its folder is listed.
     fn save_as(&self) {
+        if self.dialog_open() {
+            return;
+        }
         // Held through the dialog; once a save starts, `doc.saving` takes over until the worker hands the picture back.
         if self.modal.replace(true) {
             return;
@@ -594,6 +622,9 @@ impl Controller {
     /// `Context.DeleteImage`: recycles the file, then shows the next file of the folder, or clears the view when none is left.
     /// Pasted content has no file: nothing is recycled. A failed recycle changes nothing (1.x swallows the exception).
     fn delete(&self) {
+        if self.dialog_open() {
+            return;
+        }
         if self.modal.get() {
             return;
         }
@@ -647,6 +678,9 @@ impl Controller {
     /// of a file load (commands off, ring shown); a payload that fails to parse puts the previous image back untouched. Refused while
     /// a load, a paste or a save runs (the loader keeps only the latest request, so a paste would drop the pending load's completion).
     fn paste(&self) {
+        if self.dialog_open() {
+            return;
+        }
         {
             let doc = self.doc.borrow();
             if doc.loading || doc.saving {

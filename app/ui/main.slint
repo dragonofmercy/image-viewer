@@ -94,15 +94,29 @@ export component MainWindow inherits Window {
     default-font-family: "Segoe UI Variable Text";
     default-font-size: 14px;
 
+    // Where the keyboard belongs: the open dialog, else the window. The window scope is an ancestor of the dialogs, so focusing it
+    // under a dialog would let keys bypass the dialog's own scope.
+    function restore-focus() {
+        if root.error-open {
+            error-dialog.focus-keys();
+        } else if root.settings-open {
+            settings-dialog.focus-keys();
+        } else if root.about-open {
+            about-dialog.focus-keys();
+        } else {
+            scope.focus();
+        }
+    }
+
     property <int> focus-return: FocusReturn.token;
     changed focus-return => {
-        scope.focus();
+        root.restore-focus();
     }
     // The cropper is destroyed with the focus (and possibly an open dropdown) inside: take both back.
     changed cropping => {
         if !root.cropping {
             PopupArea.open = false;
-            scope.focus();
+            root.restore-focus();
         }
     }
     // The Slint attribution badge of the About dialog follows the app theme.
@@ -132,6 +146,20 @@ export component MainWindow inherits Window {
             // Named keys have no modifier in the XAML accelerators, so Shift must not be held either.
             let bare = plain && !shift;
             let img = AppState.image-commands;
+            // Defence in depth: the dialogs take every key themselves, one that still reaches the window runs nothing under them.
+            if root.dialog-open {
+                if event.text != Key.Escape {
+                    return reject;
+                }
+                if root.error-open {
+                    error-dialog.close();
+                } else if root.settings-open {
+                    settings-dialog.close();
+                } else {
+                    about-dialog.close();
+                }
+                return accept;
+            }
             // A dropdown left without the keyboard: Enter does nothing and Escape, rejected, makes Slint close the popup.
             if PopupArea.open && (event.text == Key.Return || event.text == Key.Escape) {
                 return reject;
@@ -330,18 +358,18 @@ export component MainWindow inherits Window {
             if !AppState.fullscreen: Footer { }
         }
 
-        ErrorDialog {
+        error-dialog := ErrorDialog {
             open <=> root.error-open;
             message: root.error-message;
             caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
             caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
         }
-        SettingsDialog {
+        settings-dialog := SettingsDialog {
             open <=> root.settings-open;
             caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
             caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
         }
-        AboutDialog {
+        about-dialog := AboutDialog {
             open <=> root.about-open;
             caption-height: AppState.fullscreen ? 0px : root.title-bar-height;
             caption-width: AppState.fullscreen ? 0px : root.caption-buttons-width;
