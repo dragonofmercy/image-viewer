@@ -41,9 +41,16 @@ try {
         throw 'vpk not found on PATH. Install it with: dotnet tool install -g vpk --version 1.2.161'
     }
 
+    # The app pins velopack = "=1.2.161"; vpk may print a build suffix ("1.2.161+abc").
+    $vpkVersion = ((vpk --version | Select-Object -First 1) -split '\+')[0].Trim()
+    if ($vpkVersion -ne '1.2.161') {
+        throw "vpk $vpkVersion found, 1.2.161 required. Run: dotnet tool update -g vpk --version 1.2.161"
+    }
+
     Write-Host '==> Cleaning publish\ and Releases\' -ForegroundColor Yellow
-    Remove-Item -Recurse -Force 'publish' -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force 'Releases' -ErrorAction SilentlyContinue
+    foreach ($dir in 'publish', 'Releases') {
+        if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }
+    }
 
     Write-Host '==> cargo build --release' -ForegroundColor Yellow
     cargo build --release
@@ -71,7 +78,7 @@ try {
 
     # On failure the throw above skips this, so publish\ stays in place for inspection.
     Write-Host '==> Cleaning publish\ (pack succeeded)' -ForegroundColor Yellow
-    Remove-Item -Recurse -Force 'publish' -ErrorAction SilentlyContinue
+    if (Test-Path 'publish') { Remove-Item -Recurse -Force 'publish' }
 
     Write-Host ''
     Write-Host '==> Done. Artifacts in Releases\:' -ForegroundColor Green

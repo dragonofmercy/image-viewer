@@ -24,7 +24,7 @@ Image extensions supported: jpg, jpeg, bmp, png, gif, tif, tiff, tga, ico, webp,
 cargo build --release
 ```
 
-The runnable exe is `target\release\ImageViewer.exe`. Keep the DLLs from `native\` (libheif and the C++ runtime) next to it to open heic, heif and avif files.
+The runnable exe is `target\release\ImageViewer.exe`. The DLLs from `native\` must stay next to the exe: the C++ runtime is needed to start the app, libheif to open heic, heif and avif files.
 
 ## How to install
 
@@ -54,7 +54,7 @@ Then tag and publish by hand. The release title equals the tag and carries the f
 ```pwsh
 git tag vX.Y.Z
 git push origin vX.Y.Z
-gh release create vX.Y.Z --title vX.Y.Z Releases\*
+gh release create vX.Y.Z --title vX.Y.Z (Get-ChildItem Releases).FullName
 ```
 
 ## Credits
