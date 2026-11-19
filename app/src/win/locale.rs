@@ -1,6 +1,6 @@
 //! User-locale date and time formatting (`DateTime.ToString(CultureInfo.CurrentCulture)` in 1.x).
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use windows::Win32::Foundation::{FILETIME, SYSTEMTIME};
 use windows::Win32::Globalization::{DATE_SHORTDATE, GetDateFormatEx, GetTimeFormatEx, TIME_FORMAT_FLAGS};
@@ -11,8 +11,13 @@ use windows::core::PCWSTR;
 const UNIX_TO_FILETIME_SECS: u64 = 11_644_473_600;
 
 fn to_local_system_time(t: SystemTime) -> Option<SYSTEMTIME> {
-    let since_unix = t.duration_since(UNIX_EPOCH).unwrap_or(Duration::ZERO);
-    let ticks = (since_unix.as_secs() + UNIX_TO_FILETIME_SECS) * 10_000_000 + u64::from(since_unix.subsec_nanos() / 100);
+    let epoch_ticks = i128::from(UNIX_TO_FILETIME_SECS) * 10_000_000;
+    let ticks = match t.duration_since(UNIX_EPOCH) {
+        Ok(d) => epoch_ticks + (d.as_nanos() / 100) as i128,
+        Err(e) => epoch_ticks - (e.duration().as_nanos() / 100) as i128,
+    };
+    // Before 1601 there is no FILETIME (Windows SystemTime cannot even hold such a time, so this is a safety net).
+    let ticks = u64::try_from(ticks).ok()?;
     let file_time = FILETIME {
         dwLowDateTime: ticks as u32,
         dwHighDateTime: (ticks >> 32) as u32,
@@ -63,6 +68,7 @@ fn stamp(t: &SYSTEMTIME) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn stamp_uses_a_12_hour_clock() {
@@ -86,4 +92,9 @@ mod tests {
         let text = format_file_time(UNIX_EPOCH + Duration::from_secs(1_718_452_800));
         assert!(text.chars().any(|c| c.is_ascii_digit()), "{text}");
     }
+
+    #[test]
+    fn dates_before_1970_are_not_clamped() {
+        let text = format_file_time(UNIX_EPOCH - Duration::from_secs(86_400 * 365));
+        assert!(text.contains("1969") && !text.contains("1970"), "{text}");    }
 }
