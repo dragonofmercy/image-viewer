@@ -164,7 +164,6 @@ fn main() -> Result<(), slint::PlatformError> {
         }
         c.stop_animation();
         frame::flush_geometry();
-        win::toast::clear();
         slint::CloseRequestResponse::HideWindow
     });
     // Paths may be relative and non-ASCII: kept as OsString, made absolute by the document.
@@ -190,7 +189,10 @@ fn main() -> Result<(), slint::PlatformError> {
             options::show_about(&ui, &s.borrow(), &u, start_update);
         }
     });
-    ui.run()
+    // After the loop: the window is already hidden, so the WinRT call no longer delays the close.
+    let result = ui.run();
+    win::toast::clear();
+    result
 }
 
 #[cfg(test)]
