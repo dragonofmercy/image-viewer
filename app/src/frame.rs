@@ -36,6 +36,7 @@ struct Geometry {
 }
 
 type DropHandler = Rc<dyn Fn(PathBuf)>;
+type FullscreenHandler = Rc<dyn Fn(bool)>;
 
 thread_local! {
     static UI: RefCell<Option<slint::Weak<MainWindow>>> = const { RefCell::new(None) };
@@ -46,6 +47,9 @@ thread_local! {
     static OS_THEME_CHANGED: RefCell<Option<Rc<dyn Fn()>>> = const { RefCell::new(None) };
     static TRACKER: RefCell<Option<(Tracker, Settings)>> = const { RefCell::new(None) };
     static FILE_DROPPED: RefCell<Option<DropHandler>> = const { RefCell::new(None) };
+    // Last fullscreen state seen in WM_STYLECHANGED: the single source for the tracker and `AppState.fullscreen`.
+    static FULLSCREEN: Cell<bool> = const { Cell::new(false) };
+    static FULLSCREEN_CHANGED: RefCell<Option<FullscreenHandler>> = const { RefCell::new(None) };
 }
 
 pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
@@ -96,25 +100,39 @@ pub fn track_geometry(tracker: Tracker, settings: Settings) {
     TRACKER.set(Some((tracker, settings)));
 }
 
-/// Enters or leaves borderless fullscreen (winit: drops WS_OVERLAPPEDWINDOW, then SetWindowPos to the monitor; leaving restores
-/// the styles and the saved placement, maximized included). Winit does it synchronously, so WM_SIZE / WM_MOVE reach the subclass
-/// inside `set_fullscreen`: the tracker stops recording before the window leaves its normal rectangle and resumes only once it is
-/// back, so the monitor rectangle is never recorded. No TRACKER borrow is held across the call.
-pub fn set_fullscreen(window: &slint::Window, fullscreen: bool) {
-    let track = |on: bool| {
-        TRACKER.with_borrow_mut(|t| {
-            if let Some((tracker, _)) = t {
-                tracker.set_fullscreen(on);
-            }
-        });
-    };
+/// Registers the callback run on the UI thread, from the event loop, when the window enters or leaves fullscreen (the caption style
+/// disappears or comes back), whoever caused it. The argument is the state at the time the callback runs.
+pub fn on_fullscreen_changed(f: impl Fn(bool) + 'static) {
+    FULLSCREEN_CHANGED.with(|c| *c.borrow_mut() = Some(Rc::new(f)));
+}
+
+/// The caption style changed (`WM_STYLECHANGED`). Winit's borderless fullscreen changes the style before it moves the window
+/// (SetWindowPos to the monitor) and, when leaving, restores it before the frame change and SetWindowPlacement back to the normal
+/// (or maximized) placement, all synchronously. So the tracker stops recording right away on entry, and resumes from the event loop,
+/// after the window is back in place; the monitor rectangle is never recorded.
+fn fullscreen_style_changed(fullscreen: bool) {
+    if FULLSCREEN.replace(fullscreen) == fullscreen {
+        return;
+    }
     if fullscreen {
-        track(true);
+        set_tracker_fullscreen(true);
     }
-    window.set_fullscreen(fullscreen);
-    if !fullscreen {
-        track(false);
-    }
+    let _ = slint::invoke_from_event_loop(|| {
+        // Current value, not the one at the change: a later change may have happened meanwhile.
+        let fullscreen = FULLSCREEN.get();
+        set_tracker_fullscreen(fullscreen);
+        if let Some(f) = FULLSCREEN_CHANGED.with(|c| c.borrow().clone()) {
+            f(fullscreen);
+        }
+    });
+}
+
+fn set_tracker_fullscreen(on: bool) {
+    TRACKER.with_borrow_mut(|t| {
+        if let Some((tracker, _)) = t {
+            tracker.set_fullscreen(on);
+        }
+    });
 }
 
 /// Winit's borderless fullscreen removes the caption style (our window always has it otherwise). Read from the window itself so
@@ -280,6 +298,11 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                         f();
                     }
                 });
+                DefSubclassProc(hwnd, msg, wparam, lparam)
+            }
+            WM_STYLECHANGED if wparam.0 as i32 == GWL_STYLE.0 => {
+                let styles = &*(lparam.0 as *const STYLESTRUCT);
+                fullscreen_style_changed(styles.styleNew & WS_CAPTION.0 == 0);
                 DefSubclassProc(hwnd, msg, wparam, lparam)
             }
             WM_ACTIVATE => {

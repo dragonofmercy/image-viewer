@@ -136,6 +136,12 @@ impl Controller {
         let c = controller.clone();
         ui.on_icon_size_step(move |delta| c.step_icon_size(delta));
         let weak = Rc::downgrade(&controller);
+        frame::on_fullscreen_changed(move |on| {
+            if let Some(c) = weak.upgrade() {
+                c.show_fullscreen(on);
+            }
+        });
+        let weak = Rc::downgrade(&controller);
         frame::on_file_dropped(move |path| {
             if let Some(c) = weak.upgrade() {
                 c.open_path(&path);
@@ -296,24 +302,31 @@ impl Controller {
         }
     }
 
-    /// `ToggleFullScreen` (F11).
+    /// `ToggleFullScreen` (F11), from the window's own state so a drift of the UI state cannot swallow the key.
     fn toggle_fullscreen(&self) {
         if let Some(ui) = self.ui.upgrade() {
-            self.set_fullscreen(!ui.global::<AppState>().get_fullscreen());
+            self.set_fullscreen(!ui.window().is_fullscreen());
         }
     }
 
-    /// `SetFullScreen`: the title bar, footer and icon strip hide with `AppState.fullscreen`; the image is refitted to the new view.
+    /// `SetFullScreen`. The UI follows at once (no frame with the title bar over the monitor); `frame::on_fullscreen_changed`
+    /// confirms or corrects it from the real window state afterwards.
     fn set_fullscreen(&self, on: bool) {
+        let Some(ui) = self.ui.upgrade() else { return };
+        self.show_fullscreen(on);
+        ui.window().set_fullscreen(on);
+    }
+
+    /// The title bar, footer and icon strip hide with `AppState.fullscreen`; the image is refitted to the new view.
+    fn show_fullscreen(&self, on: bool) {
         let Some(ui) = self.ui.upgrade() else { return };
         let app = ui.global::<AppState>();
         if app.get_fullscreen() == on {
             return;
         }
         app.set_fullscreen(on);
-        frame::set_fullscreen(ui.window(), on);
         self.host.fit_after_resize();
-        // The icon strip flag depends on fullscreen.
+        // The icon strip flag depends on fullscreen (main.slint also hides the strip on it, for a refresh skipped during a save).
         self.refresh_ui();
     }
 
@@ -613,7 +626,7 @@ impl Controller {
         }
     }
 
-    /// `CopyImageToClipboard`: the shown frame as CF_DIBV5 and CF_DIB (paste prefers CF_DIBV5, so its own copies keep their alpha).
+    /// `CopyImageToClipboard`: the shown frame as CF_DIB (1.x) and CF_DIBV5 (an explicit alpha mask for readers that use it).
     /// A failure is only logged, as in 1.x.
     fn copy(&self) {
         let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };

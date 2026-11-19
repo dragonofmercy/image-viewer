@@ -210,7 +210,7 @@ export component MainWindow inherits Window {
                     y: (parent.height - self.height) / 2;
                 }
                 // XAML IconSizeBar: floats bottom-centered, 16px clear of the edges, never wider than 640px.
-                if AppState.icon-strip: IconStrip {
+                if AppState.icon-strip && !AppState.fullscreen: IconStrip {
                     x: (parent.width - self.width) / 2;
                     y: parent.height - self.height - 16px;
                     available: parent.width - 32px;
