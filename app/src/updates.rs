@@ -178,6 +178,7 @@ impl Updates {
     }
 
     /// Background check at startup: `found` runs on the UI thread when an update exists.
+    #[allow(dead_code)] // Task 5 calls it at startup
     pub fn check_if_due(self: &Rc<Self>, found: impl FnOnce() + 'static) {
         if self.busy() || !self.backend.installed() || !Settings::app().update_check_due() {
             return;

@@ -1,6 +1,7 @@
 //! Settings and About dialogs: the entries of the dropdowns and the wiring between the dialogs and `Settings`.
 
 use crate::install::REPOSITORY_URL;
+use crate::updates::{State, Updates};
 use crate::win::locale::format_file_time;
 use crate::{AboutState, Commands, MainWindow, SettingsState, Tr, choose_theme};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -47,7 +48,7 @@ fn save<E: std::fmt::Display>(what: &str, result: Result<(), E>) {
 
 /// Opens the Settings and About dialogs on their commands (dropped while another dialog is up, as `ShowDialogAsync`) and saves each change at once.
 /// A language change applies at once: the strings are reloaded, every `Tr.t` binding re-evaluates and `language_changed` runs.
-pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, language_changed: impl Fn() + 'static) {
+pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, updates: &Rc<Updates>, language_changed: impl Fn() + 'static) {
     let state = ui.global::<SettingsState>();
     let weak = ui.as_weak();
     let s = strings.clone();
@@ -96,24 +97,80 @@ pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, language_changed
 
     let weak = ui.as_weak();
     let s = strings.clone();
+    let u = updates.clone();
     ui.global::<Commands>().on_about(move || {
-        let Some(ui) = weak.upgrade() else { return };
-        if ui.get_dialog_open() {
-            return;
+        if let Some(ui) = weak.upgrade() {
+            show_about(&ui, &s.borrow(), &u, false);
         }
-        let last = Settings::app().last_update_check_time().map(format_file_time).filter(|t| !t.is_empty()).unwrap_or_else(|| s.borrow().get("ABOUT_LABEL_LAST_UPDATE_NEVER"));
-        ui.global::<AboutState>().set_version(format!("v{}", env!("CARGO_PKG_VERSION")).into());
-        ui.global::<AboutState>().set_last_check(format!("{}{last}", s.borrow().get("ABOUT_LABEL_LAST_UPDATE")).into());
-        ui.set_about_open(true);
     });
+    let u = updates.clone();
+    ui.global::<AboutState>().on_check(move || u.check());
+    let u = updates.clone();
+    ui.global::<AboutState>().on_download(move || u.download_and_restart());
+    let u = updates.clone();
+    ui.global::<AboutState>().on_closed(move || u.abandon());
     ui.global::<AboutState>().on_open_url(|release| {
         crate::win::shell::open_url(&if release { format!("{REPOSITORY_URL}/releases") } else { REPOSITORY_URL.to_string() });
     });
 }
 
+/// (update-state, progress, error, failed-download) of the About dialog for an update state.
+fn about_view(state: &State) -> (i32, i32, String, bool) {
+    match state {
+        State::Idle => (0, 0, String::new(), false),
+        State::Checking => (1, 0, String::new(), false),
+        State::UpToDate => (2, 0, String::new(), false),
+        State::Available => (3, 0, String::new(), false),
+        State::Downloading(percent) => (4, i32::from(*percent), String::new(), false),
+        State::Failed { message, during_download } => (5, 0, message.clone(), *during_download),
+    }
+}
+
+fn refresh_last_check(ui: &MainWindow, strings: &Strings) {
+    let last = Settings::app().last_update_check_time().map(format_file_time).filter(|t| !t.is_empty()).unwrap_or_else(|| strings.get("ABOUT_LABEL_LAST_UPDATE_NEVER"));
+    ui.global::<AboutState>().set_last_check(format!("{}{last}", strings.get("ABOUT_LABEL_LAST_UPDATE")).into());
+}
+
+/// Shows an update state in the About dialog and refreshes its last check line (the service reports on the UI thread).
+pub fn show_update_state(ui: &MainWindow, strings: &Strings, state: &State) {
+    let (update_state, progress, error, failed_download) = about_view(state);
+    let about = ui.global::<AboutState>();
+    about.set_update_state(update_state);
+    about.set_progress(progress);
+    about.set_error(error.into());
+    about.set_failed_download(failed_download);
+    refresh_last_check(ui, strings);
+}
+
+/// Opens the About dialog (dropped while another dialog is up) and, when `start_update`, starts the download. Already open: only the download starts.
+pub fn show_about(ui: &MainWindow, strings: &Strings, updates: &Rc<Updates>, start_update: bool) {
+    if !ui.get_about_open() {
+        if ui.get_dialog_open() {
+            return;
+        }
+        ui.global::<AboutState>().set_version(format!("v{}", env!("CARGO_PKG_VERSION")).into());
+        show_update_state(ui, strings, &updates.state());
+        ui.set_about_open(true);
+    }
+    if start_update {
+        updates.download_and_restart();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn about_view_maps_the_six_states() {
+        assert_eq!(about_view(&State::Idle), (0, 0, String::new(), false));
+        assert_eq!(about_view(&State::Checking), (1, 0, String::new(), false));
+        assert_eq!(about_view(&State::UpToDate), (2, 0, String::new(), false));
+        assert_eq!(about_view(&State::Available), (3, 0, String::new(), false));
+        assert_eq!(about_view(&State::Downloading(42)), (4, 42, String::new(), false));
+        assert_eq!(about_view(&State::Failed { message: "boom".into(), during_download: true }), (5, 0, "boom".to_string(), true));
+        assert_eq!(about_view(&State::Failed { message: String::new(), during_download: false }), (5, 0, String::new(), false));
+    }
 
     #[test]
     fn language_entries_start_with_the_system_default() {

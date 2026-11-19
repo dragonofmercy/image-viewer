@@ -1,17 +1,26 @@
 import { Theme } from "../theme.slint";
 import { Tr } from "../tr.slint";
-import { Button } from "../widgets/button.slint";
+import { AccentButton, Button } from "../widgets/button.slint";
 import { HyperlinkButton } from "../widgets/hyperlink-button.slint";
 import { InfoBar } from "../widgets/info-bar.slint";
+import { ProgressRing } from "../widgets/progress-ring.slint";
 import { SettingsCard } from "../widgets/settings-card.slint";
 import { ContentDialog } from "content-dialog.slint";
-import { AppState } from "../footer.slint";
 
-// Texts of the About dialog and its links, filled and handled by options.rs (`open-url(true)` is the releases page).
+// Texts and update state of the About dialog, filled and handled by options.rs and main.rs (`open-url(true)` is the releases page).
+// update-state: 0 idle, 1 checking, 2 up to date, 3 available, 4 downloading, 5 failed. `error` is empty for a network failure.
 export global AboutState {
     in property <string> version;
     in property <string> last-check;
+    in property <int> update-state;
+    in property <int> progress;
+    in property <string> error;
+    in property <bool> failed-download;
     callback open-url(bool);
+    callback check();
+    callback download();
+    // The dialog was closed (by any means).
+    callback closed();
 }
 
 export component AboutDialog inherits ContentDialog {
@@ -82,16 +91,59 @@ export component AboutDialog inherits ContentDialog {
             glyph: "\u{E895}";
             label: AboutState.version;
             description: AboutState.last-check;
-            // Updates arrive in phase 4: the check is present but cannot run yet.
-            Button {
-                text: Tr.t("ABOUT_BTN_CHECK_UPDATE");
-                enabled: AppState.updates-available;
+            HorizontalLayout {
+                spacing: 16px;
+                if AboutState.update-state == 1: VerticalLayout {
+                    alignment: center;
+                    ProgressRing {
+                        width: 20px;
+                        height: 20px;
+                    }
+                }
+                if AboutState.update-state == 1: VerticalLayout {
+                    alignment: center;
+                    Text {
+                        text: Tr.t("ABOUT_UPDATE_CHECKING");
+                        color: Theme.text-primary;
+                    }
+                }
+                if AboutState.update-state != 1: Button {
+                    text: Tr.t("ABOUT_BTN_CHECK_UPDATE");
+                    enabled: AboutState.update-state != 4;
+                    clicked => {
+                        AboutState.check();
+                    }
+                }
             }
         }
         VerticalLayout {
             padding-top: 4px;
             InfoBar {
-                open: false;
+                open: AboutState.update-state >= 2;
+                severity: AboutState.update-state == 2 ? 1 : AboutState.update-state == 5 ? 3 : 2;
+                title: AboutState.update-state == 2 ? Tr.t("ABOUT_UPDATE_INFO_UPDATE_LATEST")
+                    : AboutState.update-state == 5 ? (AboutState.error != "" ? AboutState.error : Tr.t("ABOUT_UPDATE_INFO_ERROR_NO_INTERNET"))
+                    : Tr.t("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE");
+                if AboutState.update-state == 3 || AboutState.update-state == 4 || (AboutState.update-state == 5 && AboutState.failed-download): AccentButton {
+                    text: AboutState.update-state == 4 ? Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING") + " " + AboutState.progress + "%"
+                        : AboutState.update-state == 5 ? Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE_RETRY")
+                        : Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE");
+                    enabled: AboutState.update-state != 4;
+                    clicked => {
+                        AboutState.download();
+                    }
+                }
+            }
+        }
+        // Reports the close to Rust: a `changed open` here would replace the one of ContentDialog.
+        Rectangle {
+            width: 0px;
+            height: 0px;
+            property <bool> shown: root.open;
+            changed shown => {
+                if !self.shown {
+                    AboutState.closed();
+                }
             }
         }
     }

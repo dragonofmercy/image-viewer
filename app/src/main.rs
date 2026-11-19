@@ -12,7 +12,6 @@ mod launch;
 mod options;
 mod theme;
 mod ui_state;
-#[allow(dead_code)] // Task 4 creates the service in main
 mod updates;
 mod viewport;
 mod win {
@@ -148,7 +147,13 @@ fn main() -> Result<(), slint::PlatformError> {
     });
     let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings.clone());
     let c = controller.clone();
-    options::install(&ui, &strings, move || c.language_changed());
+    let (weak, s) = (ui.as_weak(), strings.clone());
+    let updates = updates::Updates::new(move |state| {
+        if let Some(ui) = weak.upgrade() {
+            options::show_update_state(&ui, &s.borrow(), &state);
+        }
+    });
+    options::install(&ui, &strings, &updates, move || c.language_changed());
     let c = controller.clone();
     ui.window().on_close_requested(move || {
         // Closing now would lose the edit being written: the controller closes the window once the save succeeded.
