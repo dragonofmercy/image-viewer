@@ -1,0 +1,154 @@
+import { Theme } from "../theme.slint";
+
+// WinUI Slider for whole values, with the value shown to its left. Drag or click the track; Left/Right or Down/Up step by 1,
+// PageDown/PageUp by 10, Home/End go to the bounds. `edited` fires when a change is finished (pointer released, or a key),
+// not on every step of a drag.
+export component Slider inherits Rectangle {
+    in property <int> minimum: 0;
+    in property <int> maximum: 100;
+    in-out property <int> value;
+    in property <string> label;
+    callback edited(int);
+
+    property <length> value-width: 28px;
+    property <length> thumb: 20px;
+    // The thumb center travels over the track, half a thumb clear of each end.
+    property <length> track-x: root.value-width + 12px + root.thumb / 2;
+    property <length> track-w: root.width - root.track-x - root.thumb / 2;
+    property <float> ratio: root.maximum > root.minimum ? (root.value - root.minimum) / (root.maximum - root.minimum) : 0;
+    property <int> at-press;
+
+    function set(v: int) {
+        root.value = max(root.minimum, min(root.maximum, v));
+    }
+
+    function set-and-report(v: int) {
+        let before = root.value;
+        root.set(v);
+        if root.value != before {
+            root.edited(root.value);
+        }
+    }
+
+    min-width: 120px;
+    height: 32px;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.value;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-value-step: 1;
+    accessible-action-increment => {
+        root.set-and-report(root.value + 1);
+    }
+    accessible-action-decrement => {
+        root.set-and-report(root.value - 1);
+    }
+
+    Text {
+        x: 0px;
+        width: root.value-width;
+        height: root.height;
+        text: root.value;
+        color: Theme.text-primary;
+        horizontal-alignment: right;
+        vertical-alignment: center;
+    }
+
+    // Track, then its filled part.
+    Rectangle {
+        x: root.track-x;
+        y: (root.height - self.height) / 2;
+        width: root.track-w;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.text-tertiary;
+    }
+    Rectangle {
+        x: root.track-x;
+        y: (root.height - self.height) / 2;
+        width: root.track-w * root.ratio;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.accent;
+    }
+
+    // Thumb: a disc with an accent dot that grows under the pointer.
+    Rectangle {
+        x: root.track-x + root.track-w * root.ratio - self.width / 2;
+        y: (root.height - self.height) / 2;
+        width: root.thumb;
+        height: root.thumb;
+        border-radius: self.width / 2;
+        background: Theme.slider-thumb;
+        border-width: 1px;
+        border-color: Theme.control-stroke;
+        Rectangle {
+            property <length> dot: touch.pressed ? 10px : touch.has-hover ? 14px : 12px;
+            width: self.dot;
+            height: self.dot;
+            border-radius: self.dot / 2;
+            background: Theme.accent;
+            animate dot { duration: 100ms; }
+        }
+    }
+
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.modifiers.control || event.modifiers.alt {
+                return reject;
+            }
+            if event.text == Key.RightArrow || event.text == Key.UpArrow {
+                root.set-and-report(root.value + 1);
+            } else if event.text == Key.LeftArrow || event.text == Key.DownArrow {
+                root.set-and-report(root.value - 1);
+            } else if event.text == Key.PageUp {
+                root.set-and-report(root.value + 10);
+            } else if event.text == Key.PageDown {
+                root.set-and-report(root.value - 10);
+            } else if event.text == Key.Home {
+                root.set-and-report(root.minimum);
+            } else if event.text == Key.End {
+                root.set-and-report(root.maximum);
+            } else {
+                return reject;
+            }
+            accept
+        }
+    }
+
+    touch := TouchArea {
+        x: root.value-width + 12px;
+        width: root.width - self.x;
+        mouse-cursor: MouseCursor.pointer;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left {
+                if event.kind == PointerEventKind.down {
+                    root.at-press = root.value;
+                    root.set(root.minimum + Math.round((self.mouse-x + self.x - root.track-x) / root.track-w * (root.maximum - root.minimum)));
+                } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel {
+                    if root.value != root.at-press {
+                        root.edited(root.value);
+                    }
+                }
+            }
+        }
+        moved => {
+            if self.pressed {
+                root.set(root.minimum + Math.round((self.mouse-x + self.x - root.track-x) / root.track-w * (root.maximum - root.minimum)));
+            }
+        }
+    }
+
+    // Focus visual (keyboard only: a click does not focus the slider).
+    if fs.has-focus: Rectangle {
+        x: root.value-width + 12px - 3px;
+        y: -3px;
+        width: root.width - self.x + 3px;
+        height: root.height + 6px;
+        border-radius: Theme.control-radius + 3px;
+        border-width: 2px;
+        border-color: Theme.text-primary;
+    }
+}

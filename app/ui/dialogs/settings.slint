@@ -1,7 +1,7 @@
 import { Theme } from "../theme.slint";
 import { Tr } from "../tr.slint";
 import { ComboBox } from "../widgets/combo-box.slint";
-import { NumberBox } from "../widgets/number-box.slint";
+import { Slider } from "../widgets/slider.slint";
 import { HyperlinkButton } from "../widgets/hyperlink-button.slint";
 import { SettingsCard, SettingsGroup } from "../widgets/settings-card.slint";
 import { ContentDialog } from "content-dialog.slint";
@@ -90,7 +90,8 @@ export component SettingsDialog inherits ContentDialog {
             SettingsCard {
                 glyph: "\u{E8B9}";
                 label: Tr.t("SETTINGS_FIELD_JPEG_QUALITY");
-                NumberBox {
+                Slider {
+                    label: Tr.t("SETTINGS_FIELD_JPEG_QUALITY");
                     width: 240px;
                     minimum: 1;
                     maximum: 100;
@@ -103,7 +104,8 @@ export component SettingsDialog inherits ContentDialog {
             SettingsCard {
                 glyph: "\u{E8B9}";
                 label: Tr.t("SETTINGS_FIELD_WEBP_QUALITY");
-                NumberBox {
+                Slider {
+                    label: Tr.t("SETTINGS_FIELD_WEBP_QUALITY");
                     width: 240px;
                     minimum: 1;
                     maximum: 100;
