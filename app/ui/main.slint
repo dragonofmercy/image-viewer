@@ -115,7 +115,7 @@ export component MainWindow inherits Window {
             root.restore-focus();
         }
     }
-    // The Slint attribution badge of the About dialog follows the app theme.
+    // Texts and inputs without an explicit color take the std palette: keep it on the app theme, not the system one.
     property <bool> dark: Theme.dark;
     changed dark => {
         Palette.color-scheme = root.dark ? ColorScheme.dark : ColorScheme.light;
