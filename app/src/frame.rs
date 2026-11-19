@@ -290,6 +290,11 @@ fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
     }
 }
 
+/// F10 or a bare Alt (`lparam` 0); Alt+Space carries the space character in `lparam`.
+fn is_key_menu(wparam: usize, lparam: isize) -> bool {
+    (wparam & 0xFFF0) == SC_KEYMENU as usize && lparam == 0
+}
+
 unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM, _id: usize, _data: usize) -> LRESULT {
     unsafe {
         match msg {
@@ -299,6 +304,8 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 set_cloaked(hwnd, false);
                 result
             }
+            // Winit still gets the F10 key event; without the menu loop DefWindowProc would start, the next key would be swallowed.
+            WM_SYSCOMMAND if is_key_menu(wparam.0, lparam.0) => LRESULT(0),
             // Fullscreen: the whole window is client area (a window maximized before keeps IsZoomed, so no maximized inset either).
             WM_NCCALCSIZE if wparam.0 != 0 && is_fullscreen(hwnd) => LRESULT(0),
             WM_NCCALCSIZE if wparam.0 != 0 => {
@@ -454,5 +461,17 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
             }
             _ => DefSubclassProc(hwnd, msg, wparam, lparam),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_key_menu;
+
+    #[test]
+    fn key_menu_is_f10_not_alt_space() {
+        assert!(is_key_menu(0xF100, 0));
+        assert!(!is_key_menu(0xF100, 0x20));
+        assert!(!is_key_menu(0xF060, 0));
     }
 }

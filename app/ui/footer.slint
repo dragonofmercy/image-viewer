@@ -87,7 +87,7 @@ export component Footer inherits Rectangle {
                     shortcut-text: "Ctrl+F1";
                     clicked => { Commands.about(); }
                 }
-                MenuItem { glyph: "\u{E713}"; text: Tr.t("FOOTER_TOOLBAR_MENU_OPTIONS"); shortcut-text: "Ctrl+Alt+O"; clicked => { Commands.settings(); } }
+                MenuItem { glyph: "\u{E713}"; text: Tr.t("FOOTER_TOOLBAR_MENU_OPTIONS"); shortcut-text: "F10"; clicked => { Commands.settings(); } }
                 MenuItem { glyph: "\u{F3B1}"; text: Tr.t("FOOTER_TOOLBAR_MENU_QUIT"); shortcut-text: "Ctrl+Q"; clicked => { Commands.quit(); } }
             }
         }

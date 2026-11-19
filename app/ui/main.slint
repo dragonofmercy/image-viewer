@@ -166,9 +166,7 @@ export component MainWindow inherits Window {
                 root.crop-apply();
             } else if ctrl && !alt && !shift && key == "o" {
                 if AppState.open { Commands.open(); }
-            // shortcut: AltGr is Ctrl+Alt, so on a layout where AltGr+O types a character this never sees an "o" and the
-            // menu entry is the way in; upgrade by matching the physical key if Slint ever exposes it.
-            } else if ctrl && alt && key == "o" {
+            } else if bare && event.text == Key.F10 {
                 Commands.settings();
             } else if ctrl && !alt && !shift && key == "i" {
                 if AppState.file-info { Commands.file-info(); }
