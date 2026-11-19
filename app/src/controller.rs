@@ -40,6 +40,8 @@ pub struct Controller {
     saver: Saver,
     /// The window was asked to close during a save: it closes once the save succeeded.
     close_pending: Cell<bool>,
+    /// A Save As dialog or the shell's recycle UI is up (`SavingProcess` in 1.x): a second save or delete queued meanwhile is dropped.
+    modal: Cell<bool>,
     strings: Rc<Strings>,
     /// Frame timer of the playing animation. Held here so the controller dropping (or `stop_animation`) ends it.
     anim: slint::Timer,
@@ -56,6 +58,7 @@ impl Controller {
             loader: Loader::new(),
             saver: Saver::new(),
             close_pending: Cell::new(false),
+            modal: Cell::new(false),
             strings,
             anim: slint::Timer::default(),
             trace: std::env::var_os("IMAGEVIEWER_TRACE").is_some(),
@@ -310,6 +313,9 @@ impl Controller {
 
     /// `Context.Save`: overwrites the file in place, or routes to Save As (pasted content, svg, ico).
     fn save(&self) {
+        if self.modal.get() {
+            return;
+        }
         let route = {
             let doc = self.doc.borrow();
             save_route(doc.picture.as_ref().is_some_and(Picture::modified), doc.path.as_deref())
@@ -328,20 +334,33 @@ impl Controller {
 
     /// `Context.SaveAs`: the saved file becomes the current document and its folder is listed.
     fn save_as(&self) {
+        // Held through the dialog; once a save starts, `doc.saving` takes over until the worker hands the picture back.
+        if self.modal.replace(true) {
+            return;
+        }
+        let picked = self.pick_save_target();
+        self.modal.set(false);
+        let Some((path, ext, renamed)) = picked else { return };
+        // The dialog confirmed an overwrite of the name as typed only: never replace a different existing file silently.
+        if renamed && path.exists() {
+            eprintln!("not overwriting {}: the dialog did not confirm that name", path.display());
+            self.show_error("SYSTEM_SAVING_ERROR");
+            return;
+        }
+        self.start_save(path, ext, true);
+    }
+
+    /// The Save As dialog: path, save type, and whether the name was changed after the dialog confirmed it.
+    fn pick_save_target(&self) -> Option<(PathBuf, String, bool)> {
         let suggested = {
             let doc = self.doc.borrow();
-            if doc.picture.is_none() {
-                return;
-            }
+            doc.picture.as_ref()?;
             doc.path.as_deref().and_then(Path::file_stem).map(|s| s.to_string_lossy().into_owned())
         };
         let suggested = suggested.unwrap_or_else(|| locale::save_stamp(SystemTime::now()));
-        let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
+        let hwnd = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window()))?;
         // Modal: no borrow is held while it pumps messages.
-        let Some((path, ext)) = dialogs::pick_save(hwnd, &suggested, &SAVE_FILE_TYPES, &self.strings.get("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT")) else {
-            return;
-        };
-        self.start_save(path, ext, true);
+        dialogs::pick_save(hwnd, &suggested, &SAVE_FILE_TYPES, &self.strings.get("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT"))
     }
 
     /// Hands the picture to the save worker. Until it comes back, image commands, navigation and loads are off and the UI keeps
@@ -414,9 +433,17 @@ impl Controller {
     /// `Context.DeleteImage`: recycles the file, then shows the next file of the folder, or clears the view when none is left.
     /// Pasted content has no file: nothing is recycled. A failed recycle changes nothing (1.x swallows the exception).
     fn delete(&self) {
+        if self.modal.get() {
+            return;
+        }
         let path = self.doc.borrow().path.clone();
         if let Some(path) = path {
-            if !shell::recycle(&path) {
+            let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
+            // The shell's error UI pumps messages: no borrow is held and a second delete is dropped meanwhile.
+            self.modal.set(true);
+            let recycled = shell::recycle(hwnd, &path);
+            self.modal.set(false);
+            if !recycled {
                 return;
             }
             let mut doc = self.doc.borrow_mut();

@@ -2,14 +2,14 @@
 
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use viewer_core::files::{extension_of, normalize_extension};
 use viewer_core::picture::can_save_jxl;
 use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree};
 use windows::Win32::UI::Shell::Common::COMDLG_FILTERSPEC;
-use windows::Win32::UI::Shell::{FOS_FILEMUSTEXIST, FOS_FORCEFILESYSTEM, FOS_OVERWRITEPROMPT, FileOpenDialog, FileSaveDialog, IFileOpenDialog, IFileSaveDialog, IShellItem, SIGDN_FILESYSPATH};
+use windows::Win32::UI::Shell::{FOS_FILEMUSTEXIST, FOS_FORCEFILESYSTEM, FOS_OVERWRITEPROMPT, FOS_STRICTFILETYPES, FileOpenDialog, FileSaveDialog, IFileOpenDialog, IFileSaveDialog, IShellItem, SIGDN_FILESYSPATH};
 use windows::core::{HSTRING, PCWSTR};
 
 /// `*.jpg;*.jpeg;...` from extensions with their leading dot.
@@ -23,14 +23,16 @@ fn save_filters<'a>(types: &[&'a str], format: &str, jxl: bool) -> Vec<(String, 
     types.iter().filter(|t| jxl || **t != ".jxl").map(|t| (format.replace("{0}", &t.trim_start_matches('.').to_uppercase()), *t)).collect()
 }
 
-/// Appends `ext` unless the file name already ends with an extension that normalizes to it ("a.JPEG" stays as is for ".jpg").
-fn with_type_extension(path: PathBuf, ext: &str) -> PathBuf {
-    if extension_of(&path).is_some_and(|e| normalize_extension(&e) == ext) {
-        return path;
+/// The saved file from the dialog result. As `PickSaveTargetAsync` reads `StorageFile.FileType`, a typed extension that normalizes to
+/// one of the offered `types` decides the type and the path stays as typed. Otherwise the selected filter's type decides and its
+/// extension is appended; the bool is then true: the dialog never confirmed that final name.
+fn resolve_save_target(picked: &Path, filter_type: &str, types: &[&str]) -> (PathBuf, String, bool) {
+    if let Some(ext) = extension_of(picked).map(|e| normalize_extension(&e)).filter(|e| types.contains(&e.as_str())) {
+        return (picked.to_path_buf(), ext, false);
     }
-    let mut name = path.into_os_string();
-    name.push(ext);
-    PathBuf::from(name)
+    let mut name = picked.as_os_str().to_os_string();
+    name.push(filter_type);
+    (PathBuf::from(name), filter_type.to_string(), true)
 }
 
 /// Cancellation is silent; any other COM failure is logged.
@@ -55,14 +57,14 @@ pub fn pick_open(owner: HWND, extensions: &[&str]) -> Option<PathBuf> {
     completed(unsafe { show_open(owner, extensions) }, "open")
 }
 
-/// Save As dialog. Returns the target path and its save type, taken from the selected filter; the type's extension is appended when
-/// the name lacks it. `format` is the localized FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT. None when cancelled or on a COM failure.
-pub fn pick_save(owner: HWND, suggested_name: &str, types: &[&str], format: &str) -> Option<(PathBuf, String)> {
+/// Save As dialog. Returns the target path, its save type (see `resolve_save_target`) and whether the name was changed after the
+/// dialog's overwrite prompt. `format` is the localized FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT. None when cancelled or on a COM failure.
+pub fn pick_save(owner: HWND, suggested_name: &str, types: &[&str], format: &str) -> Option<(PathBuf, String, bool)> {
     init_com();
     let filters = save_filters(types, format, can_save_jxl());
     let (path, index) = completed(unsafe { show_save(owner, suggested_name, &filters) }, "save")?;
-    let ext = filters.get(index)?.1;
-    Some((with_type_extension(path, ext), ext.to_string()))
+    let offered: Vec<&str> = filters.iter().map(|(_, t)| *t).collect();
+    Some(resolve_save_target(&path, filters.get(index)?.1, &offered))
 }
 
 unsafe fn file_system_path(item: &IShellItem) -> windows::core::Result<PathBuf> {
@@ -110,7 +112,9 @@ unsafe fn show_save(owner: HWND, suggested_name: &str, filters: &[(String, &str)
             dialog.SetDefaultExtension(&HSTRING::from(ext.trim_start_matches('.')))?;
         }
         dialog.SetFileName(&HSTRING::from(suggested_name))?;
-        dialog.SetOptions(dialog.GetOptions()? | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT)?;
+        // Strict types make the dialog append the filter extension to a name with an unlisted one, so the overwrite prompt sees the final
+        // name. The caller still refuses to replace an existing file whose name changed after the dialog.
+        dialog.SetOptions(dialog.GetOptions()? | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT | FOS_STRICTFILETYPES)?;
         dialog.Show(Some(owner))?;
         let index = dialog.GetFileTypeIndex()? as usize;
         Ok((file_system_path(&dialog.GetResult()?)?, index.saturating_sub(1)))
@@ -139,13 +143,17 @@ mod tests {
     }
 
     #[test]
-    fn type_extension_is_appended_only_when_missing() {
+    fn save_target_follows_the_typed_extension_then_the_filter() {
         let dir = PathBuf::from(r"C:\Été \u{5199}");
-        assert_eq!(with_type_extension(dir.join("a"), ".jpg"), dir.join("a.jpg"));
-        assert_eq!(with_type_extension(dir.join("a.JPEG"), ".jpg"), dir.join("a.JPEG"));
-        assert_eq!(with_type_extension(dir.join("a.PNG"), ".png"), dir.join("a.PNG"));
-        assert_eq!(with_type_extension(dir.join("a.tif"), ".tiff"), dir.join("a.tif"));
-        assert_eq!(with_type_extension(dir.join("v1.2"), ".png"), dir.join("v1.2.png"));
-        assert_eq!(with_type_extension(dir.join("a.png"), ".jpg"), dir.join("a.png.jpg"));
+        let offered = [".jpg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tga"];
+        let resolve = |name: &str, filter: &str| resolve_save_target(&dir.join(name), filter, &offered);
+        assert_eq!(resolve("a.png", ".jpg"), (dir.join("a.png"), ".png".into(), false));
+        assert_eq!(resolve("a", ".jpg"), (dir.join("a.jpg"), ".jpg".into(), true));
+        assert_eq!(resolve("a.JPEG", ".png"), (dir.join("a.JPEG"), ".jpg".into(), false));
+        assert_eq!(resolve("scan.TIF", ".png"), (dir.join("scan.TIF"), ".tiff".into(), false));
+        assert_eq!(resolve("a.txt", ".webp"), (dir.join("a.txt.webp"), ".webp".into(), true));
+        assert_eq!(resolve("photo.2024", ".png"), (dir.join("photo.2024.png"), ".png".into(), true));
+        // .jxl is not offered without the encoder: the filter decides.
+        assert_eq!(resolve("a.jxl", ".png"), (dir.join("a.jxl.png"), ".png".into(), true));
     }
 }
