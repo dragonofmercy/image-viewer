@@ -14,7 +14,7 @@ export component ImageView inherits Rectangle {
     // Wheel delta in 1/120 notches (WinUI MouseWheelDelta), cursor in this element's coordinates.
     callback wheel(float, length, length);
     callback drag(length, length);
-    callback resized(length, length);
+    callback resized();
     callback back();
     callback forward();
 
@@ -26,10 +26,10 @@ export component ImageView inherits Rectangle {
     property <length> last-y;
 
     changed width => {
-        root.resized(self.width, self.height);
+        root.resized();
     }
     changed height => {
-        root.resized(self.width, self.height);
+        root.resized();
     }
 
     Image {

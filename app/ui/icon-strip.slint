@@ -17,7 +17,7 @@ component StepButton inherits Rectangle {
     width: 22px;
     height: 52px;
     border-radius: Theme.control-radius;
-    background: touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+    background: Theme.subtle-fill(true, touch.pressed, touch.has-hover);
     accessible-role: button;
     accessible-label: root.name;
     accessible-action-default => {

@@ -55,7 +55,7 @@ export component MenuItem inherits Rectangle {
         width: parent.width - 8px;
         height: parent.height - 4px;
         border-radius: Theme.control-radius;
-        background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+        background: Theme.subtle-fill(root.enabled, touch.pressed, touch.has-hover);
     }
 
     HorizontalLayout {

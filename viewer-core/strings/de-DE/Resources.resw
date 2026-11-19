@@ -21,12 +21,6 @@
   <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
     <value>Die Anwendung kann diese Datei nicht öffnen, da das Format derzeit nicht unterstützt wird oder die Datei beschädigt ist</value>
   </data>
-  <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
-    <value>Zum Öffnen von JPEG XL-Dateien wird die kostenlose JPEG XL Image Extension von Microsoft benötigt (Windows 11 24H2 oder neuer)</value>
-  </data>
-  <data name="SYSTEM_LOADING_ERROR_CODEC_STORE" xml:space="preserve">
-    <value>Im Microsoft Store herunterladen</value>
-  </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
     <value>Die Anwendung kann das Bild an diesem Speicherort nicht speichern</value>
   </data>
@@ -39,9 +33,6 @@
   <data name="SETTINGS_FIELD_LANGUAGE" xml:space="preserve">
     <value>Sprache</value>
   </data>
-  <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
-    <value>Sie müssen die Anwendung neu starten, um diese Einstellung anzuwenden.</value>
-  </data>
   <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
     <value>Design</value>
   </data>
@@ -53,18 +44,6 @@
   </data>
   <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
     <value>Dunkel</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP" xml:space="preserve">
-    <value>Darstellung</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_BASIC" xml:space="preserve">
-    <value>Einfach</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_MICA" xml:space="preserve">
-    <value>Mica</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_ACRYLIC" xml:space="preserve">
-    <value>Acryl</value>
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Nach Updates suchen</value>
@@ -80,9 +59,6 @@
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL" xml:space="preserve">
     <value>Manuell</value>
-  </data>
-  <data name="FILE_INFORMATION_TITLE" xml:space="preserve">
-    <value>Bildinformationen</value>
   </data>
   <data name="FILE_INFORMATION_DIMENSIONS" xml:space="preserve">
     <value>Bildabmessungen</value>
@@ -173,9 +149,6 @@
   </data>
   <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT" xml:space="preserve">
     <value>Vertikal spiegeln</value>
-  </data>
-  <data name="TRANSFORM_CROP_TITLE" xml:space="preserve">
-    <value>Zuschneidewerkzeug</value>
   </data>
   <data name="TRANSFORM_CROP_RATIO" xml:space="preserve">
     <value>Seitenverhältnis</value>

@@ -21,12 +21,6 @@
   <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
     <value>抱歉，应用程序无法打开此文件，因为该格式当前不受支持或文件已损坏</value>
   </data>
-  <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
-    <value>打开 JPEG XL 文件需要 Microsoft 的免费 JPEG XL Image Extension（Windows 11 24H2 或更高版本）</value>
-  </data>
-  <data name="SYSTEM_LOADING_ERROR_CODEC_STORE" xml:space="preserve">
-    <value>从 Microsoft Store 获取</value>
-  </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
     <value>抱歉，应用程序无法将图像保存到此位置</value>
   </data>
@@ -39,9 +33,6 @@
   <data name="SETTINGS_FIELD_LANGUAGE" xml:space="preserve">
     <value>语言</value>
   </data>
-  <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
-    <value>需要重新启动应用程序才能应用此设置。</value>
-  </data>
   <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
     <value>主题</value>
   </data>
@@ -53,18 +44,6 @@
   </data>
   <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
     <value>深色</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP" xml:space="preserve">
-    <value>渲染模式</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_BASIC" xml:space="preserve">
-    <value>基本</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_MICA" xml:space="preserve">
-    <value>云母</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_ACRYLIC" xml:space="preserve">
-    <value>亚克力</value>
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>检查更新</value>
@@ -80,9 +59,6 @@
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL" xml:space="preserve">
     <value>手动</value>
-  </data>
-  <data name="FILE_INFORMATION_TITLE" xml:space="preserve">
-    <value>图像信息</value>
   </data>
   <data name="FILE_INFORMATION_DIMENSIONS" xml:space="preserve">
     <value>图像尺寸</value>
@@ -173,9 +149,6 @@
   </data>
   <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT" xml:space="preserve">
     <value>垂直翻转</value>
-  </data>
-  <data name="TRANSFORM_CROP_TITLE" xml:space="preserve">
-    <value>裁剪工具</value>
   </data>
   <data name="TRANSFORM_CROP_RATIO" xml:space="preserve">
     <value>比例</value>

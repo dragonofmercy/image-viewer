@@ -7,7 +7,7 @@ export component AppBarButton inherits Rectangle {
     in property <string> path-data;
     in property <float> viewbox-width: 16;
     in property <float> viewbox-height: 16;
-    in property <length> icon-size: 20px;
+    in property <length> icon-size: 16px;
     // When set, shown to the right of the icon and the width fits the content.
     in property <string> label;
     in property <bool> enabled: true;
@@ -27,7 +27,7 @@ export component AppBarButton inherits Rectangle {
         width: parent.width - 5px;
         height: parent.height - 4px;
         border-radius: Theme.control-radius;
-        background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+        background: Theme.subtle-fill(root.enabled, touch.pressed, touch.has-hover);
     }
 
     content := HorizontalLayout {
@@ -42,7 +42,7 @@ export component AppBarButton inherits Rectangle {
                 path-data: root.path-data;
                 viewbox-width: root.viewbox-width;
                 viewbox-height: root.viewbox-height;
-                size: root.glyph != "" ? 16px : root.icon-size;
+                size: root.icon-size;
                 tint: root.enabled ? Theme.text-primary : Theme.text-disabled;
             }
         }

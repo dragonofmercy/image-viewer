@@ -21,12 +21,6 @@
   <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
     <value>Sorry, the application cannot open this file because the format is currently not supported or the file is damaged</value>
   </data>
-  <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
-    <value>Opening JPEG XL files requires Microsoft's free JPEG XL Image Extension (Windows 11 24H2 or later)</value>
-  </data>
-  <data name="SYSTEM_LOADING_ERROR_CODEC_STORE" xml:space="preserve">
-    <value>Get it from the Microsoft Store</value>
-  </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
     <value>Sorry, the application cannot save the image to this location</value>
   </data>
@@ -39,9 +33,6 @@
   <data name="SETTINGS_FIELD_LANGUAGE" xml:space="preserve">
     <value>Language</value>
   </data>
-  <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
-    <value>You need to restart the application to apply this setting.</value>
-  </data>
   <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
     <value>Theme</value>
   </data>
@@ -53,18 +44,6 @@
   </data>
   <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
     <value>Dark</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP" xml:space="preserve">
-    <value>Rendering mode</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_BASIC" xml:space="preserve">
-    <value>Basic</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_MICA" xml:space="preserve">
-    <value>Mica</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_ACRYLIC" xml:space="preserve">
-    <value>Acrylic</value>
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Find updates</value>
@@ -80,9 +59,6 @@
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL" xml:space="preserve">
     <value>Manually</value>
-  </data>
-  <data name="FILE_INFORMATION_TITLE" xml:space="preserve">
-    <value>File informations</value>
   </data>
   <data name="FILE_INFORMATION_DIMENSIONS" xml:space="preserve">
     <value>File dimensions</value>
@@ -173,9 +149,6 @@
   </data>
   <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT" xml:space="preserve">
     <value>Flip vertical</value>
-  </data>
-  <data name="TRANSFORM_CROP_TITLE" xml:space="preserve">
-    <value>Crop tool</value>
   </data>
   <data name="TRANSFORM_CROP_RATIO" xml:space="preserve">
     <value>Ratio</value>

@@ -9,11 +9,9 @@ export component ContentDialog inherits Rectangle {
     in-out property <bool> open;
     // WinUI default button: Enter closes a dialog whose only command is Close.
     in property <bool> close-on-enter: false;
-    callback closed;
 
     public function close() {
         root.open = false;
-        root.closed();
     }
 
     // Gives the keyboard (back) to the dialog.

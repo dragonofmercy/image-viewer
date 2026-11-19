@@ -229,8 +229,6 @@ export component MainWindow inherits Window {
                 height: root.title-bar-height;
                 title-text: root.title-text;
             }
-            // Spacer row (XAML Auto row), filled by later tasks.
-            Rectangle { vertical-stretch: 0; }
             // Content row.
             image-view := ImageView {
                 vertical-stretch: 1;
@@ -247,7 +245,7 @@ export component MainWindow inherits Window {
                 drag(dx, dy) => {
                     root.view-drag(dx, dy);
                 }
-                resized(w, h) => {
+                resized => {
                     root.view-resized();
                 }
                 back => {

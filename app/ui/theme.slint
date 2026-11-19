@@ -13,7 +13,6 @@ export global Theme {
     out property <color> title-button-pressed: root.dark ? #494d55 : #c0c2c7;
     out property <color> image-background: root.dark ? #1d2026 : #ffffff;
     out property <color> window-background: root.dark ? #1d2026 : #f0f3f9;
-    out property <color> context-background: root.dark ? #171717 : #f0f3f9;
     out property <color> combo-dropdown-background: root.dark ? #292c31 : #f9f9fb;
     out property <color> crop-thumb-border: root.dark ? #7f7f7f : #1875c5;
     out property <color> pane-background: root.dark ? #2c2c2c : #f9f9f9;
@@ -36,4 +35,9 @@ export global Theme {
     out property <color> menu-separator: root.dark ? #3b3d42 : #000000.with-alpha(0.058);
     out property <color> smoke: #000000.with-alpha(0.3);
     out property <color> text-on-accent: root.dark ? #000000 : #ffffff;
+
+    // Background of a subtle button (no fill at rest): lighter under the pointer, in between while pressed.
+    public pure function subtle-fill(enabled: bool, pressed: bool, hover: bool) -> color {
+        return !enabled ? transparent : pressed ? root.subtle-fill-tertiary : hover ? root.subtle-fill-secondary : transparent;
+    }
 }

@@ -52,7 +52,6 @@ export global AppState {
     // The adjust button replaces the 100% button.
     in property <bool> show-adjust;
     // True when the dark palette is active: the footer then offers the light theme button.
-    in property <bool> dark-setting;
 }
 
 export component Footer inherits Rectangle {
@@ -102,9 +101,6 @@ export component Footer inherits Rectangle {
         }
         if !AppState.show-adjust: AppBarButton {
             path-data: "M4.8 5.1C4.9 5.2 5 5.3 5 5.5v5C5 10.8 4.8 11 4.5 11S4 10.8 4 10.5V6.3L3.7 6.4C3.5 6.5 3.2 6.4 3 6.2 2.9 6 3 5.7 3.3 5.6l1-.5C4.4 5 4.6 5 4.8 5.1zM12 5.5c0-.2-.1-.3-.2-.4-.1-.1-.3-.1-.5 0l-1 .5C10 5.7 9.9 6 10.1 6.2c.1.2.4.3.7.2L11 6.3v4.2c0 .3.2.5.5.5s.5-.2.5-.5V5.5zM8 7C8 7 7 7 7 7S7 6 7 6 8 6 8 6zM8 10c0 0 0-1 0-1S7 9 7 9 7 10 7 10zM0 4.8C0 3.2 1.2 2 2.8 2h10.5C14.8 2 16 3.2 16 4.8v6.5c0 1.5-1.2 2.8-2.8 2.8H2.8C1.2 14 0 12.8 0 11.2V4.8zM2.8 3C1.8 3 1 3.8 1 4.8v6.5c0 1 .8 1.8 1.8 1.8h10.5c1 0 1.8-.8 1.8-1.8V4.8c0-1-.8-1.8-1.8-1.8H2.8z";
-            viewbox-width: 16;
-            viewbox-height: 16;
-            icon-size: 16px;
             tooltip: Tr.t("FOOTER_TOOLBAR_IMAGE_ZOOM_100");
             enabled: AppState.image-commands;
             clicked => { Commands.zoom-full(); }
@@ -152,13 +148,12 @@ export component Footer inherits Rectangle {
         y: (parent.height - self.height) / 2 + 1px;
         height: 40px;
         width: self.preferred-width;
-        if AppState.dark-setting: AppBarButton { glyph: "\u{E706}"; clicked => { Commands.theme-light(); } }
-        if !AppState.dark-setting: AppBarButton { glyph: "\u{E708}"; clicked => { Commands.theme-dark(); } }
+        if Theme.dark: AppBarButton { glyph: "\u{E706}"; clicked => { Commands.theme-light(); } }
+        if !Theme.dark: AppBarButton { glyph: "\u{E708}"; clicked => { Commands.theme-dark(); } }
         AppBarButton {
             path-data: "M159.531377 127.625101A95.718826 95.718826 0 0 0 63.812551 223.343927v574.312956A95.718826 95.718826 0 0 0 159.531377 893.375709h313.319623l15.187387-63.812551H159.531377a31.77865 31.77865 0 0 1-31.906276-31.906275v-59.090422l226.853618-255.760703 227.810806 240.318066 44.860223-45.306911-37.904655-40.201907 81.807689-92.209136 42.371534 44.349723 44.604973-45.306911-88.252758-93.549199-124.625911 140.387611L352.947218 388.618433 127.625101 642.337135V223.343927c0-17.676077 14.230199-31.906275 31.906276-31.906275h701.938057c17.676077 0 31.906275 14.230199 31.906275 31.906275v224.811616c4.211628-0.446688 8.487069-1.467689 12.76251-1.467689h3.190628c16.974138 1.021001 32.927276 4.466879 47.859412 9.954758V223.343927A95.718826 95.718826 0 0 0 861.469434 127.625101zM701.938057 255.250203c-35.096903 0-63.812551 28.715648-63.812551 63.81255s28.715648 63.812551 63.812551 63.812551 63.812551-28.715648 63.812551-63.812551-28.715648-63.812551-63.812551-63.81255z m204.3916 255.505452a80.148564 80.148564 0 0 0-56.79317 24.184957l-297.685549 302.599115-44.349723 186.460273 186.460273-44.158285 6.25363-6.445068 296.600735-291.368106c31.651025-30.949087 32.161526-83.020128 0.510501-114.415903l-33.437777-33.693027a79.765688 79.765688 0 0 0-57.55892-23.163956z m0.5105 63.30205c4.211628 0 8.487069 1.722939 11.932947 5.23263l33.437777 33.437776c7.019381 6.700318 7.019381 16.910326 0 23.929707l-290.155668 284.859226-68.78993 16.718888 16.463638-68.78993 285.369727-290.155667a15.953138 15.953138 0 0 1 11.741509-5.23263z";
             viewbox-width: 1024;
             viewbox-height: 1024;
-            icon-size: 16px;
             tooltip: Tr.t("FOOTER_TOOLBAR_TRANSFORM_MENU");
             enabled: AppState.image-commands;
             clicked => {
@@ -191,8 +186,6 @@ export component Footer inherits Rectangle {
                 MenuSeparator { }
                 MenuItem {
                     path-data: "M1 7.5v1h2v-1zM5 7.5v1h2v-1zM9 7.5v1h2v-1zM13 7.5v1h2v-1zM3 6h10V1zM6.5 5L12 2.75V5zM3 10l10 5V10z";
-                    viewbox-width: 16;
-                    viewbox-height: 16;
                     text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_FLIP_HORZ");
                     shortcut-text: "Alt+H";
                     enabled: AppState.image-commands;
@@ -200,8 +193,6 @@ export component Footer inherits Rectangle {
                 }
                 MenuItem {
                     path-data: "M7.5 1h1v2h-1zM7.5 5h1v2h-1zM7.5 9h1v2h-1zM7.5 13h1v2h-1zM6 3v10H1zM5 6.5L2.75 12H5zM10 3l5 10h-5z";
-                    viewbox-width: 16;
-                    viewbox-height: 16;
                     text: Tr.t("FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT");
                     shortcut-text: "Alt+V";
                     enabled: AppState.image-commands;

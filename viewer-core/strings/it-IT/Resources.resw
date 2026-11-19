@@ -21,12 +21,6 @@
   <data name="SYSTEM_LOADING_ERROR" xml:space="preserve">
     <value>Spiacenti, l'applicazione non può aprire questo file perché il formato attualmente non è supportato o il file è danneggiato</value>
   </data>
-  <data name="SYSTEM_LOADING_ERROR_JXL_CODEC" xml:space="preserve">
-    <value>Per aprire i file JPEG XL è necessaria l'estensione gratuita JPEG XL Image Extension di Microsoft (Windows 11 24H2 o successivo)</value>
-  </data>
-  <data name="SYSTEM_LOADING_ERROR_CODEC_STORE" xml:space="preserve">
-    <value>Scaricala da Microsoft Store</value>
-  </data>
   <data name="SYSTEM_SAVING_ERROR" xml:space="preserve">
     <value>Spiacenti, l'applicazione non può salvare l'immagine in questa posizione</value>
   </data>
@@ -39,9 +33,6 @@
   <data name="SETTINGS_FIELD_LANGUAGE" xml:space="preserve">
     <value>Lingua</value>
   </data>
-  <data name="SETTINGS_FIELD_LANGUAGE_HELP" xml:space="preserve">
-    <value>È necessario riavviare l'applicazione per applicare questa impostazione.</value>
-  </data>
   <data name="SETTINGS_FIELD_THEME" xml:space="preserve">
     <value>Tema</value>
   </data>
@@ -53,18 +44,6 @@
   </data>
   <data name="SETTINGS_FIELD_THEME_DARK" xml:space="preserve">
     <value>Scuro</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP" xml:space="preserve">
-    <value>Modalità di rendering</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_BASIC" xml:space="preserve">
-    <value>Base</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_MICA" xml:space="preserve">
-    <value>Mica</value>
-  </data>
-  <data name="SETTINGS_FIELD_BACKDROP_ACRYLIC" xml:space="preserve">
-    <value>Acrilico</value>
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL" xml:space="preserve">
     <value>Cerca aggiornamenti</value>
@@ -80,9 +59,6 @@
   </data>
   <data name="SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL" xml:space="preserve">
     <value>Manualmente</value>
-  </data>
-  <data name="FILE_INFORMATION_TITLE" xml:space="preserve">
-    <value>Informazioni immagine</value>
   </data>
   <data name="FILE_INFORMATION_DIMENSIONS" xml:space="preserve">
     <value>Dimensioni immagine</value>
@@ -173,9 +149,6 @@
   </data>
   <data name="FOOTER_TOOLBAR_TRANSFORM_FLIP_VERT" xml:space="preserve">
     <value>Capovolgi verticalmente</value>
-  </data>
-  <data name="TRANSFORM_CROP_TITLE" xml:space="preserve">
-    <value>Strumento di ritaglio</value>
   </data>
   <data name="TRANSFORM_CROP_RATIO" xml:space="preserve">
     <value>Proporzioni</value>
