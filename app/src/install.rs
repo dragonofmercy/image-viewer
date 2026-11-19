@@ -151,13 +151,14 @@ pub fn ensure_associations() {
         return;
     }
     let exe = match std::env::current_exe() {
-        Ok(p) => p.to_string_lossy().into_owned(),
+        Ok(p) => p,
         Err(e) => return eprintln!("cannot locate the executable: {e}"),
     };
-    if exe.is_empty() {
-        return;
-    }
-    let plan = FileAssociationPlan::new(&exe, &SUPPORTED_FILE_TYPES);
+    // A lossy path must never reach the registry.
+    let Some(exe) = exe.to_str().filter(|e| !e.is_empty()) else {
+        return eprintln!("the executable path is not valid Unicode: file associations not written");
+    };
+    let plan = FileAssociationPlan::new(exe, &SUPPORTED_FILE_TYPES);
     log("register file associations", AssociationService::new("", Settings::app()).ensure_registered(&plan).map(drop));
 }
 
