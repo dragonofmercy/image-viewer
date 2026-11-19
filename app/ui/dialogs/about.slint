@@ -98,6 +98,8 @@ export component AboutDialog inherits ContentDialog {
             description: AboutState.last-check;
             HorizontalLayout {
                 spacing: 16px;
+                // Ring and text keep their own size and sit against the right edge, where the button was.
+                alignment: end;
                 if AboutState.update-state == 1: VerticalLayout {
                     alignment: center;
                     ProgressRing {
