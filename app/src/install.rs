@@ -165,6 +165,8 @@ pub fn ensure_associations() {
 /// First statement of `main`. Velopack does nothing when the exe is not an installed copy.
 pub fn run_hooks() {
     velopack::VelopackApp::build()
+        // A download the user abandoned must not install itself at the next start: updates apply only through updates.rs.
+        .set_auto_apply_on_startup(false)
         .on_first_run(|_| legacy_cleanup())
         .on_after_install_fast_callback(|_| integrate())
         .on_after_update_fast_callback(|_| integrate())
