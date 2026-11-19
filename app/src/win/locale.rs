@@ -96,5 +96,6 @@ mod tests {
     #[test]
     fn dates_before_1970_are_not_clamped() {
         let text = format_file_time(UNIX_EPOCH - Duration::from_secs(86_400 * 365));
-        assert!(text.contains("1969") && !text.contains("1970"), "{text}");    }
+        assert!(text.contains("1969") && !text.contains("1970"), "{text}");
+    }
 }
