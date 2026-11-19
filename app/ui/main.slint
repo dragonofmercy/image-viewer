@@ -338,11 +338,13 @@ export component MainWindow inherits Window {
                 }
                 // XAML SplitView pane: overlays the right edge, slides in over the image.
                 InfoPane {
-                    x: AppState.info-open ? parent.width - self.width : parent.width;
+                    // Animated as a fraction: animating x itself made the pane trail behind the edge while the window was resized.
+                    property <float> shown: AppState.info-open ? 1 : 0;
+                    animate shown { duration: 200ms; easing: ease-out; }
+                    x: parent.width - self.width * self.shown;
                     y: 0px;
                     height: parent.height;
                     visible: self.x < parent.width;
-                    animate x { duration: 200ms; easing: ease-out; }
                     info: root.info;
                     close => {
                         AppState.info-open = false;

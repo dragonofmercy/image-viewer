@@ -1,6 +1,5 @@
 import { Theme } from "../theme.slint";
 import { Icon } from "icon.slint";
-import { ToolTip } from "tooltip.slint";
 
 // A MenuFlyout can be declared inside; open it from `clicked`. See menu-flyout.slint.
 export component AppBarButton inherits Rectangle {
@@ -12,11 +11,14 @@ export component AppBarButton inherits Rectangle {
     // When set, shown to the right of the icon and the width fits the content.
     in property <string> label;
     in property <bool> enabled: true;
+    // Accessible name of an icon-only button (no tooltip is shown).
     in property <string> tooltip;
     callback clicked;
 
     width: root.label == "" ? 45px : content.preferred-width;
     height: 40px;
+    accessible-role: button;
+    accessible-label: root.label != "" ? root.label : root.tooltip;
     border-radius: Theme.control-radius;
     background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
 
@@ -54,10 +56,6 @@ export component AppBarButton inherits Rectangle {
         }
     }
 
-    // Disabled buttons show no tooltip (and drop a visible one).
-    ToolTip {
-        text: root.enabled ? root.tooltip : "";
-    }
 
     // Optional MenuFlyout; it anchors to this button.
     @children

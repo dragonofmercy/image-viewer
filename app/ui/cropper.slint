@@ -199,8 +199,7 @@ export component Cropper inherits Rectangle {
                 }
             }
             Button {
-                glyph: "\u{E711}";
-                accessible-label: Tr.t("TRANSFORM_CROP_CANCEL");
+                text: Tr.t("TRANSFORM_CROP_CANCEL");
                 clicked => {
                     root.cancel();
                 }
