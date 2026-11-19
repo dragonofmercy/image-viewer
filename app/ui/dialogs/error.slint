@@ -6,6 +6,7 @@ import { ContentDialog } from "content-dialog.slint";
 // `ShowErrorAsync`: a message and a single close button (SYSTEM_OK).
 export component ErrorDialog inherits ContentDialog {
     in property <string> message;
+    close-on-enter: true;
 
     // ContentDialogContentPadding, as the other 1.x dialogs.
     VerticalLayout {

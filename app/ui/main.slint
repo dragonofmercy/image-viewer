@@ -133,6 +133,7 @@ export component MainWindow inherits Window {
     }
 
     scope := FocusScope {
+        focus-on-tab-navigation: !root.dialog-open;
         init => {
             self.focus();
         }

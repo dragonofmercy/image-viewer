@@ -10,6 +10,8 @@ export component ContentDialog inherits Rectangle {
     // The uncovered caption button block: the title bar height and the buttons width (zero in fullscreen).
     in property <length> caption-height;
     in property <length> caption-width;
+    // WinUI default button: Enter closes a dialog whose only command is Close.
+    in property <bool> close-on-enter: false;
     callback closed;
 
     public function close() {
@@ -58,8 +60,12 @@ export component ContentDialog inherits Rectangle {
     // Keys of the content bubble up here and stop: none reaches the window shortcuts.
     keys := FocusScope {
         key-pressed(event) => {
-            if event.text == Key.Escape {
+            if event.text == Key.Escape || (root.close-on-enter && event.text == Key.Return) {
                 root.close();
+            }
+            // Tab and Shift+Tab belong to Slint's focus navigation among the dialog controls.
+            if event.text == Key.Tab || event.text == Key.Backtab {
+                return reject;
             }
             accept
         }

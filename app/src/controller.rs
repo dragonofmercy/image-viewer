@@ -418,6 +418,9 @@ impl Controller {
 
     /// Changes the open session and pushes its selection. Does nothing when the cropper is closed.
     fn update_crop(&self, change: impl FnOnce(&mut CropSession, (u32, u32))) {
+        if self.dialog_open() {
+            return;
+        }
         let sel = {
             let mut doc = self.doc.borrow_mut();
             let Some(image) = doc.picture.as_ref().map(|p| (p.width(), p.height())) else { return };
@@ -455,6 +458,9 @@ impl Controller {
 
     /// `ButtonCropValidate_Click` + `Context.Crop`: crops, closes the cropper, then the transform refresh.
     fn crop_apply(&self) {
+        if self.dialog_open() {
+            return;
+        }
         let rect = {
             let mut doc = self.doc.borrow_mut();
             let Some(image) = doc.picture.as_ref().map(|p| (p.width(), p.height())) else { return };
@@ -466,6 +472,9 @@ impl Controller {
 
     /// `Context.CloseCropper` without a change: the animation resumes.
     fn crop_cancel(&self) {
+        if self.dialog_open() {
+            return;
+        }
         if self.doc.borrow_mut().crop.take().is_none() {
             return;
         }
