@@ -67,8 +67,16 @@ impl Integration {
 
     /// 1.x registered a Windows App SDK toast activator under the same AUMID: drop its CLSID and the pointer to it.
     pub fn remove_legacy_activator(&self) -> io::Result<()> {
-        let Ok(id) = Self::hkcu().open_subkey_with_flags(self.aumid_key(), KEY_READ | KEY_SET_VALUE) else { return Ok(()) };
-        let Ok(guid) = id.get_value::<String, _>("CustomActivator") else { return Ok(()) };
+        let id = match Self::hkcu().open_subkey_with_flags(self.aumid_key(), KEY_READ | KEY_SET_VALUE) {
+            Ok(id) => id,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
+            Err(e) => return Err(e),
+        };
+        let guid = match id.get_value::<String, _>("CustomActivator") {
+            Ok(guid) => guid,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
+            Err(e) => return Err(e),
+        };
         if !is_guid(&guid) {
             return Ok(());
         }
@@ -89,9 +97,14 @@ fn legacy_cleanup_in(dir: &Path) {
     log("legacy cleanup", ignore_missing(std::fs::remove_dir_all(dir)));
 }
 
+/// The 1.x folder under `LOCALAPPDATA`, only when that value is an absolute path (an empty one must not resolve against the current directory).
+fn legacy_dir(local_app_data: Option<std::ffi::OsString>) -> Option<PathBuf> {
+    local_app_data.map(PathBuf::from).filter(|p| p.is_absolute()).map(|p| p.join("Dragon Industries"))
+}
+
 fn legacy_cleanup() {
-    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
-        legacy_cleanup_in(&PathBuf::from(local).join("Dragon Industries"));
+    if let Some(dir) = legacy_dir(std::env::var_os("LOCALAPPDATA")) {
+        legacy_cleanup_in(&dir);
     }
 }
 
@@ -104,9 +117,12 @@ fn integrate() {
 }
 
 fn uninstall() {
-    if let Some(exe) = std::env::current_exe().ok().and_then(|p| p.to_str().map(str::to_string)) {
-        let plan = FileAssociationPlan::new(&exe, &SUPPORTED_FILE_TYPES);
-        log("unregister file associations", AssociationService::new("", Settings::app()).unregister(&plan));
+    match std::env::current_exe().map(|p| p.to_string_lossy().into_owned()) {
+        Ok(exe) => {
+            let plan = FileAssociationPlan::new(&exe, &SUPPORTED_FILE_TYPES);
+            log("unregister file associations", AssociationService::new("", Settings::app()).unregister(&plan));
+        }
+        Err(e) => eprintln!("cannot locate the executable: {e}"),
     }
     log("unregister integration", Integration::new("").unregister());
 }
@@ -196,6 +212,14 @@ mod tests {
         assert!(!exists(&root, &format!(r"AppUserModelId\{AUMID}")));
         it.unregister().unwrap();
         let _ = Integration::hkcu().delete_subkey_all(&root);
+    }
+
+    #[test]
+    fn legacy_dir_requires_an_absolute_local_app_data() {
+        assert_eq!(legacy_dir(Some(r"C:\Users\x\AppData\Local".into())), Some(PathBuf::from(r"C:\Users\x\AppData\Local\Dragon Industries")));
+        assert_eq!(legacy_dir(Some("".into())), None);
+        assert_eq!(legacy_dir(Some(r"relative\dir".into())), None);
+        assert_eq!(legacy_dir(None), None);
     }
 
     #[test]
