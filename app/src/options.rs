@@ -1,6 +1,7 @@
 //! Settings and About dialogs: the entries of the dropdowns and the wiring between the dialogs and `Settings`.
 
-use crate::{AboutState, AppState, Commands, MainWindow, SettingsState, apply_theme};
+use crate::win::locale::format_file_time;
+use crate::{AboutState, Commands, MainWindow, SettingsState, apply_theme};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, native_name};
@@ -85,8 +86,7 @@ pub fn install(ui: &MainWindow, strings: &Rc<Strings>) {
         if ui.get_dialog_open() {
             return;
         }
-        let last = Settings::app().last_update_check();
-        let last = if last.is_empty() { s.get("ABOUT_LABEL_LAST_UPDATE_NEVER") } else { last };
+        let last = Settings::app().last_update_check_time().map(format_file_time).filter(|t| !t.is_empty()).unwrap_or_else(|| s.get("ABOUT_LABEL_LAST_UPDATE_NEVER"));
         ui.global::<AboutState>().set_version(format!("v{}", env!("CARGO_PKG_VERSION")).into());
         ui.global::<AboutState>().set_last_check(format!("{}{last}", s.get("ABOUT_LABEL_LAST_UPDATE")).into());
         ui.set_about_open(true);
@@ -94,8 +94,6 @@ pub fn install(ui: &MainWindow, strings: &Rc<Strings>) {
     ui.global::<AboutState>().on_open_url(|release| {
         crate::win::shell::open_url(&if release { format!("{REPOSITORY_URL}/releases") } else { REPOSITORY_URL.to_string() });
     });
-    // Phase 4 turns this on with the update check.
-    ui.global::<AppState>().set_updates_available(false);
 }
 
 #[cfg(test)]

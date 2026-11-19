@@ -7,6 +7,8 @@ export component HyperlinkButton inherits Rectangle {
     in property <string> glyph;
     in property <color> foreground: Theme.accent;
     in property <bool> enabled: true;
+    in property <int> font-weight: 400;
+    in property <length> font-size: 14px;
     callback clicked;
 
     min-height: 32px;
@@ -29,6 +31,8 @@ export component HyperlinkButton inherits Rectangle {
         }
         if root.glyph == "": Text {
             text: root.text;
+            font-weight: root.font-weight;
+            font-size: root.font-size;
             vertical-alignment: center;
             color: root.enabled ? root.foreground : Theme.text-disabled;
         }

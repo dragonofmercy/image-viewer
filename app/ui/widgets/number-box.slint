@@ -22,10 +22,13 @@ export component NumberBox inherits Rectangle {
         root.show-value();
     }
 
-    // Typed text to a value; garbage reverts.
+    // Typed text to a value (spaces ignored, decimals truncated like the 1.x (int) cast); garbage, inf and NaN revert.
     function commit() {
-        if input.text.is-float() {
-            root.set-value(Math.round(input.text.to-float()));
+        let text = input.text.replace-all(" ", "");
+        // v - v is 0 for a finite number only.
+        if text.is-float() && text.to-float() - text.to-float() == 0 {
+            let v = max(root.minimum, min(root.maximum, text.to-float()));
+            root.set-value(v < 0 ? Math.ceil(v) : Math.floor(v));
         } else {
             root.show-value();
         }
@@ -38,7 +41,8 @@ export component NumberBox inherits Rectangle {
         root.show-value();
     }
 
-    // The pointer area lies above the box so that its hover also covers the spin buttons; a click goes to the button under it by position.
+    // The pointer area lies under the text so that the text input gets its own clicks; the spin zone is always laid out, so the area
+    // covers it, and a click goes to the button under it by position. Hover over the text itself does not reach the area.
     property <bool> spin-visible: input.has-focus || area.has-hover;
     property <length> spin-x: root.width - 4px - 2 * 24px - 2px;
     property <bool> over-up: area.mouse-x >= root.spin-x && area.mouse-x < root.spin-x + 24px + 1px;
@@ -54,6 +58,19 @@ export component NumberBox inherits Rectangle {
     accessible-value: root.value;
     accessible-value-minimum: root.minimum;
     accessible-value-maximum: root.maximum;
+
+    area := TouchArea {
+        mouse-cursor: root.over-up || root.over-down ? MouseCursor.default : MouseCursor.text;
+        clicked => {
+            if root.over-up {
+                root.set-value(root.value + 1);
+            } else if root.over-down {
+                root.set-value(root.value - 1);
+            } else {
+                input.focus();
+            }
+        }
+    }
 
     HorizontalLayout {
         padding-left: 11px;
@@ -90,7 +107,8 @@ export component NumberBox inherits Rectangle {
                 accept
             }
         }
-        if root.spin-visible: HorizontalLayout {
+        HorizontalLayout {
+            visible: root.spin-visible;
             spacing: 2px;
             padding-top: 4px;
             padding-bottom: 4px;
@@ -113,19 +131,6 @@ export component NumberBox inherits Rectangle {
                     size: 10px;
                     tint: Theme.text-secondary;
                 }
-            }
-        }
-    }
-
-    area := TouchArea {
-        mouse-cursor: root.over-up || root.over-down ? MouseCursor.default : MouseCursor.text;
-        clicked => {
-            if root.over-up {
-                root.set-value(root.value + 1);
-            } else if root.over-down {
-                root.set-value(root.value - 1);
-            } else {
-                input.focus();
             }
         }
     }

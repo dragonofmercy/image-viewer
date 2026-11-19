@@ -27,7 +27,7 @@ const NATIVE_NAMES: [&str; 8] = [
 ];
 
 fn index_of(tag: &str) -> Option<usize> {
-    AVAILABLE_LANGUAGES.iter().position(|t| *t == tag)
+    AVAILABLE_LANGUAGES.iter().position(|t| t.eq_ignore_ascii_case(tag))
 }
 
 /// Override wins if supported; otherwise the first system tag matching exactly or by primary subtag; otherwise en-US.
@@ -129,6 +129,7 @@ mod tests {
     fn resolve_language_cases() {
         let sys = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
         assert_eq!(resolve_language("fr-FR", &[]), "fr-FR");
+        assert_eq!(resolve_language("fr-fr", &sys(&["de-DE"])), "fr-FR");
         assert_eq!(resolve_language("", &sys(&["fr-CA"])), "fr-FR");
         assert_eq!(resolve_language("", &sys(&["zh-CN"])), "zh-Hans");
         assert_eq!(resolve_language("", &sys(&["ja-JP"])), "en-US");

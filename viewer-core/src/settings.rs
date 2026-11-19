@@ -153,6 +153,12 @@ impl Settings {
         self.string("LastUpdateCheck")
     }
 
+    /// The stored `yyyy-MM-dd HH:mm:ss` (invariant) as a local time; None when empty or unparsable (1.x `ToUpdateDate`).
+    pub fn last_update_check_time(&self) -> Option<std::time::SystemTime> {
+        use chrono::TimeZone;
+        parse_update_date(&self.last_update_check()).and_then(|t| chrono::Local.from_local_datetime(&t).earliest()).map(std::time::SystemTime::from)
+    }
+
     pub fn set_last_update_check(&self, v: &str) -> std::io::Result<()> {
         self.write_str("LastUpdateCheck", v)
     }
@@ -202,9 +208,22 @@ impl Settings {
     }
 }
 
+fn parse_update_date(value: &str) -> Option<chrono::NaiveDateTime> {
+    chrono::NaiveDateTime::parse_from_str(value, UPDATE_DATE_FORMAT).ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_date_parses_the_stored_format_only() {
+        let parsed = parse_update_date("2026-03-04 05:06:07").unwrap();
+        assert_eq!(parsed.format(UPDATE_DATE_FORMAT).to_string(), "2026-03-04 05:06:07");
+        assert!(parse_update_date("").is_none());
+        assert!(parse_update_date("garbage").is_none());
+        assert!(parse_update_date("04/03/2026 05:06:07").is_none());
+    }
 
     #[test]
     fn clamp_quality_ports_the_csharp_cases() {

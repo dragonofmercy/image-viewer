@@ -44,15 +44,21 @@ export component AboutDialog inherits ContentDialog {
                 }
                 HorizontalLayout {
                     padding-top: 5px;
-                    spacing: 8px;
+                    // 1.x: the first link is pulled 12px left (the button padding), the second sits 20px after it.
+                    padding-left: -12px;
+                    spacing: 20px;
                     alignment: start;
                     HyperlinkButton {
+                        font-weight: 700;
+                        font-size: 13px;
                         text: Tr.t("ABOUT_LINK_GITHUB_REPOSITORY");
                         clicked => {
                             AboutState.open-url(false);
                         }
                     }
                     HyperlinkButton {
+                        font-weight: 700;
+                        font-size: 13px;
                         text: Tr.t("ABOUT_LINK_LATEST_RELEASE");
                         clicked => {
                             AboutState.open-url(true);
