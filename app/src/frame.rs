@@ -13,7 +13,7 @@ use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use slint::ComponentHandle;
 use viewer_core::settings::{Settings, WindowState};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
-use windows::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
+use windows::Win32::Graphics::Dwm::{DWMWA_CLOAK, DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
 use windows::Win32::Graphics::Gdi::ScreenToClient;
 use windows::Win32::System::Ole::RevokeDragDrop;
 use windows::Win32::UI::HiDpi::{GetDpiForWindow, GetSystemMetricsForDpi};
@@ -50,6 +50,25 @@ thread_local! {
     // Last fullscreen state seen in WM_STYLECHANGED: the single source for the tracker and `AppState.fullscreen`.
     static FULLSCREEN: Cell<bool> = const { Cell::new(false) };
     static FULLSCREEN_CHANGED: RefCell<Option<FullscreenHandler>> = const { RefCell::new(None) };
+    // The window is hidden from the compositor until its first frame is painted (see `set_cloaked`).
+    static CLOAKED: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Hides the window from the compositor, or reveals it. A new window is white until Slint has painted its first frame: it stays
+/// cloaked meanwhile, so nothing shows before the interface does.
+fn set_cloaked(hwnd: HWND, cloaked: bool) {
+    if CLOAKED.replace(cloaked) == cloaked {
+        return;
+    }
+    let value = i32::from(cloaked);
+    unsafe {
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, std::ptr::from_ref(&value).cast(), size_of::<i32>() as u32);
+    }
+    if std::env::var_os("IMAGEVIEWER_TRACE").is_some() {
+        thread_local!(static SINCE: Cell<Option<std::time::Instant>> = const { Cell::new(None) });
+        let ms = SINCE.replace(Some(std::time::Instant::now())).map_or(0, |t| t.elapsed().as_millis());
+        eprintln!("trace frame cloaked={cloaked} after_ms={ms}");
+    }
 }
 
 pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
@@ -59,9 +78,14 @@ pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
     }
 }
 
-/// Polls until the native window exists, installs the frame subclass once, then calls `on_ready`.
+/// Installs the frame subclass once the native window exists, then calls `on_ready`: at once when the window was already shown
+/// (before anything is painted), otherwise by polling.
 /// `RenderingSetup` cannot be relied on to fire once the window exists with every renderer, hence the 5 ms timer.
 pub fn install_when_ready(ui: &MainWindow, on_ready: impl FnOnce(HWND) + 'static) {
+    if let Some(hwnd) = hwnd_of(ui.window()) {
+        install(ui, hwnd);
+        return on_ready(hwnd);
+    }
     let weak = ui.as_weak();
     let mut on_ready = Some(on_ready);
     let timer = Rc::new(slint::Timer::default());
@@ -161,6 +185,10 @@ fn install(ui: &MainWindow, hwnd: HWND) {
             eprintln!("frame: SetWindowSubclass failed, keeping the system caption");
             return;
         }
+        // Revealed by the first WM_PAINT; the timer is the way out if that paint never comes.
+        set_cloaked(hwnd, true);
+        let raw = hwnd.0 as isize;
+        slint::Timer::single_shot(Duration::from_secs(1), move || set_cloaked(HWND(raw as *mut _), false));
         // Re-run WM_NCCALCSIZE so the caption disappears right away.
         let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         // winit registers an OLE drop target, which would take precedence over WM_DROPFILES.
@@ -264,6 +292,12 @@ unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
     unsafe {
         match msg {
             // Fullscreen: the whole window is client area (a window maximized before keeps IsZoomed, so no maximized inset either).
+            // Winit renders inside WM_PAINT: once it returns, the first frame is on the window.
+            WM_PAINT if CLOAKED.get() => {
+                let result = DefSubclassProc(hwnd, msg, wparam, lparam);
+                set_cloaked(hwnd, false);
+                result
+            }
             WM_NCCALCSIZE if wparam.0 != 0 && is_fullscreen(hwnd) => LRESULT(0),
             WM_NCCALCSIZE if wparam.0 != 0 => {
                 // Let the system compute the left/right/bottom resize borders, then give the caption back to the client area.

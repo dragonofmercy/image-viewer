@@ -116,6 +116,8 @@ fn main() -> Result<(), slint::PlatformError> {
         };
         if dark { ui.global::<Commands>().on_theme_dark(handler) } else { ui.global::<Commands>().on_theme_light(handler) }
     }
+    // Shown here so the native window exists: the frame hides it until its first frame is painted (no white flash).
+    ui.show()?;
     let weak = ui.as_weak();
     frame::install_when_ready(&ui, move |_| {
         if let Some(ui) = weak.upgrade() {
