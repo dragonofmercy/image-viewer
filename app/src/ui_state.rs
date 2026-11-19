@@ -9,7 +9,6 @@ pub struct Inputs {
     pub modified: bool,
     pub has_path: bool,
     pub folder_count: usize,
-    pub fullscreen: bool,
     pub has_icon_sizes: bool,
     pub file_name: Option<String>,
 }
@@ -31,7 +30,8 @@ pub fn flags(i: &Inputs) -> Flags {
         save_direct: enabled && i.modified,
         file_info: enabled && i.has_path,
         navigate: !i.cropping && !i.saving && i.folder_count > 1,
-        icon_strip: enabled && !i.fullscreen && i.has_icon_sizes,
+        // Fullscreen hides the strip in main.slint.
+        icon_strip: enabled && i.has_icon_sizes,
     }
 }
 
@@ -47,21 +47,18 @@ pub fn title_prefix(i: &Inputs, loading_text: &str, pasted_text: &str) -> Option
     Some(if i.modified { format!("\u{25CF} {name}") } else { name.to_string() })
 }
 
-/// What Escape closes (`Context.EscapeAction`, with the dialog in front).
+/// What Escape closes (`Context.EscapeAction`). An open dialog closes itself: its Escape never reaches this.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Target {
-    Dialog,
     Cropper,
     InfoPane,
     Fullscreen,
     Nothing,
 }
 
-/// The first open layer, from the front: dialog, cropper, info pane, fullscreen. Never quits.
-pub fn escape_target(dialog_open: bool, cropping: bool, info_open: bool, fullscreen: bool) -> Target {
-    if dialog_open {
-        Target::Dialog
-    } else if cropping {
+/// The first open layer, from the front: cropper, info pane, fullscreen. Never quits.
+pub fn escape_target(cropping: bool, info_open: bool, fullscreen: bool) -> Target {
+    if cropping {
         Target::Cropper
     } else if info_open {
         Target::InfoPane
@@ -174,23 +171,19 @@ mod tests {
     }
 
     #[test]
-    fn icon_strip_hidden_in_fullscreen() {
-        let i = Inputs { has_icon_sizes: true, ..file() };
-        assert!(flags(&i).icon_strip);
-        assert!(!flags(&Inputs { fullscreen: true, ..i }).icon_strip);
+    fn icon_strip_needs_icon_sizes() {
+        assert!(flags(&Inputs { has_icon_sizes: true, ..file() }).icon_strip);
     }
 
     #[test]
     fn escape_backs_out_by_priority_and_never_quits() {
         use Target::*;
-        assert_eq!(escape_target(true, true, true, true), Dialog);
-        assert_eq!(escape_target(false, true, true, true), Cropper);
-        assert_eq!(escape_target(false, false, true, true), InfoPane);
-        assert_eq!(escape_target(false, false, false, true), Fullscreen);
-        assert_eq!(escape_target(false, false, false, false), Nothing);
-        assert_eq!(escape_target(true, false, false, false), Dialog);
-        assert_eq!(escape_target(false, true, false, false), Cropper);
-        assert_eq!(escape_target(false, false, true, false), InfoPane);
+        assert_eq!(escape_target(true, true, true), Cropper);
+        assert_eq!(escape_target(false, true, true), InfoPane);
+        assert_eq!(escape_target(false, false, true), Fullscreen);
+        assert_eq!(escape_target(false, false, false), Nothing);
+        assert_eq!(escape_target(true, false, false), Cropper);
+        assert_eq!(escape_target(false, true, false), InfoPane);
     }
 
     #[test]

@@ -8,7 +8,7 @@ use std::rc::{Rc, Weak};
 use std::time::{Duration, Instant, SystemTime};
 
 use slint::platform::WindowEvent;
-use slint::{ComponentHandle, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, TimerMode, VecModel};
+use slint::{ComponentHandle, ModelRc, SharedString, TimerMode, VecModel};
 use viewer_core::culture::Strings;
 use viewer_core::dib;
 use viewer_core::files::{SAVE_FILE_TYPES, SUPPORTED_FILE_TYPES, is_supported};
@@ -19,9 +19,10 @@ use viewer_core::settings::Settings;
 use crate::crop::{self, Handle, Sel};
 use crate::document::{CropSession, Document, Loader, PictureCache, Route, Saver, Source, Stamp, frame_delay, next_icon_index, quality_for, reveal_offset, save_route, stamp};
 use crate::file_info;
-use crate::image_host::ImageHost;
+use crate::image_host::{ImageHost, buffer_of};
 use crate::win::{clipboard, dialogs, locale, shell};
 use crate::{AppState, Commands, IconSizeItem, MainWindow, frame, ui_state, window_title};
+use windows::Win32::Foundation::HWND;
 
 thread_local! {
     // Loader results come back through the event loop, which only carries `Send` closures: they reach the controller through this.
@@ -31,6 +32,26 @@ thread_local! {
 /// `can_open` of the folder navigation: 1.x skips files that no longer exist.
 fn exists(path: &Path) -> bool {
     path.is_file()
+}
+
+/// The controller, from a worker callback.
+fn current() -> Option<Rc<Controller>> {
+    CURRENT.with(|c| c.borrow().upgrade())
+}
+
+/// A command handler that calls `f` on the controller.
+fn bind(c: &Rc<Controller>, f: fn(&Controller)) -> impl Fn() + 'static {
+    let c = c.clone();
+    move || f(&c)
+}
+
+/// Like `bind`, but `f` runs from the event loop, after the handler returned.
+fn deferred(c: &Rc<Controller>, f: fn(&Controller)) -> impl Fn() + 'static {
+    let c = c.clone();
+    move || {
+        let c = c.clone();
+        slint::Timer::single_shot(Duration::ZERO, move || f(&c));
+    }
 }
 
 pub struct Controller {
@@ -84,70 +105,39 @@ impl Controller {
             let c = weak.upgrade()?;
             // Not available while a caller holds the document or took the picture out: the host then shows a smaller level.
             let doc = c.doc.try_borrow().ok()?;
-            let pixels = doc.picture.as_ref()?.current();
-            Some(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), pixels.width(), pixels.height()))
+            Some(buffer_of(doc.picture.as_ref()?.current()))
         });
         let commands = ui.global::<Commands>();
-        let c = controller.clone();
-        // Deferred as 1.x yields before the picker: the dialog does not run inside the key or menu handler.
-        commands.on_open(move || {
-            let c = c.clone();
-            slint::Timer::single_shot(Duration::ZERO, move || c.open_dialog());
-        });
-        let c = controller.clone();
-        commands.on_next(move || c.next());
-        let c = controller.clone();
-        commands.on_previous(move || c.previous());
-        let c = controller.clone();
-        commands.on_first(move || c.first());
-        let c = controller.clone();
-        commands.on_last(move || c.last());
-        let c = controller.clone();
-        commands.on_file_info(move || c.open_info());
+        let c = &controller;
+        // Deferred as 1.x yields before the picker: the open and save dialogs do not run inside the key or menu handler.
+        commands.on_open(deferred(c, Self::open_dialog));
+        commands.on_save(deferred(c, Self::save));
+        commands.on_save_as(deferred(c, Self::save_as));
+        commands.on_next(bind(c, Self::next));
+        commands.on_previous(bind(c, Self::previous));
+        commands.on_first(bind(c, Self::first));
+        commands.on_last(bind(c, Self::last));
+        commands.on_file_info(bind(c, Self::open_info));
         // `MainWindow.xaml.cs` button handlers: the flip buttons pass the opposite ImageSharp mode, kept as is.
-        let c = controller.clone();
-        commands.on_rotate_left(move || c.rotate_flip(Rotate::Rotate270, Flip::None));
-        let c = controller.clone();
-        commands.on_rotate_right(move || c.rotate_flip(Rotate::Rotate90, Flip::None));
-        let c = controller.clone();
-        commands.on_flip_horizontal(move || c.rotate_flip(Rotate::None, Flip::Vertical));
-        let c = controller.clone();
-        commands.on_flip_vertical(move || c.rotate_flip(Rotate::None, Flip::Horizontal));
-        // Deferred like open: the save dialog does not run inside the key or menu handler.
-        let c = controller.clone();
-        commands.on_save(move || {
-            let c = c.clone();
-            slint::Timer::single_shot(Duration::ZERO, move || c.save());
-        });
-        let c = controller.clone();
-        commands.on_save_as(move || {
-            let c = c.clone();
-            slint::Timer::single_shot(Duration::ZERO, move || c.save_as());
-        });
-        let c = controller.clone();
-        commands.on_delete(move || c.delete());
-        let c = controller.clone();
-        commands.on_copy(move || c.copy());
-        let c = controller.clone();
-        commands.on_paste(move || c.paste());
-        let c = controller.clone();
-        commands.on_escape(move || c.escape());
-        let c = controller.clone();
-        commands.on_toggle_fullscreen(move || c.toggle_fullscreen());
-        let c = controller.clone();
-        commands.on_crop(move || c.start_crop());
+        commands.on_rotate_left(bind(c, |c| c.rotate_flip(Rotate::Rotate270, Flip::None)));
+        commands.on_rotate_right(bind(c, |c| c.rotate_flip(Rotate::Rotate90, Flip::None)));
+        commands.on_flip_horizontal(bind(c, |c| c.rotate_flip(Rotate::None, Flip::Vertical)));
+        commands.on_flip_vertical(bind(c, |c| c.rotate_flip(Rotate::None, Flip::Horizontal)));
+        commands.on_delete(bind(c, Self::delete));
+        commands.on_copy(bind(c, Self::copy));
+        commands.on_paste(bind(c, Self::paste));
+        commands.on_escape(bind(c, Self::escape));
+        commands.on_toggle_fullscreen(bind(c, Self::toggle_fullscreen));
+        commands.on_crop(bind(c, Self::start_crop));
+        ui.on_crop_reset(bind(c, Self::crop_reset));
+        ui.on_crop_apply(bind(c, Self::crop_apply));
+        ui.on_crop_cancel(bind(c, Self::crop_cancel));
         let c = controller.clone();
         ui.on_crop_drag_start(move |handle| c.crop_drag_start(handle));
         let c = controller.clone();
         ui.on_crop_drag_move(move |dx, dy| c.crop_drag_move(dx, dy));
         let c = controller.clone();
         ui.on_crop_ratio_chosen(move |index| c.crop_ratio_chosen(index));
-        let c = controller.clone();
-        ui.on_crop_reset(move || c.crop_reset());
-        let c = controller.clone();
-        ui.on_crop_apply(move || c.crop_apply());
-        let c = controller.clone();
-        ui.on_crop_cancel(move || c.crop_cancel());
         controller.push_crop_ratios();
         let c = controller.clone();
         ui.on_info_folder_clicked(move || c.open_info_folder());
@@ -218,12 +208,26 @@ impl Controller {
         if self.dialog_open() {
             return;
         }
-        let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
-        if let Some(path) = dialogs::pick_open(hwnd, &SUPPORTED_FILE_TYPES)
+        let Some(hwnd) = self.hwnd() else { return };
+        if let Some(path) = self.exclusive(|| dialogs::pick_open(hwnd, &SUPPORTED_FILE_TYPES)).flatten()
             && is_supported(&path)
         {
             self.open_path(&path);
         }
+    }
+
+    fn hwnd(&self) -> Option<HWND> {
+        self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window()))
+    }
+
+    /// Runs `f`, a native dialog that pumps messages (`SavingProcess` in 1.x). None, without running it, when another one is up.
+    fn exclusive<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
+        if self.modal.replace(true) {
+            return None;
+        }
+        let result = f();
+        self.modal.set(false);
+        Some(result)
     }
 
     /// A dialog (settings, about, error) is up: commands that mutate or open things are dropped, whatever delivered them.
@@ -288,7 +292,8 @@ impl Controller {
         }
         self.stop_animation();
         let requested = self.trace.then(Instant::now);
-        let cached = self.cache.borrow_mut().take(&path, stamp(&path));
+        let on_disk = stamp(&path);
+        let cached = self.cache.borrow_mut().take(&path, on_disk);
         if let Some((picture, stamp)) = cached {
             self.stamp.set(Some(stamp));
             self.finished(generation, Ok(picture), Duration::ZERO, requested);
@@ -301,9 +306,9 @@ impl Controller {
             self.stamp.set(Some(stamp));
             return true;
         }
-        self.stamp.set(stamp(&path));
+        self.stamp.set(on_disk);
         self.loader.request(Source::Path(path), generation, move |generation, result, decode| {
-            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+            if let Some(c) = current() {
                 c.finished(generation, result, decode, requested);
             }
         });
@@ -328,7 +333,7 @@ impl Controller {
         *self.preloading.borrow_mut() = Some((target.clone(), stamp));
         let path = target.clone();
         self.preloader.request(Source::Path(target), 0, move |_, result, _| {
-            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+            if let Some(c) = current() {
                 c.preloaded(path, stamp, result);
             }
         });
@@ -410,9 +415,7 @@ impl Controller {
         let Some(ui) = self.ui.upgrade() else { return };
         let app = ui.global::<AppState>();
         let cropping = self.doc.borrow().crop.is_some();
-        match ui_state::escape_target(ui.get_dialog_open(), cropping, app.get_info_open(), app.get_fullscreen()) {
-            // The dialog's own FocusScope closes it on Escape; one reaching the window must not close what lies behind it.
-            ui_state::Target::Dialog => {}
+        match ui_state::escape_target(cropping, app.get_info_open(), app.get_fullscreen()) {
             ui_state::Target::Cropper => self.crop_cancel(),
             ui_state::Target::InfoPane => self.close_info(),
             ui_state::Target::Fullscreen => self.set_fullscreen(false),
@@ -444,8 +447,6 @@ impl Controller {
         }
         app.set_fullscreen(on);
         self.host.fit_after_resize();
-        // The icon strip flag depends on fullscreen (main.slint also hides the strip on it, for a refresh skipped during a save).
-        self.refresh_ui();
     }
 
     /// `Context.UpdateFileInfo`, only while the pane is open (opening refreshes it too).
@@ -634,13 +635,8 @@ impl Controller {
         if self.dialog_open() {
             return;
         }
-        // Held through the dialog; once a save starts, `doc.saving` takes over until the worker hands the picture back.
-        if self.modal.replace(true) {
-            return;
-        }
-        let picked = self.pick_save_target();
-        self.modal.set(false);
-        let Some((path, ext, renamed)) = picked else { return };
+        // Exclusive through the dialog; once a save starts, `doc.saving` takes over until the worker hands the picture back.
+        let Some((path, ext, renamed)) = self.exclusive(|| self.pick_save_target()).flatten() else { return };
         // The dialog confirmed an overwrite of the name as typed only: never replace a different existing file silently.
         if renamed && path.exists() {
             eprintln!("not overwriting {}: the dialog did not confirm that name", path.display());
@@ -658,7 +654,7 @@ impl Controller {
             doc.path.as_deref().and_then(Path::file_stem).map(|s| s.to_string_lossy().into_owned())
         };
         let suggested = suggested.unwrap_or_else(|| locale::save_stamp(SystemTime::now()));
-        let hwnd = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window()))?;
+        let hwnd = self.hwnd()?;
         // Modal: no borrow is held while it pumps messages.
         dialogs::pick_save(hwnd, &suggested, &SAVE_FILE_TYPES, &self.strings.borrow().get("FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT"))
     }
@@ -680,7 +676,7 @@ impl Controller {
         let Some(picture) = self.doc.borrow_mut().picture.take() else { return };
         let target = adopt.then(|| path.clone());
         let sent = self.saver.request(picture, path, ext, quality, move |picture, result| {
-            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+            if let Some(c) = current() {
                 c.saved(picture, result, target);
             }
         });
@@ -743,12 +739,9 @@ impl Controller {
         }
         let path = self.doc.borrow().path.clone();
         if let Some(path) = path {
-            let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
+            let Some(hwnd) = self.hwnd() else { return };
             // The shell's error UI pumps messages: no borrow is held and a second delete is dropped meanwhile.
-            self.modal.set(true);
-            let recycled = shell::recycle(hwnd, &path);
-            self.modal.set(false);
-            if !recycled {
+            if self.exclusive(|| shell::recycle(hwnd, &path)) != Some(true) {
                 return;
             }
             let mut doc = self.doc.borrow_mut();
@@ -775,7 +768,7 @@ impl Controller {
     /// `CopyImageToClipboard`: the shown frame as CF_DIB (1.x) and CF_DIBV5 (an explicit alpha mask for readers that use it).
     /// A failure is only logged, as in 1.x.
     fn copy(&self) {
-        let Some(hwnd) = self.ui.upgrade().and_then(|ui| frame::hwnd_of(ui.window())) else { return };
+        let Some(hwnd) = self.hwnd() else { return };
         let (v5, dib) = {
             let doc = self.doc.borrow();
             let Some(picture) = doc.picture.as_ref() else { return };
@@ -800,15 +793,14 @@ impl Controller {
                 return;
             }
         }
-        let Some(ui) = self.ui.upgrade() else { return };
-        let Some(hwnd) = frame::hwnd_of(ui.window()) else { return };
+        let Some(hwnd) = self.hwnd() else { return };
         let Some(bytes) = clipboard::get_dib(hwnd) else { return };
         self.close_info();
         self.stop_animation();
         let generation = self.doc.borrow_mut().begin_paste();
         self.refresh_ui();
         self.loader.request(Source::Dib(bytes), generation, move |generation, result, decode| {
-            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+            if let Some(c) = current() {
                 c.pasted(generation, result, decode);
             }
         });
@@ -862,7 +854,7 @@ impl Controller {
         let delay = self.doc.borrow().picture.as_ref().and_then(|p| p.frames().get(index)).map(|f| frame_delay(f.delay_ms));
         let Some(delay) = delay else { return };
         self.anim.start(TimerMode::SingleShot, delay, move || {
-            if let Some(c) = CURRENT.with(|c| c.borrow().upgrade()) {
+            if let Some(c) = current() {
                 c.show_frame(index + 1);
             }
         });
@@ -875,8 +867,7 @@ impl Controller {
             let Some(p) = doc.picture.as_ref().filter(|p| p.is_animated()) else { return };
             let frames = p.frames();
             let index = if index < frames.len() { index } else { 0 };
-            let pixels = &frames[index].pixels;
-            (index, SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), pixels.width(), pixels.height()))
+            (index, buffer_of(&frames[index].pixels))
         };
         self.host.set_frame(buffer.1);
         self.schedule_frame(buffer.0);
@@ -893,7 +884,7 @@ impl Controller {
                         let pixels = p.icon_frame(i);
                         let (w, h) = pixels.dimensions();
                         IconSizeItem {
-                            thumb: slint::Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels.as_raw(), w, h)),
+                            thumb: slint::Image::from_rgba8(buffer_of(pixels)),
                             label: w.to_string().into(),
                             tooltip: format!("{w} x {h}").into(),
                         }
@@ -932,7 +923,6 @@ impl Controller {
         }
     }
 
-    /// `UpdateButtonsAccessiblity` + `LoadingDisplay`: command flags, title, dimensions, ring and error panel.
     /// The texts Rust pushes itself, after the language changed: the crop ratio names and the window title.
     pub fn language_changed(&self) {
         self.push_crop_ratios();
@@ -946,6 +936,7 @@ impl Controller {
         ui.set_crop_ratios(ModelRc::new(VecModel::from(labels)));
     }
 
+    /// `UpdateButtonsAccessiblity` + `LoadingDisplay`: command flags, title, dimensions, ring and error panel.
     pub fn refresh_ui(&self) {
         let Some(ui) = self.ui.upgrade() else { return };
         let app = ui.global::<AppState>();
@@ -955,10 +946,7 @@ impl Controller {
             if doc.saving && doc.picture.is_none() {
                 return;
             }
-            let inputs = ui_state::Inputs {
-                fullscreen: app.get_fullscreen(),
-                ..doc.inputs()
-            };
+            let inputs = doc.inputs();
             let dimensions = doc.picture.as_ref().map(|p| format!("{}x{}", p.width(), p.height())).unwrap_or_default();
             (inputs, dimensions, doc.error.clone())
         };

@@ -61,10 +61,17 @@ fn apply_theme(ui: &MainWindow, setting: ThemeSetting) {
     let global = ui.global::<Theme>();
     global.set_dark(dark);
     global.set_accent(theme::accent(dark));
-    ui.global::<AppState>().set_dark_setting(dark);
     if let Some(hwnd) = frame::hwnd_of(ui.window()) {
         frame::set_dark_title(hwnd, dark);
     }
+}
+
+/// Saves the theme the user chose and applies it.
+pub(crate) fn choose_theme(ui: &MainWindow, setting: ThemeSetting) {
+    if let Err(e) = Settings::app().set_theme(setting) {
+        eprintln!("cannot save the theme: {e}");
+    }
+    apply_theme(ui, setting);
 }
 
 fn main() -> Result<(), slint::PlatformError> {
@@ -104,18 +111,18 @@ fn main() -> Result<(), slint::PlatformError> {
             ui.window().dispatch_event(WindowEvent::CloseRequested);
         }
     });
-    for (dark, setting) in [(false, ThemeSetting::Light), (true, ThemeSetting::Dark)] {
-        let weak = ui.as_weak();
-        let handler = move || {
-            if let Err(e) = Settings::app().set_theme(setting) {
-                eprintln!("cannot save the theme: {e}");
-            }
-            if let Some(ui) = weak.upgrade() {
-                apply_theme(&ui, setting);
-            }
-        };
-        if dark { ui.global::<Commands>().on_theme_dark(handler) } else { ui.global::<Commands>().on_theme_light(handler) }
-    }
+    let weak = ui.as_weak();
+    ui.global::<Commands>().on_theme_light(move || {
+        if let Some(ui) = weak.upgrade() {
+            choose_theme(&ui, ThemeSetting::Light);
+        }
+    });
+    let weak = ui.as_weak();
+    ui.global::<Commands>().on_theme_dark(move || {
+        if let Some(ui) = weak.upgrade() {
+            choose_theme(&ui, ThemeSetting::Dark);
+        }
+    });
     // Shown here so the native window exists: the frame hides it until its first frame is painted (no white flash).
     ui.show()?;
     let weak = ui.as_weak();

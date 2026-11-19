@@ -66,6 +66,8 @@ fn channel(mask: u32) -> Option<(u32, u64)> {
 
 fn extract(pixel: u32, ch: Option<(u32, u64)>) -> u8 {
     match ch {
+        // A whole byte, as every standard mask: the scaling below would return it unchanged.
+        Some((shift, 255)) => (pixel >> shift) as u8,
         Some((shift, max)) => (u64::from(pixel >> shift) & max).saturating_mul(255).checked_div(max).unwrap_or(0) as u8,
         None => 0,
     }

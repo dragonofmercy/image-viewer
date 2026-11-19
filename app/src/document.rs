@@ -9,7 +9,7 @@ use crate::ui_state::Inputs;
 use image::RgbaImage;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Condvar, Mutex, mpsc};
+use std::sync::mpsc;
 use std::time::{Duration, Instant, SystemTime};
 use viewer_core::dib;
 use viewer_core::files::{SAVE_FILE_TYPES, extension_of, normalize_extension};
@@ -137,7 +137,6 @@ impl Document {
             folder_count: self.folder.as_ref().map_or(0, |f| f.files.len()),
             has_icon_sizes: picture.is_some_and(Picture::has_icon_sizes),
             file_name: self.path.as_ref().and_then(|p| p.file_name()).map(|n| n.to_string_lossy().into_owned()),
-            ..Inputs::default()
         }
     }
 }
@@ -250,14 +249,6 @@ struct Job {
     done: Done,
 }
 
-#[derive(Default)]
-struct Slot {
-    job: Option<Job>,
-    closed: bool,
-}
-
-type Shared = Arc<(Mutex<Slot>, Condvar)>;
-
 fn decode(source: Source) -> Result<Picture, LoadError> {
     match source {
         Source::Path(path) => picture::load_path(&path),
@@ -272,25 +263,10 @@ fn decode(source: Source) -> Result<Picture, LoadError> {
     }
 }
 
-/// Waits for the next job; None once the loader is dropped.
-fn next_job(shared: &Shared) -> Option<Job> {
-    let (lock, ready) = &**shared;
-    let mut slot = lock.lock().ok()?;
-    loop {
-        if slot.closed {
-            return None;
-        }
-        if let Some(job) = slot.job.take() {
-            return Some(job);
-        }
-        slot = ready.wait(slot).ok()?;
-    }
-}
-
 /// Decodes on one long-lived worker thread. Only the latest request waits: a newer one replaces it, so holding an arrow key
 /// never queues decodes. A decode already running finishes; its result is then dropped by the generation check.
 pub struct Loader {
-    shared: Shared,
+    jobs: mpsc::Sender<Job>,
 }
 
 impl Loader {
@@ -299,10 +275,12 @@ impl Loader {
     }
 
     fn with_decoder(decode: impl Fn(Source) -> Result<Picture, LoadError> + Send + 'static) -> Self {
-        let shared: Shared = Arc::default();
-        let worker = shared.clone();
+        let (jobs, queue) = mpsc::channel::<Job>();
         let spawned = std::thread::Builder::new().name("decode".into()).spawn(move || {
-            while let Some(job) = next_job(&worker) {
+            // Ends when the loader, and with it the sender, is dropped.
+            while let Ok(job) = queue.recv() {
+                // Requests that queued up meanwhile: only the latest one is decoded.
+                let job = queue.try_iter().last().unwrap_or(job);
                 let started = Instant::now();
                 // A decoder panic must not kill the worker: every later load would then hang.
                 let result = panic::catch_unwind(AssertUnwindSafe(|| decode(job.source))).unwrap_or_else(|_| Err(LoadError::Decode("decoder panicked".into())));
@@ -315,25 +293,12 @@ impl Loader {
         if let Err(e) = spawned {
             eprintln!("cannot start the decode thread: {e}");
         }
-        Self { shared }
+        Self { jobs }
     }
 
     pub fn request(&self, source: Source, generation: u64, done: impl FnOnce(u64, Result<Picture, LoadError>, Duration) + Send + 'static) {
-        let (lock, ready) = &*self.shared;
-        if let Ok(mut slot) = lock.lock() {
-            slot.job = Some(Job { source, generation, done: Box::new(done) });
-            ready.notify_one();
-        }
-    }
-}
-
-impl Drop for Loader {
-    fn drop(&mut self) {
-        let (lock, ready) = &*self.shared;
-        if let Ok(mut slot) = lock.lock() {
-            slot.closed = true;
-            ready.notify_one();
-        }
+        // Fails only when the worker could not start: the load then never completes, as before.
+        let _ = self.jobs.send(Job { source, generation, done: Box::new(done) });
     }
 }
 

@@ -2,12 +2,13 @@ use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
 
+use image::buffer::ConvertBuffer;
 use image::codecs::gif::{GifEncoder, Repeat};
 use image::codecs::jpeg::JpegEncoder;
 use image::codecs::png::PngEncoder;
 use image::codecs::tiff::TiffEncoder;
 use image::imageops;
-use image::{Delay, DynamicImage, ImageEncoder, ImageFormat, RgbaImage};
+use image::{Delay, ImageEncoder, ImageFormat, RgbaImage};
 
 use super::{Frame, Picture, can_save_jxl, encode_jxl_wic, metadata};
 use crate::files::{SAVE_FILE_TYPES, normalize_extension};
@@ -140,9 +141,7 @@ impl Picture {
         let mut out = Cursor::new(Vec::new());
         match ext {
             // JPEG has no alpha: ImageSharp drops it without compositing, so do the same.
-            ".jpg" => DynamicImage::ImageRgba8(pixels.clone())
-                .to_rgb8()
-                .write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
+            ".jpg" => ConvertBuffer::<image::RgbImage>::convert(pixels).write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
             ".png" => pixels.write_with_encoder(self.with_metadata(PngEncoder::new(&mut out), usize::MAX, usize::MAX))?,
             ".bmp" => pixels.write_to(&mut out, ImageFormat::Bmp)?,
             ".tga" => pixels.write_to(&mut out, ImageFormat::Tga)?,

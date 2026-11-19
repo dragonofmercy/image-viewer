@@ -1,22 +1,17 @@
 //! Settings and About dialogs: the entries of the dropdowns and the wiring between the dialogs and `Settings`.
 
 use crate::win::locale::format_file_time;
-use crate::{AboutState, Commands, MainWindow, SettingsState, Tr, apply_theme};
+use crate::{AboutState, Commands, MainWindow, SettingsState, Tr, choose_theme};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
 use viewer_core::culture::{AVAILABLE_LANGUAGES, Strings, index_of, native_name, resolve_language};
+use viewer_core::format::uc_first;
 use viewer_core::settings::{Settings, Theme as ThemeSetting};
 
 const REPOSITORY_URL: &str = "https://github.com/dragonofmercy/image-viewer";
 const UPDATE_INTERVALS: [&str; 4] = ["day", "week", "month", ""];
 const THEMES: [ThemeSetting; 3] = [ThemeSetting::Default, ThemeSetting::Light, ThemeSetting::Dark];
-
-/// Uppercases the first character (`UcFirst` in 1.x): .NET native names of some cultures start in lower case.
-fn uc_first(s: &str) -> String {
-    let mut chars = s.chars();
-    chars.next().map_or_else(String::new, |c| c.to_uppercase().chain(chars).collect())
-}
 
 /// (label, tag) of the language dropdown: the system default (empty tag), then the native names.
 fn language_entries(system_label: &str) -> Vec<(String, String)> {
@@ -33,6 +28,11 @@ fn index_of_language(tag: &str) -> usize {
 /// Unknown values read as manual, the last entry.
 fn index_of_interval(value: &str) -> usize {
     UPDATE_INTERVALS.iter().position(|v| *v == value).unwrap_or(UPDATE_INTERVALS.len() - 1)
+}
+
+/// Labels of the language dropdown in the current language.
+fn language_labels(strings: &Strings) -> ModelRc<SharedString> {
+    model(language_entries(&strings.get("DEFAULT_SYSTEM_LANGUAGE")).into_iter().map(|(label, _)| label))
 }
 
 fn model(labels: impl IntoIterator<Item = String>) -> ModelRc<SharedString> {
@@ -57,19 +57,21 @@ pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, language_changed
             return;
         }
         let stored = Settings::app();
-        ui.global::<SettingsState>().set_language_labels(model(language_entries(&s.borrow().get("DEFAULT_SYSTEM_LANGUAGE")).into_iter().map(|(label, _)| label)));
-        ui.global::<SettingsState>().set_language_index(index_of_language(&stored.language()) as i32);
-        ui.global::<SettingsState>().set_theme_index(THEMES.iter().position(|t| *t == stored.theme()).unwrap_or(0) as i32);
-        ui.global::<SettingsState>().set_interval_index(index_of_interval(&stored.update_interval()) as i32);
-        ui.global::<SettingsState>().set_jpeg_quality(i32::from(stored.jpeg_quality()));
-        ui.global::<SettingsState>().set_webp_quality(i32::from(stored.webp_quality()));
+        let state = ui.global::<SettingsState>();
+        state.set_language_labels(language_labels(&s.borrow()));
+        state.set_language_index(index_of_language(&stored.language()) as i32);
+        state.set_theme_index(THEMES.iter().position(|t| *t == stored.theme()).unwrap_or(0) as i32);
+        state.set_interval_index(index_of_interval(&stored.update_interval()) as i32);
+        state.set_jpeg_quality(i32::from(stored.jpeg_quality()));
+        state.set_webp_quality(i32::from(stored.webp_quality()));
         ui.set_settings_open(true);
     });
     let weak = ui.as_weak();
     let s = strings.clone();
     let language_changed = Rc::new(language_changed);
     state.on_language_chosen(move |i| {
-        let tag = language_entries("").get(i as usize).map(|(_, tag)| tag.clone()).unwrap_or_default();
+        // Entry 0 is the system default, stored as an empty tag.
+        let tag = usize::try_from(i).ok().and_then(|i| i.checked_sub(1)).and_then(|i| AVAILABLE_LANGUAGES.get(i)).map(|tag| (*tag).to_string()).unwrap_or_default();
         save("language", Settings::app().set_language(&tag));
         // Deferred: this runs inside the dropdown row that is about to be rebuilt with the new labels.
         let (weak, s, language_changed) = (weak.clone(), s.clone(), language_changed.clone());
@@ -78,16 +80,14 @@ pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, language_changed
             *s.borrow_mut() = Strings::load(resolve_language(&tag, &crate::system_ui_languages()));
             let tr = ui.global::<Tr>();
             tr.set_revision(tr.get_revision().wrapping_add(1));
-            ui.global::<SettingsState>().set_language_labels(model(language_entries(&s.borrow().get("DEFAULT_SYSTEM_LANGUAGE")).into_iter().map(|(label, _)| label)));
+            ui.global::<SettingsState>().set_language_labels(language_labels(&s.borrow()));
             language_changed();
         });
     });
     let weak = ui.as_weak();
     state.on_theme_chosen(move |i| {
-        let Some(theme) = THEMES.get(i as usize).copied() else { return };
-        save("theme", Settings::app().set_theme(theme));
-        if let Some(ui) = weak.upgrade() {
-            apply_theme(&ui, theme);
+        if let (Some(theme), Some(ui)) = (THEMES.get(i as usize).copied(), weak.upgrade()) {
+            choose_theme(&ui, theme);
         }
     });
     state.on_interval_chosen(|i| save("update interval", Settings::app().set_update_interval(UPDATE_INTERVALS.get(i as usize).copied().unwrap_or(""))));

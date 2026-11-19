@@ -18,7 +18,13 @@ const MAX_TEXTURE: u32 = 16384;
 /// Levels stop once the longest edge is at or under this.
 const LEVEL_STOP: u32 = 1024;
 
-type Buffer = SharedPixelBuffer<Rgba8Pixel>;
+pub type Buffer = SharedPixelBuffer<Rgba8Pixel>;
+
+/// A copy of `pixels` in the form Slint displays.
+pub fn buffer_of(pixels: &RgbaImage) -> Buffer {
+    Buffer::clone_from_slice(pixels.as_raw(), pixels.width(), pixels.height())
+}
+
 type FullSource = Box<dyn Fn() -> Option<Buffer>>;
 
 thread_local! {
@@ -63,29 +69,25 @@ fn resolve_pending(pending: bool, view: (f32, f32)) -> (bool, bool) {
 }
 
 fn premultiply(w: u32, h: u32, bytes: &[u8]) -> Option<RgbaImage> {
-    let data = bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .flat_map(|p| {
-            let a = u32::from(p[3]);
-            [p[0], p[1], p[2]].map(|c| ((u32::from(c) * a + 127) / 255) as u8).into_iter().chain([p[3]])
-        })
-        .collect();
+    let mut data = bytes.to_vec();
+    for p in data.as_chunks_mut::<4>().0 {
+        let a = u32::from(p[3]);
+        for c in &mut p[..3] {
+            *c = ((u32::from(*c) * a + 127) / 255) as u8;
+        }
+    }
     RgbaImage::from_raw(w, h, data)
 }
 
 fn unpremultiply(bytes: &[u8]) -> Vec<u8> {
-    bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .flat_map(|p| {
-            let a = u32::from(p[3]);
-            let rgb = [p[0], p[1], p[2]].map(|c| (u32::from(c) * 255 + a / 2).checked_div(a).map_or(0, |v| v.min(255) as u8));
-            rgb.into_iter().chain([p[3]])
-        })
-        .collect()
+    let mut data = bytes.to_vec();
+    for p in data.as_chunks_mut::<4>().0 {
+        let a = u32::from(p[3]);
+        for c in &mut p[..3] {
+            *c = (u32::from(*c) * 255 + a / 2).checked_div(a).map_or(0, |v| v.min(255) as u8);
+        }
+    }
+    data
 }
 
 /// Builds levels 1.. of `sizes` from the level 0 bytes (no copy unless the image has transparency, where the chain runs premultiplied
@@ -248,7 +250,7 @@ impl ImageHost {
         let sizes = if pyramid { level_sizes(w, h) } else { vec![(w, h)] };
         let first = first_displayable(&sizes);
         // One copy of the pixels, shared by level 0 and the worker (reference counted).
-        let buffer = Buffer::clone_from_slice(pixels.as_raw(), w, h);
+        let buffer = buffer_of(pixels);
         let mut levels = vec![None; sizes.len()];
         if first == 0 {
             levels[0] = Some(Image::from_rgba8(buffer.clone()));

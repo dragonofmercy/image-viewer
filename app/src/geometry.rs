@@ -6,7 +6,7 @@ use viewer_core::settings::{Settings, WindowState};
 use windows::Win32::Foundation::{LPARAM, POINT, RECT};
 use windows::Win32::Graphics::Gdi::{EnumDisplayMonitors, GetMonitorInfoW, HDC, HMONITOR, MONITOR_DEFAULTTONEAREST, MONITOR_DEFAULTTOPRIMARY, MONITORINFO, MonitorFromPoint, MonitorFromRect};
 use windows::Win32::UI::HiDpi::{GetDpiForMonitor, GetSystemMetricsForDpi, MDT_EFFECTIVE_DPI};
-use windows::Win32::UI::WindowsAndMessaging::{SM_CXFRAME, SM_CXPADDEDBORDER, SM_CYCAPTION, SM_CYFRAME};
+use windows::Win32::UI::WindowsAndMessaging::SM_CYCAPTION;
 use windows::core::BOOL;
 
 /// Below this, Windows has parked a minimized window offscreen.
@@ -158,12 +158,12 @@ pub fn apply(window: &slint::Window, saved: &Saved) {
         cbSize: size_of::<MONITORINFO>() as u32,
         ..Default::default()
     };
-    let (side, bottom, caption) = unsafe {
+    let caption = unsafe {
         let _ = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut dpi, &mut dpi_y);
         let _ = GetMonitorInfoW(monitor, &mut info);
-        let padded = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-        (GetSystemMetricsForDpi(SM_CXFRAME, dpi) + padded, GetSystemMetricsForDpi(SM_CYFRAME, dpi) + padded, GetSystemMetricsForDpi(SM_CYCAPTION, dpi))
+        GetSystemMetricsForDpi(SM_CYCAPTION, dpi)
     };
+    let (side, bottom) = crate::frame::border_sizes(dpi);
     let s = dpi as f32 / 96.0;
     let (pw, ph) = ((w as f32 * s).round() as i32, (h as f32 * s).round() as i32);
     // The frame subclass turns the caption and the top border into client area: ask for that much less so the final client is w x h DIPs.

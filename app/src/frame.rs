@@ -201,20 +201,22 @@ fn scale(hwnd: HWND) -> f32 {
     unsafe { GetDpiForWindow(hwnd) as f32 / 96.0 }
 }
 
+/// (width of a side resize border, height of the top or bottom one) at `dpi`.
+pub fn border_sizes(dpi: u32) -> (i32, i32) {
+    unsafe {
+        let padded = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+        (GetSystemMetricsForDpi(SM_CXFRAME, dpi) + padded, GetSystemMetricsForDpi(SM_CYFRAME, dpi) + padded)
+    }
+}
+
 /// Height of the resize border that the system adds above the client area (and that a maximized window pushes offscreen).
 fn frame_thickness(hwnd: HWND) -> i32 {
-    unsafe {
-        let dpi = GetDpiForWindow(hwnd);
-        GetSystemMetricsForDpi(SM_CYFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
-    }
+    border_sizes(unsafe { GetDpiForWindow(hwnd) }).1
 }
 
 /// Width of the side resize borders, also used as the corner zone of the top resize strip.
 fn frame_width(hwnd: HWND) -> i32 {
-    unsafe {
-        let dpi = GetDpiForWindow(hwnd);
-        GetSystemMetricsForDpi(SM_CXFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
-    }
+    border_sizes(unsafe { GetDpiForWindow(hwnd) }).0
 }
 
 fn button_of(hit: u32) -> i32 {
@@ -291,13 +293,13 @@ fn hit_test(hwnd: HWND, lparam: LPARAM) -> u32 {
 unsafe extern "system" fn subclass_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM, _id: usize, _data: usize) -> LRESULT {
     unsafe {
         match msg {
-            // Fullscreen: the whole window is client area (a window maximized before keeps IsZoomed, so no maximized inset either).
             // Winit renders inside WM_PAINT: once it returns, the first frame is on the window.
             WM_PAINT if CLOAKED.get() => {
                 let result = DefSubclassProc(hwnd, msg, wparam, lparam);
                 set_cloaked(hwnd, false);
                 result
             }
+            // Fullscreen: the whole window is client area (a window maximized before keeps IsZoomed, so no maximized inset either).
             WM_NCCALCSIZE if wparam.0 != 0 && is_fullscreen(hwnd) => LRESULT(0),
             WM_NCCALCSIZE if wparam.0 != 0 => {
                 // Let the system compute the left/right/bottom resize borders, then give the caption back to the client area.
