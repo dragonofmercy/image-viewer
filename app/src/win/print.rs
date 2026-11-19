@@ -16,25 +16,26 @@ pub fn fit_page(image: (u32, u32), page: (i32, i32), margin: i32) -> (i32, i32, 
 }
 
 /// Top-down BGRA composited over white (transparent pixels print as paper), reduced to `size` when that is smaller than the image.
-pub fn flatten_on_white(rgba: &RgbaImage, size: (u32, u32)) -> Vec<u8> {
+pub fn flatten_on_white(mut img: RgbaImage, size: (u32, u32)) -> Vec<u8> {
     // Composite first: thumbnail averages straight RGBA, so transparent black would darken the edges.
-    let opaque = RgbaImage::from_fn(rgba.width(), rgba.height(), |x, y| {
-        let Rgba([r, g, b, a]) = *rgba.get_pixel(x, y);
-        let over = |c: u8| ((u32::from(c) * u32::from(a) + 255 * (255 - u32::from(a)) + 127) / 255) as u8;
-        Rgba([over(r), over(g), over(b), 255])
-    });
-    let reduced;
-    let img = if size.0 < opaque.width() || size.1 < opaque.height() {
-        reduced = imageops::thumbnail(&opaque, size.0.clamp(1, opaque.width()), size.1.clamp(1, opaque.height()));
-        &reduced
-    } else {
-        &opaque
-    };
-    img.pixels().flat_map(|Rgba([r, g, b, _])| [*b, *g, *r, 255]).collect()
+    for Rgba([r, g, b, a]) in img.pixels_mut() {
+        let a = u32::from(*a);
+        let over = |c: u8| ((u32::from(c) * a + 255 * (255 - a) + 127) / 255) as u8;
+        (*r, *g, *b) = (over(*r), over(*g), over(*b));
+    }
+    if size.0 < img.width() || size.1 < img.height() {
+        img = imageops::thumbnail(&img, size.0.clamp(1, img.width()), size.1.clamp(1, img.height()));
+    }
+    let mut bgra = img.into_raw();
+    for px in bgra.as_chunks_mut::<4>().0 {
+        px.swap(0, 2);
+        px[3] = 255;
+    }
+    bgra
 }
 
 /// Shows the print dialog and prints `pixels` on the chosen printer. Ok(false) when the user cancelled.
-pub fn print(hwnd: HWND, pixels: &RgbaImage, job_name: &str) -> Result<bool, String> {
+pub fn print(hwnd: HWND, pixels: RgbaImage, job_name: &str) -> Result<bool, String> {
     let mut pd = PRINTDLGEXW {
         lStructSize: size_of::<PRINTDLGEXW>() as u32,
         hwndOwner: hwnd,
@@ -53,18 +54,17 @@ pub fn print(hwnd: HWND, pixels: &RgbaImage, job_name: &str) -> Result<bool, Str
         if !pd.hDC.is_invalid() {
             let _ = DeleteDC(pd.hDC);
         }
-        if !pd.hDevMode.is_invalid() {
-            let _ = GlobalFree(Some(pd.hDevMode));
-        }
-        if !pd.hDevNames.is_invalid() {
-            let _ = GlobalFree(Some(pd.hDevNames));
+        for h in [pd.hDevMode, pd.hDevNames] {
+            if !h.is_invalid() {
+                let _ = GlobalFree(Some(h));
+            }
         }
         result
     }
 }
 
 /// One page on the printer DC. SAFETY: `dc` is a valid printer DC.
-unsafe fn draw(dc: windows::Win32::Graphics::Gdi::HDC, pixels: &RgbaImage, job_name: &str) -> Result<(), String> {
+unsafe fn draw(dc: windows::Win32::Graphics::Gdi::HDC, pixels: RgbaImage, job_name: &str) -> Result<(), String> {
     unsafe {
         let page = (GetDeviceCaps(Some(dc), HORZRES), GetDeviceCaps(Some(dc), VERTRES));
         let margin = GetDeviceCaps(Some(dc), LOGPIXELSX) / 2;
@@ -127,13 +127,13 @@ mod tests {
     #[test]
     fn transparent_pixels_print_white() {
         let img = RgbaImage::from_fn(2, 1, |x, _| if x == 0 { Rgba([255, 0, 0, 0]) } else { Rgba([0, 0, 255, 255]) });
-        assert_eq!(flatten_on_white(&img, (2, 1)), vec![255, 255, 255, 255, 255, 0, 0, 255]);
+        assert_eq!(flatten_on_white(img, (2, 1)), vec![255, 255, 255, 255, 255, 0, 0, 255]);
     }
 
     #[test]
     fn reduction_does_not_darken_transparent_edges() {
         let img = RgbaImage::from_fn(2, 1, |x, _| if x == 0 { Rgba([255, 0, 0, 255]) } else { Rgba([0, 0, 0, 0]) });
-        let out = flatten_on_white(&img, (1, 1));
+        let out = flatten_on_white(img, (1, 1));
         assert_eq!(out.len(), 4);
         assert!(out[0].abs_diff(127) <= 2 && out[1].abs_diff(127) <= 2 && out[2] == 255 && out[3] == 255, "{out:?}");
     }

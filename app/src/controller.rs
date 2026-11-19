@@ -773,7 +773,7 @@ impl Controller {
             };
             (picture.current().clone(), name)
         };
-        if let Some(Err(e)) = self.exclusive(|| print::print(hwnd, &pixels, &name)) {
+        if let Some(Err(e)) = self.exclusive(move || print::print(hwnd, pixels, &name)) {
             eprintln!("cannot print the image: {e}");
             self.show_error("SYSTEM_PRINTING_ERROR");
         }
