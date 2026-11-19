@@ -7,6 +7,7 @@ mod file_info;
 mod frame;
 mod geometry;
 mod image_host;
+mod options;
 mod theme;
 mod ui_state;
 mod viewport;
@@ -129,6 +130,7 @@ fn main() -> Result<(), slint::PlatformError> {
             apply_theme(&ui, setting);
         }
     });
+    options::install(&ui, &strings);
     let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings);
     let c = controller.clone();
     ui.window().on_close_requested(move || {

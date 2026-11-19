@@ -1,0 +1,98 @@
+import { AboutSlint } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { Tr } from "../tr.slint";
+import { Button } from "../widgets/button.slint";
+import { HyperlinkButton } from "../widgets/hyperlink-button.slint";
+import { InfoBar } from "../widgets/info-bar.slint";
+import { SettingsCard } from "../widgets/settings-card.slint";
+import { ContentDialog } from "content-dialog.slint";
+import { AppState } from "../footer.slint";
+
+// Texts of the About dialog and its links, filled and handled by options.rs (`open-url(true)` is the releases page).
+export global AboutState {
+    in property <string> version;
+    in property <string> last-check;
+    callback open-url(bool);
+}
+
+export component AboutDialog inherits ContentDialog {
+    VerticalLayout {
+        padding: 24px;
+        // ContentDialogHeadingMargin 0,0,0,16
+        HorizontalLayout {
+            padding-bottom: 16px;
+            spacing: 20px;
+            Image {
+                width: 96px;
+                height: 96px;
+                source: @image-url("../../assets/ImageViewer.ico");
+                image-fit: contain;
+            }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                Text {
+                    text: "Image Viewer";
+                    color: Theme.text-primary;
+                    font-size: 16px;
+                    font-weight: 700;
+                }
+                Text {
+                    text: "By DragonOfMercy";
+                    color: Theme.text-primary;
+                    font-size: 12px;
+                }
+                HorizontalLayout {
+                    padding-top: 5px;
+                    spacing: 8px;
+                    alignment: start;
+                    HyperlinkButton {
+                        text: Tr.t("ABOUT_LINK_GITHUB_REPOSITORY");
+                        clicked => {
+                            AboutState.open-url(false);
+                        }
+                    }
+                    HyperlinkButton {
+                        text: Tr.t("ABOUT_LINK_LATEST_RELEASE");
+                        clicked => {
+                            AboutState.open-url(true);
+                        }
+                    }
+                }
+            }
+            VerticalLayout {
+                alignment: start;
+                padding-top: 5px;
+                HyperlinkButton {
+                    width: 44px;
+                    glyph: "\u{E711}";
+                    foreground: Theme.text-primary;
+                    clicked => {
+                        root.close();
+                    }
+                }
+            }
+        }
+        SettingsCard {
+            glyph: "\u{E895}";
+            label: AboutState.version;
+            description: AboutState.last-check;
+            // Updates arrive in phase 4: the check is present but cannot run yet.
+            Button {
+                text: Tr.t("ABOUT_BTN_CHECK_UPDATE");
+                enabled: AppState.updates-available;
+            }
+        }
+        VerticalLayout {
+            padding-top: 4px;
+            InfoBar {
+                open: false;
+            }
+        }
+        // Attribution required by the Slint royalty-free license.
+        HorizontalLayout {
+            padding-top: 16px;
+            AboutSlint { }
+        }
+    }
+}

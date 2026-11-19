@@ -1,0 +1,56 @@
+import { Theme } from "../theme.slint";
+
+// WinUI InfoBar (not closable): severity 0 informational, 1 success, 2 warning, 3 error; the children are the action on the right.
+// Closed it takes no room.
+export component InfoBar inherits Rectangle {
+    in property <bool> open;
+    in property <int> severity;
+    in property <string> title;
+
+    visible: root.open;
+    min-height: root.open ? 48px : 0px;
+    max-height: root.open ? 1000px : 0px;
+    border-radius: Theme.control-radius;
+    border-width: 1px;
+    border-color: Theme.card-stroke;
+    background: Theme.card-background;
+
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 16px;
+                height: 16px;
+                border-radius: 8px;
+                background: root.severity == 1 ? #0f7b0f : root.severity == 2 ? #9d5d00 : root.severity == 3 ? #c42b1c : Theme.accent;
+                Text {
+                    text: root.severity == 1 ? "\u{2713}" : root.severity == 0 ? "i" : "!";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: root.severity == 0 ? Theme.text-on-accent : #ffffff;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: root.title;
+                color: Theme.text-primary;
+                font-weight: 600;
+                wrap: word-wrap;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            @children
+        }
+    }
+}

@@ -1,0 +1,67 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+
+// The 1.x SettingsCard: icon, label with a description under it, and the control (the children) on the right.
+export component SettingsCard inherits Rectangle {
+    in property <string> glyph;
+    in property <string> label;
+    in property <string> description;
+
+    min-height: 68px;
+    border-radius: Theme.control-radius;
+    border-width: 1px;
+    border-color: Theme.card-stroke;
+    background: Theme.card-background;
+
+    HorizontalLayout {
+        padding: 16px;
+        if root.glyph != "": VerticalLayout {
+            alignment: center;
+            width: 20px + 20px + 2px;
+            HorizontalLayout {
+                padding-left: 2px;
+                padding-right: 20px;
+                Icon {
+                    glyph: root.glyph;
+                    size: 20px;
+                    tint: Theme.text-primary;
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            if root.label != "": Text {
+                text: root.label;
+                color: Theme.text-primary;
+                wrap: word-wrap;
+            }
+            if root.description != "": Text {
+                text: root.description;
+                color: Theme.text-secondary;
+                font-size: 12px;
+                wrap: word-wrap;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            padding-left: 24px;
+            @children
+        }
+    }
+}
+
+// A titled stack of cards, 2px apart. The title row is kept when empty, as in 1.x (margin 1,32,0,8).
+export component SettingsGroup inherits VerticalLayout {
+    in property <string> title;
+
+    spacing: 2px;
+    Text {
+        text: root.title;
+        color: Theme.text-primary;
+        font-weight: 600;
+        height: self.preferred-height + 32px + 8px;
+        vertical-alignment: bottom;
+    }
+    @children
+}

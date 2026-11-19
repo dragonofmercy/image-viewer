@@ -22,7 +22,6 @@ pub fn open_in_explorer(folder: &Path) {
 }
 
 /// Opens a URL in the default browser.
-#[allow(dead_code)] // first caller: the About dialog task
 pub fn open_url(url: &str) {
     open(&HSTRING::from(url));
 }

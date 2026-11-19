@@ -1,0 +1,132 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+
+// WinUI NumberBox with compact spin buttons: typed input is validated and clamped on Enter or when the focus leaves the box
+// (an invalid text goes back to the value); Up/Down step by 1, PageUp/PageDown by 10; the spin buttons show while the box has the pointer or the focus.
+export component NumberBox inherits Rectangle {
+    in property <int> minimum: 0;
+    in property <int> maximum: 100;
+    in-out property <int> value;
+    callback edited(int);
+
+    function show-value() {
+        input.text = root.value;
+    }
+
+    function set-value(v: int) {
+        let clamped = max(root.minimum, min(root.maximum, v));
+        if clamped != root.value {
+            root.value = clamped;
+            root.edited(clamped);
+        }
+        root.show-value();
+    }
+
+    // Typed text to a value; garbage reverts.
+    function commit() {
+        if input.text.is-float() {
+            root.set-value(Math.round(input.text.to-float()));
+        } else {
+            root.show-value();
+        }
+    }
+
+    init => {
+        root.show-value();
+    }
+    changed value => {
+        root.show-value();
+    }
+
+    // The pointer area lies above the box so that its hover also covers the spin buttons; a click goes to the button under it by position.
+    property <bool> spin-visible: input.has-focus || area.has-hover;
+    property <length> spin-x: root.width - 4px - 2 * 24px - 2px;
+    property <bool> over-up: area.mouse-x >= root.spin-x && area.mouse-x < root.spin-x + 24px + 1px;
+    property <bool> over-down: area.mouse-x >= root.spin-x + 24px + 1px;
+
+    min-width: 80px;
+    height: 32px;
+    border-radius: Theme.control-radius;
+    border-width: 1px;
+    border-color: Theme.control-stroke;
+    background: input.has-focus ? Theme.control-fill-pressed : area.has-hover ? Theme.control-fill-hover : Theme.control-fill;
+    accessible-role: spinbox;
+    accessible-value: root.value;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+
+    HorizontalLayout {
+        padding-left: 11px;
+        padding-right: 4px;
+        spacing: 4px;
+        input := TextInput {
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+            color: Theme.text-primary;
+            selection-background-color: Theme.accent;
+            selection-foreground-color: Theme.text-on-accent;
+            single-line: true;
+            accessible-role: none;
+            accepted => {
+                root.commit();
+            }
+            changed has-focus => {
+                if !self.has-focus {
+                    root.commit();
+                }
+            }
+            key-pressed(event) => {
+                if event.text == Key.UpArrow {
+                    root.set-value(root.value + 1);
+                } else if event.text == Key.DownArrow {
+                    root.set-value(root.value - 1);
+                } else if event.text == Key.PageUp {
+                    root.set-value(root.value + 10);
+                } else if event.text == Key.PageDown {
+                    root.set-value(root.value - 10);
+                } else {
+                    return reject;
+                }
+                accept
+            }
+        }
+        if root.spin-visible: HorizontalLayout {
+            spacing: 2px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            Rectangle {
+                width: 24px;
+                border-radius: Theme.control-radius;
+                background: area.pressed && root.over-up ? Theme.subtle-fill-tertiary : area.has-hover && root.over-up ? Theme.subtle-fill-secondary : transparent;
+                Icon {
+                    glyph: "\u{E70E}";
+                    size: 10px;
+                    tint: Theme.text-secondary;
+                }
+            }
+            Rectangle {
+                width: 24px;
+                border-radius: Theme.control-radius;
+                background: area.pressed && root.over-down ? Theme.subtle-fill-tertiary : area.has-hover && root.over-down ? Theme.subtle-fill-secondary : transparent;
+                Icon {
+                    glyph: "\u{E70D}";
+                    size: 10px;
+                    tint: Theme.text-secondary;
+                }
+            }
+        }
+    }
+
+    area := TouchArea {
+        mouse-cursor: root.over-up || root.over-down ? MouseCursor.default : MouseCursor.text;
+        clicked => {
+            if root.over-up {
+                root.set-value(root.value + 1);
+            } else if root.over-down {
+                root.set-value(root.value - 1);
+            } else {
+                input.focus();
+            }
+        }
+    }
+}

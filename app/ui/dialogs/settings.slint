@@ -1,0 +1,115 @@
+import { Theme } from "../theme.slint";
+import { Tr } from "../tr.slint";
+import { ComboBox } from "../widgets/combo-box.slint";
+import { NumberBox } from "../widgets/number-box.slint";
+import { HyperlinkButton } from "../widgets/hyperlink-button.slint";
+import { SettingsCard, SettingsGroup } from "../widgets/settings-card.slint";
+import { ContentDialog } from "content-dialog.slint";
+
+// Values and changes of the Settings dialog, filled and handled by options.rs. Every change is written at once.
+export global SettingsState {
+    in property <[string]> language-labels;
+    in-out property <int> language-index;
+    in-out property <int> theme-index;
+    in-out property <int> interval-index;
+    in-out property <int> jpeg-quality;
+    in-out property <int> webp-quality;
+    callback language-chosen(int);
+    callback theme-chosen(int);
+    callback interval-chosen(int);
+    callback jpeg-quality-edited(int);
+    callback webp-quality-edited(int);
+}
+
+export component SettingsDialog inherits ContentDialog {
+    VerticalLayout {
+        padding: 24px;
+        // ContentDialogHeadingMargin 0,0,0,16
+        HorizontalLayout {
+            padding-bottom: 16px;
+            Text {
+                text: Tr.t("FOOTER_TOOLBAR_MENU_OPTIONS");
+                color: Theme.text-primary;
+                font-size: 20px;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            HyperlinkButton {
+                width: 44px;
+                glyph: "\u{E711}";
+                foreground: Theme.text-primary;
+                clicked => {
+                    root.close();
+                }
+            }
+        }
+        SettingsGroup {
+            SettingsCard {
+                glyph: "\u{E775}";
+                label: Tr.t("SETTINGS_FIELD_LANGUAGE");
+                description: Tr.t("SETTINGS_FIELD_LANGUAGE_HELP");
+                ComboBox {
+                    min-width: 240px;
+                    model: SettingsState.language-labels;
+                    current-index <=> SettingsState.language-index;
+                    selected(i) => {
+                        SettingsState.language-chosen(i);
+                    }
+                }
+            }
+            SettingsCard {
+                glyph: "\u{E790}";
+                label: Tr.t("SETTINGS_FIELD_THEME");
+                ComboBox {
+                    min-width: 240px;
+                    model: [Tr.t("SETTINGS_FIELD_THEME_SYSTEM"), Tr.t("SETTINGS_FIELD_THEME_LIGHT"), Tr.t("SETTINGS_FIELD_THEME_DARK")];
+                    current-index <=> SettingsState.theme-index;
+                    selected(i) => {
+                        SettingsState.theme-chosen(i);
+                    }
+                }
+            }
+            SettingsCard {
+                glyph: "\u{E895}";
+                label: Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL");
+                ComboBox {
+                    min-width: 240px;
+                    model: [Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_DAY"), Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_WEEK"), Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_MONTH"), Tr.t("SETTINGS_FIELD_UPDATE_INTERVAL_MANUAL")];
+                    current-index <=> SettingsState.interval-index;
+                    selected(i) => {
+                        SettingsState.interval-chosen(i);
+                    }
+                }
+            }
+        }
+        SettingsGroup {
+            title: Tr.t("SETTINGS_GROUP_SAVE");
+            SettingsCard {
+                glyph: "\u{E8B9}";
+                label: Tr.t("SETTINGS_FIELD_JPEG_QUALITY");
+                NumberBox {
+                    min-width: 240px;
+                    minimum: 1;
+                    maximum: 100;
+                    value <=> SettingsState.jpeg-quality;
+                    edited(v) => {
+                        SettingsState.jpeg-quality-edited(v);
+                    }
+                }
+            }
+            SettingsCard {
+                glyph: "\u{E8B9}";
+                label: Tr.t("SETTINGS_FIELD_WEBP_QUALITY");
+                NumberBox {
+                    min-width: 240px;
+                    minimum: 1;
+                    maximum: 100;
+                    value <=> SettingsState.webp-quality;
+                    edited(v) => {
+                        SettingsState.webp-quality-edited(v);
+                    }
+                }
+            }
+        }
+    }
+}

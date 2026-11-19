@@ -37,6 +37,8 @@ export global Commands {
 // Command availability, set from Rust (ui_state::flags).
 export global AppState {
     in property <bool> image-commands;
+    // The update check of the About dialog can run (phase 4).
+    in property <bool> updates-available: false;
     in property <bool> save-direct;
     in property <bool> file-info;
     // The file information pane is open (the C# SplitView.IsPaneOpen).
