@@ -129,8 +129,14 @@ fn uninstall() {
 }
 
 /// Update manager of this install, `None` for a debug run or a loose copy.
+/// `IMAGEVIEWER_UPDATE_FEED` (a folder holding the `vpk pack` output) replaces GitHub, to test an update locally.
 pub fn installed() -> Option<velopack::UpdateManager> {
-    velopack::UpdateManager::new(velopack::sources::GithubSource::new(REPOSITORY_URL, None, false), None, None).ok()
+    use velopack::sources::{FileSource, GithubSource};
+    match std::env::var_os("IMAGEVIEWER_UPDATE_FEED").filter(|v| !v.is_empty()) {
+        Some(dir) => velopack::UpdateManager::new(FileSource::new(dir), None, None),
+        None => velopack::UpdateManager::new(GithubSource::new(REPOSITORY_URL, None, false), None, None),
+    }
+    .ok()
 }
 
 /// Only a real release install owns the associations: not a debug build, a loose copy or the portable zip.

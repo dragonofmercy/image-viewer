@@ -167,6 +167,11 @@ impl Settings {
         self.set_last_update_check(&chrono::Local::now().format(UPDATE_DATE_FORMAT).to_string())
     }
 
+    /// Whether the background update check is due now (local time), from the stored interval and last check.
+    pub fn update_check_due(&self) -> bool {
+        check_due(&self.update_interval(), parse_update_date(&self.last_update_check()), chrono::Local::now().naive_local())
+    }
+
     pub fn update_interval(&self) -> String {
         self.string("UpdateInterval")
     }
@@ -208,6 +213,21 @@ impl Settings {
     }
 }
 
+/// Port of `UpdateService.CheckUpdate`: "day" = +1 day, "week" = +7 days, any other non-empty value = +1 calendar month, "" = manual only.
+/// Compared on calendar dates; never checked (or unparsable) is due; a clock moved back waits.
+pub fn check_due(interval: &str, last: Option<chrono::NaiveDateTime>, now: chrono::NaiveDateTime) -> bool {
+    if interval.is_empty() {
+        return false;
+    }
+    let Some(last) = last else { return true };
+    let next = match interval {
+        "day" => last.checked_add_days(chrono::Days::new(1)),
+        "week" => last.checked_add_days(chrono::Days::new(7)),
+        _ => last.checked_add_months(chrono::Months::new(1)),
+    };
+    next.is_some_and(|n| n.date() <= now.date())
+}
+
 fn parse_update_date(value: &str) -> Option<chrono::NaiveDateTime> {
     chrono::NaiveDateTime::parse_from_str(value, UPDATE_DATE_FORMAT).ok()
 }
@@ -223,6 +243,23 @@ mod tests {
         assert!(parse_update_date("").is_none());
         assert!(parse_update_date("garbage").is_none());
         assert!(parse_update_date("04/03/2026 05:06:07").is_none());
+    }
+
+    #[test]
+    fn update_check_schedule() {
+        let at = |s: &str| chrono::NaiveDateTime::parse_from_str(s, UPDATE_DATE_FORMAT).unwrap();
+        let now = at("2026-11-19 10:00:00");
+        assert!(!check_due("", None, now)); // manual: never
+        assert!(check_due("day", None, now)); // never checked, or unparsable
+        assert!(!check_due("day", Some(at("2026-11-19 00:00:01")), now)); // next day not reached
+        assert!(check_due("day", Some(at("2026-11-18 23:59:59")), now)); // calendar dates, not 24 h
+        assert!(!check_due("week", Some(at("2026-11-13 09:00:00")), now));
+        assert!(check_due("week", Some(at("2026-11-12 09:00:00")), now));
+        assert!(!check_due("month", Some(at("2026-10-20 09:00:00")), now));
+        assert!(check_due("month", Some(at("2026-10-19 09:00:00")), now));
+        assert!(check_due("bogus", Some(at("2026-10-19 09:00:00")), now)); // unknown value = month
+        assert!(!check_due("day", Some(at("2027-01-01 00:00:00")), now)); // clock moved back: wait
+        assert!(check_due("month", Some(at("2026-01-31 09:00:00")), at("2026-02-28 09:00:00"))); // Jan 31 + 1 month clamps to Feb 28
     }
 
     #[test]

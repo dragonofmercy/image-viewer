@@ -12,6 +12,8 @@ mod launch;
 mod options;
 mod theme;
 mod ui_state;
+#[allow(dead_code)] // Task 4 creates the service in main
+mod updates;
 mod viewport;
 mod win {
     pub mod clipboard;
