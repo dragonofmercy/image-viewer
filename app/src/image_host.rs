@@ -12,7 +12,7 @@ use std::rc::{Rc, Weak};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// GPU texture side limit: a level above it is never uploaded.
+/// Renderer image side limit: a level above it is never uploaded.
 const MAX_TEXTURE: u32 = 16384;
 /// Levels stop once the longest edge is at or under this.
 const LEVEL_STOP: u32 = 1024;

@@ -56,7 +56,7 @@ pub fn hwnd_of(window: &slint::Window) -> Option<HWND> {
 }
 
 /// Polls until the native window exists, installs the frame subclass once, then calls `on_ready`.
-/// `RenderingSetup` never fires with the Skia wgpu renderer, hence the 5 ms timer.
+/// `RenderingSetup` cannot be relied on to fire once the window exists with every renderer, hence the 5 ms timer.
 pub fn install_when_ready(ui: &MainWindow, on_ready: impl FnOnce(HWND) + 'static) {
     let weak = ui.as_weak();
     let mut on_ready = Some(on_ready);
