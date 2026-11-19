@@ -19,8 +19,16 @@ export component AppBarButton inherits Rectangle {
     height: 40px;
     accessible-role: button;
     accessible-label: root.label != "" ? root.label : root.tooltip;
-    border-radius: Theme.control-radius;
-    background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+
+    // WinUI AppBarButton: the highlight is 36px high and leaves a 2.5px margin on each side (40px in the 45px pitch of an icon button).
+    Rectangle {
+        x: 2.5px;
+        y: 2px;
+        width: parent.width - 5px;
+        height: parent.height - 4px;
+        border-radius: Theme.control-radius;
+        background: !root.enabled ? transparent : touch.pressed ? Theme.subtle-fill-tertiary : touch.has-hover ? Theme.subtle-fill-secondary : transparent;
+    }
 
     content := HorizontalLayout {
         padding-left: root.label == "" ? 0px : 12px;
