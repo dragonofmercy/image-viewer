@@ -18,6 +18,7 @@ mod win {
     pub mod clipboard;
     pub mod dialogs;
     pub mod locale;
+    pub mod print;
     pub mod shell;
     pub mod toast;
 }

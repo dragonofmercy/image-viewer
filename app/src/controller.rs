@@ -20,7 +20,7 @@ use crate::crop::{self, Handle, Sel};
 use crate::document::{CropSession, Document, Loader, PictureCache, Route, Saver, Source, Stamp, frame_delay, next_icon_index, quality_for, reveal_offset, save_route, stamp};
 use crate::file_info;
 use crate::image_host::{ImageHost, buffer_of};
-use crate::win::{clipboard, dialogs, locale, shell};
+use crate::win::{clipboard, dialogs, locale, print, shell};
 use crate::{AppState, Commands, IconSizeItem, MainWindow, frame, ui_state, window_title};
 use windows::Win32::Foundation::HWND;
 
@@ -124,6 +124,7 @@ impl Controller {
         commands.on_flip_horizontal(bind(c, |c| c.rotate_flip(Rotate::None, Flip::Vertical)));
         commands.on_flip_vertical(bind(c, |c| c.rotate_flip(Rotate::None, Flip::Horizontal)));
         commands.on_delete(bind(c, Self::delete));
+        commands.on_print(deferred(c, Self::print));
         commands.on_copy(bind(c, Self::copy));
         commands.on_paste(bind(c, Self::paste));
         commands.on_escape(bind(c, Self::escape));
@@ -762,6 +763,27 @@ impl Controller {
             self.set_icon_sizes(None);
             self.close_info();
             self.refresh_ui();
+        }
+    }
+
+    /// `Context.Print`: the system print dialog, then the shown frame fitted on the page. The picture is copied out so no borrow spans the dialog.
+    fn print(&self) {
+        if self.dialog_open() {
+            return;
+        }
+        let Some(hwnd) = self.hwnd() else { return };
+        let (pixels, name) = {
+            let doc = self.doc.borrow();
+            let Some(picture) = doc.picture.as_ref() else { return };
+            let name = match doc.path.as_deref().and_then(Path::file_name) {
+                Some(n) => n.to_string_lossy().into_owned(),
+                None => self.strings.borrow().get("SYSTEM_PASTED_CONTENT"),
+            };
+            (picture.current().clone(), name)
+        };
+        if let Some(Err(e)) = self.exclusive(|| print::print(hwnd, &pixels, &name)) {
+            eprintln!("cannot print the image: {e}");
+            self.show_error("SYSTEM_PRINTING_ERROR");
         }
     }
 

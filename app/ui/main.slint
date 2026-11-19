@@ -177,7 +177,7 @@ export component MainWindow inherits Window {
             } else if ctrl && !alt && shift && key == "s" {
                 if img { Commands.save-as(); }
             } else if ctrl && !alt && !shift && key == "p" {
-                if img && AppState.print-available { Commands.print(); }
+                if img { Commands.print(); }
             } else if ctrl && !alt && !shift && key == "q" {
                 Commands.quit();
             } else if ctrl && !alt && !shift && event.text == Key.F1 {
