@@ -121,7 +121,7 @@ export component MenuFlyout inherits Rectangle {
     popup := PopupWindow {
         close-policy: close-on-click-outside;
         x: root.align-right ? root.width - self.width : 0px;
-        y: -self.height - 4px;
+        y: -self.height - 8px;
         Rectangle {
             background: Theme.pane-background;
             border-width: 1px;
