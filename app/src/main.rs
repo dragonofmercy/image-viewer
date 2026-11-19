@@ -177,10 +177,13 @@ fn main() -> Result<(), slint::PlatformError> {
     let (weak, s, u) = (ui.as_weak(), strings.clone(), updates.clone());
     slint::Timer::single_shot(std::time::Duration::ZERO, move || {
         let s2 = s.clone();
-        u.check_if_due(move || {
-            let tr = |key: &str| s2.borrow().get(key);
-            win::toast::show_update(&tr("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"), &tr("ABOUT_BTN_DOWNLOAD_UPDATE"));
-        });
+        // A toast launch skips the quiet check: it would overwrite the download state of the About dialog opened below.
+        if !start_update {
+            u.check_if_due(move || {
+                let tr = |key: &str| s2.borrow().get(key);
+                win::toast::show_update(&tr("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"), &tr("ABOUT_BTN_DOWNLOAD_UPDATE"));
+            });
+        }
         if start_update && let Some(ui) = weak.upgrade() {
             options::show_about(&ui, &s.borrow(), &u, true);
         }
