@@ -37,26 +37,6 @@ The runnable exe is `target\release\ImageViewer.exe`. The DLLs from `native\` mu
 
 A portable zip is also published with each release. To uninstall, use **Settings > Apps > Installed apps > Image Viewer > Uninstall**.
 
-## How to release (maintainer only)
-
-One-time setup: `dotnet tool install -g vpk --version 1.2.161`
-
-Bump `version` in `[workspace.package]` of `Cargo.toml` first, then from the repo root:
-
-```pwsh
-.\Build-Release.ps1
-```
-
-The script reads the version from `Cargo.toml` (so it always matches the binary), runs `cargo build --release`, stages the exe and the DLLs from `native\`, and wraps `vpk pack` with the standard arguments (`--packId Dragon.ImageViewer`, `--shortcuts StartMenuRoot`, etc.). Output goes to `Releases\`.
-
-Then tag and publish by hand. The release title equals the tag and carries the five assets of `Releases\`:
-
-```pwsh
-git tag vX.Y.Z
-git push origin vX.Y.Z
-gh release create vX.Y.Z --title vX.Y.Z (Get-ChildItem Releases).FullName
-```
-
 ## Credits
 
 This project stands on the shoulders of these open-source libraries:
