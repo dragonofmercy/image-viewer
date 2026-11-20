@@ -5,7 +5,6 @@ use std::os::windows::ffi::OsStringExt;
 use std::path::{Path, PathBuf};
 
 use viewer_core::files::{extension_of, normalize_extension};
-use viewer_core::picture::can_save_jxl;
 use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree};
 use windows::Win32::UI::Shell::Common::COMDLG_FILTERSPEC;
@@ -18,9 +17,9 @@ fn pattern(extensions: &[&str]) -> String {
 }
 
 /// `SaveService.PickSaveTargetAsync` filters: one per type in `types` order, labelled from `format` with "{0}" replaced by the
-/// upper-case type without its dot; `.jxl` only when `jxl` (the encoder is installed).
-fn save_filters<'a>(types: &[&'a str], format: &str, jxl: bool) -> Vec<(String, &'a str)> {
-    types.iter().filter(|t| jxl || **t != ".jxl").map(|t| (format.replace("{0}", &t.trim_start_matches('.').to_uppercase()), *t)).collect()
+/// upper-case type without its dot.
+fn save_filters<'a>(types: &[&'a str], format: &str) -> Vec<(String, &'a str)> {
+    types.iter().map(|t| (format.replace("{0}", &t.trim_start_matches('.').to_uppercase()), *t)).collect()
 }
 
 /// The saved file from the dialog result. As `PickSaveTargetAsync` reads `StorageFile.FileType`, a typed extension that normalizes to
@@ -61,7 +60,7 @@ pub fn pick_open(owner: HWND, extensions: &[&str]) -> Option<PathBuf> {
 /// dialog's overwrite prompt. `format` is the localized FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT. None when cancelled or on a COM failure.
 pub fn pick_save(owner: HWND, suggested_name: &str, types: &[&str], format: &str) -> Option<(PathBuf, String, bool)> {
     init_com();
-    let filters = save_filters(types, format, can_save_jxl());
+    let filters = save_filters(types, format);
     let (path, index) = completed(unsafe { show_save(owner, suggested_name, &filters) }, "save")?;
     let offered: Vec<&str> = filters.iter().map(|(_, t)| *t).collect();
     Some(resolve_save_target(&path, filters.get(index)?.1, &offered))
@@ -133,13 +132,10 @@ mod tests {
 
     #[test]
     fn save_filters_keep_the_order_and_label_each_type() {
-        let with = save_filters(&SAVE_FILE_TYPES, "{0} file", true);
-        let labels: Vec<&str> = with.iter().map(|(l, _)| l.as_str()).collect();
+        let filters = save_filters(&SAVE_FILE_TYPES, "{0} file");
+        let labels: Vec<&str> = filters.iter().map(|(l, _)| l.as_str()).collect();
         assert_eq!(labels, ["JPG file", "PNG file", "WEBP file", "BMP file", "GIF file", "TIFF file", "TGA file", "JXL file"]);
-        assert!(with.iter().zip(SAVE_FILE_TYPES).all(|((_, t), e)| *t == e));
-        let without = save_filters(&SAVE_FILE_TYPES, "{0}", false);
-        assert_eq!(without.len(), 7);
-        assert!(without.iter().all(|(_, t)| *t != ".jxl"));
+        assert!(filters.iter().zip(SAVE_FILE_TYPES).all(|((_, t), e)| *t == e));
     }
 
     #[test]
@@ -153,7 +149,5 @@ mod tests {
         assert_eq!(resolve("scan.TIF", ".png"), (dir.join("scan.TIF"), ".tiff".into(), false));
         assert_eq!(resolve("a.txt", ".webp"), (dir.join("a.txt.webp"), ".webp".into(), true));
         assert_eq!(resolve("photo.2024", ".png"), (dir.join("photo.2024.png"), ".png".into(), true));
-        // .jxl is not offered without the encoder: the filter decides.
-        assert_eq!(resolve("a.jxl", ".png"), (dir.join("a.jxl.png"), ".png".into(), true));
     }
 }

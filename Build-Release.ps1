@@ -60,8 +60,7 @@ try {
     New-Item -ItemType Directory -Path 'publish' | Out-Null
     Copy-Item 'target\release\ImageViewer.exe' 'publish\'
     Copy-Item 'native\*.dll' 'publish\'
-    if (-not (Test-Path 'publish\libheif.dll')) { throw 'libheif.dll is missing from publish\' }
-    if (-not (Test-Path 'publish\jxl.dll')) { throw 'jxl.dll is missing from publish\' }
+    foreach ($dll in 'libheif.dll', 'jxl.dll', 'jxl_threads.dll', 'jxl_cms.dll', 'brotlicommon.dll', 'brotlidec.dll', 'brotlienc.dll') { if (-not (Test-Path "publish\$dll")) { throw "$dll is missing from publish\" } }
 
     Write-Host "==> vpk pack $Version" -ForegroundColor Yellow
     vpk pack `

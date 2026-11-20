@@ -19,4 +19,4 @@ Loaded at runtime by `viewer-core`: `src\picture\heif.rs` for HEIC / HEIF / AVIF
 
 The FFI in `heif.rs` follows the libheif 1.20.2 C headers. Upgrading this DLL means re-checking those prototypes and enum values.
 
-`jxl.dll` loads `jxl_cms.dll` and the brotli DLLs from the exe folder; JPEG XL decoding stays in pure Rust (jxl-oxide). The FFI in `jxl.rs` follows the libjxl 0.13.0 headers, including the `JxlBasicInfo`, `JxlColorEncoding` and `JxlPixelFormat` layouts: re-check them on an upgrade.
+`jxl.rs` loads `jxl.dll` and `jxl_threads.dll`; `jxl.dll` itself loads `jxl_cms.dll` and the brotli DLLs from the exe folder; JPEG XL decoding stays in pure Rust (jxl-oxide). The FFI in `jxl.rs` follows the libjxl 0.13.0 headers, including the `JxlBasicInfo`, `JxlColorEncoding` and `JxlPixelFormat` layouts: re-check them on an upgrade.

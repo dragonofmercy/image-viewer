@@ -4,11 +4,11 @@
 
 use std::borrow::Cow;
 use std::ffi::{c_int, c_void};
-use std::path::Path;
 use std::ptr::null;
 use std::sync::OnceLock;
 
-use image::{DynamicImage, ImageBuffer, RgbaImage};
+use image::buffer::ConvertBuffer;
+use image::{DynamicImage, ImageBuffer, RgbImage, RgbaImage};
 use jxl_oxide::{AllocTracker, EnumColourEncoding, JxlImage, RenderingIntent};
 use libloading::Library;
 
@@ -99,11 +99,13 @@ struct PixelFormat {
 }
 
 type Ptr = *mut c_void;
+/// `JxlParallelRunner`: only handed back to libjxl, never called from Rust.
+type Runner = unsafe extern "C" fn();
 
 struct Api {
     encoder_create: unsafe extern "C" fn(*const c_void) -> Ptr,
     encoder_destroy: unsafe extern "C" fn(Ptr),
-    encoder_set_parallel_runner: unsafe extern "C" fn(Ptr, *const c_void, Ptr) -> c_int,
+    encoder_set_parallel_runner: unsafe extern "C" fn(Ptr, Runner, Ptr) -> c_int,
     encoder_init_basic_info: unsafe extern "C" fn(*mut BasicInfo),
     encoder_set_basic_info: unsafe extern "C" fn(Ptr, *const BasicInfo) -> c_int,
     color_encoding_set_to_srgb: unsafe extern "C" fn(*mut ColorEncoding, c_int),
@@ -113,8 +115,7 @@ struct Api {
     encoder_close_input: unsafe extern "C" fn(Ptr),
     encoder_process_output: unsafe extern "C" fn(Ptr, *mut *mut u8, *mut usize) -> c_int,
     encoder_get_error: unsafe extern "C" fn(Ptr) -> c_int,
-    /// `JxlThreadParallelRunner` itself, handed to libjxl as a function pointer.
-    thread_runner: *const c_void,
+    thread_runner: Runner,
     thread_runner_create: unsafe extern "C" fn(*const c_void, usize) -> Ptr,
     thread_runner_destroy: unsafe extern "C" fn(Ptr),
     thread_runner_default_threads: unsafe extern "C" fn() -> usize,
@@ -122,11 +123,6 @@ struct Api {
     _jxl: Library,
     _threads: Library,
 }
-
-// SAFETY: `thread_runner` is a code address in a library that is never unloaded; nothing in Api is mutable.
-unsafe impl Send for Api {}
-// SAFETY: as above.
-unsafe impl Sync for Api {}
 
 fn api() -> Result<&'static Api, String> {
     static API: OnceLock<Result<Api, String>> = OnceLock::new();
@@ -172,11 +168,6 @@ fn load_api() -> Result<Api, String> {
     })
 }
 
-/// True when the bundled libjxl loads; false only on a broken install (DLL missing or unloadable).
-pub fn can_save_jxl() -> bool {
-    api().is_ok()
-}
-
 /// Owns one libjxl object and releases it on drop.
 struct Guard {
     ptr: Ptr,
@@ -199,20 +190,15 @@ impl Drop for Guard {
     }
 }
 
-/// Writes `rgba` to `path` as JPEG XL with libjxl's defaults (lossy, distance 1.0: visually lossless), with an alpha
-/// channel only when some pixel is not opaque.
-pub fn encode_jxl(rgba: &RgbaImage, path: &Path) -> Result<(), String> {
-    let bytes = encode_with(api()?, rgba).map_err(|e| format!("JPEG XL encode: {e}"))?;
-    std::fs::write(path, bytes).map_err(|e| e.to_string())
+/// `rgba` as a JPEG XL file with libjxl's defaults (lossy, distance 1.0: visually lossless), with an alpha channel only
+/// when some pixel is not opaque.
+pub fn encode_jxl(rgba: &RgbaImage) -> Result<Vec<u8>, String> {
+    encode_with(api()?, rgba).map_err(|e| format!("JPEG XL encode: {e}"))
 }
 
 fn encode_with(api: &Api, rgba: &RgbaImage) -> Result<Vec<u8>, String> {
     let alpha = rgba.pixels().any(|p| p[3] != 255);
-    let pixels: Cow<[u8]> = if alpha {
-        Cow::Borrowed(rgba.as_raw())
-    } else {
-        Cow::Owned(rgba.as_raw().as_chunks::<4>().0.iter().flat_map(|p| [p[0], p[1], p[2]]).collect())
-    };
+    let pixels: Cow<[u8]> = if alpha { Cow::Borrowed(rgba.as_raw()) } else { Cow::Owned(ConvertBuffer::<RgbImage>::convert(rgba).into_raw()) };
     let (w, h) = rgba.dimensions();
     let format = PixelFormat {
         num_channels: if alpha { 4 } else { 3 },
@@ -246,6 +232,8 @@ fn encode_with(api: &Api, rgba: &RgbaImage) -> Result<Vec<u8>, String> {
             return Err("libjxl returned no frame settings".into());
         }
         check((api.encoder_add_image_frame)(settings, &format, pixels.as_ptr().cast(), pixels.len()), "JxlEncoderAddImageFrame")?;
+        // libjxl copied the frame: free our RGB copy before the long part.
+        drop(pixels);
         (api.encoder_close_input)(enc.ptr);
 
         let mut out = vec![0u8; 1 << 16];

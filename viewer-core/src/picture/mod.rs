@@ -16,7 +16,6 @@ mod svg;
 
 #[doc(hidden)]
 pub use heif::encode_av1_heif;
-pub use jxl::can_save_jxl;
 #[doc(hidden)]
 pub use jxl::encode_jxl;
 pub use save::{Flip, Rotate, SaveError};

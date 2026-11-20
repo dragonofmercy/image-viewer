@@ -1,5 +1,5 @@
 use std::fmt;
-use std::io::Cursor;
+use std::io::{Cursor, Write};
 use std::path::Path;
 
 use image::buffer::ConvertBuffer;
@@ -10,7 +10,7 @@ use image::codecs::tiff::TiffEncoder;
 use image::imageops;
 use image::{Delay, ImageEncoder, ImageFormat, RgbaImage};
 
-use super::{Frame, Picture, can_save_jxl, encode_jxl, metadata};
+use super::{Frame, Picture, encode_jxl, metadata};
 use crate::files::{SAVE_FILE_TYPES, normalize_extension};
 
 /// EXIF must fit one APP1 segment (65533 data bytes, minus the "Exif\0\0" prefix); the encoder writes the length unchecked.
@@ -36,7 +36,6 @@ pub enum Flip {
 #[derive(Debug)]
 pub enum SaveError {
     UnsupportedFormat(String),
-    JxlUnavailable,
     Encode(String),
     Io(std::io::Error),
 }
@@ -45,7 +44,6 @@ impl fmt::Display for SaveError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SaveError::UnsupportedFormat(e) => write!(f, "unsupported save format: {e}"),
-            SaveError::JxlUnavailable => write!(f, "JPEG XL encoder not installed"),
             SaveError::Encode(e) => write!(f, "encode error: {e}"),
             SaveError::Io(e) => write!(f, "io error: {e}"),
         }
@@ -116,19 +114,12 @@ impl Picture {
         if !SAVE_FILE_TYPES.contains(&ext.as_str()) {
             return Err(SaveError::UnsupportedFormat(ext));
         }
-        if ext == ".jxl" && !can_save_jxl() {
-            return Err(SaveError::JxlUnavailable);
-        }
+        let bytes = self.encode(&ext, quality.unwrap_or(100).clamp(1, 100))?;
         let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        // Closing the handle keeps delete-on-drop but lets the encoders open the file themselves.
-        let temp = tempfile::Builder::new().prefix(".save-").tempfile_in(dir)?.into_temp_path();
-        if ext == ".jxl" {
-            encode_jxl(self.current(), &temp).map_err(SaveError::Encode)?;
-        } else {
-            std::fs::write(&temp, self.encode(&ext, quality.unwrap_or(100).clamp(1, 100))?)?;
-        }
+        let mut temp = tempfile::Builder::new().prefix(".save-").tempfile_in(dir)?;
+        temp.write_all(&bytes)?;
         // Flush to disk before the replace: a power cut must not leave a journaled rename over unwritten data.
-        std::fs::OpenOptions::new().write(true).open(&temp)?.sync_all()?;
+        temp.as_file().sync_all()?;
         temp.persist(path).map_err(|e| SaveError::Io(e.error))?;
         self.modified = false;
         Ok(())
@@ -140,6 +131,7 @@ impl Picture {
         let (w, h) = pixels.dimensions();
         let mut out = Cursor::new(Vec::new());
         match ext {
+            ".jxl" => return encode_jxl(pixels).map_err(SaveError::Encode),
             // JPEG has no alpha: ImageSharp drops it without compositing, so do the same.
             ".jpg" => ConvertBuffer::<image::RgbImage>::convert(pixels).write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
             ".png" => pixels.write_with_encoder(self.with_metadata(PngEncoder::new(&mut out), usize::MAX, usize::MAX))?,

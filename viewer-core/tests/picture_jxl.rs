@@ -1,7 +1,7 @@
 mod support;
 
 use support::*;
-use viewer_core::picture::{self, LoadError, can_save_jxl, encode_jxl};
+use viewer_core::picture::{self, LoadError, encode_jxl};
 
 /// 240x135 opaque codestream from jxl-oxide's own documentation (bare codestream, no container),
 /// so the read path is covered by a file libjxl did not write.
@@ -22,23 +22,13 @@ fn load_embedded_jxl_codestream() {
 }
 
 #[test]
-fn save_jxl_round_trips_through_libjxl() {
-    assert!(can_save_jxl(), "bundled libjxl must load");
-    let dir = fixture_dir();
-    let p = dir.path().join("out.jxl");
-    encode_jxl(&sample_image(4, 2), &p).unwrap();
-    let pic = picture::load_path(&p).unwrap();
-    assert_eq!((pic.width(), pic.height()), (4, 2));
-}
-
-#[test]
 fn load_jxl_round_trips_pixels_under_a_non_ascii_path() {
     let dir = fixture_dir();
     let sub = dir.path().join("été 照片");
     std::fs::create_dir(&sub).unwrap();
     let p = sub.join("img.jxl");
     let src = sample_image(32, 16);
-    encode_jxl(&src, &p).unwrap();
+    std::fs::write(&p, encode_jxl(&src).unwrap()).unwrap();
     let pic = picture::load_path(&p).unwrap();
     assert_eq!((pic.width(), pic.height()), (32, 16));
     assert!(!pic.modified());
@@ -54,10 +44,10 @@ fn save_jxl_keeps_alpha_only_when_used() {
     let dir = fixture_dir();
     let (opaque, translucent) = (dir.path().join("opaque.jxl"), dir.path().join("alpha.jxl"));
     let mut src = sample_image(8, 8);
-    encode_jxl(&src, &opaque).unwrap();
+    std::fs::write(&opaque, encode_jxl(&src).unwrap()).unwrap();
     assert!(picture::load_path(&opaque).unwrap().current().pixels().all(|p| p[3] == 255));
     src.get_pixel_mut(0, 0)[3] = 0;
-    encode_jxl(&src, &translucent).unwrap();
+    std::fs::write(&translucent, encode_jxl(&src).unwrap()).unwrap();
     assert!(picture::load_path(&translucent).unwrap().current().get_pixel(0, 0)[3] < 32);
 }
 
