@@ -10,7 +10,7 @@ use image::codecs::tiff::TiffEncoder;
 use image::imageops;
 use image::{Delay, ImageEncoder, ImageFormat, RgbaImage};
 
-use super::{Frame, Picture, can_save_jxl, encode_jxl_wic, metadata};
+use super::{Frame, Picture, can_save_jxl, encode_jxl, metadata};
 use crate::files::{SAVE_FILE_TYPES, normalize_extension};
 
 /// EXIF must fit one APP1 segment (65533 data bytes, minus the "Exif\0\0" prefix); the encoder writes the length unchecked.
@@ -120,10 +120,10 @@ impl Picture {
             return Err(SaveError::JxlUnavailable);
         }
         let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        // Closing the handle keeps delete-on-drop but lets WIC open the file itself.
+        // Closing the handle keeps delete-on-drop but lets the encoders open the file themselves.
         let temp = tempfile::Builder::new().prefix(".save-").tempfile_in(dir)?.into_temp_path();
         if ext == ".jxl" {
-            encode_jxl_wic(self.current(), &temp).map_err(SaveError::Encode)?;
+            encode_jxl(self.current(), &temp).map_err(SaveError::Encode)?;
         } else {
             std::fs::write(&temp, self.encode(&ext, quality.unwrap_or(100).clamp(1, 100))?)?;
         }

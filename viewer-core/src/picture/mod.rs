@@ -18,7 +18,7 @@ mod svg;
 pub use heif::encode_av1_heif;
 pub use jxl::can_save_jxl;
 #[doc(hidden)]
-pub use jxl::encode_jxl_wic;
+pub use jxl::encode_jxl;
 pub use save::{Flip, Rotate, SaveError};
 
 /// Cap on the pixel memory one decode may allocate: a failed allocation aborts the process, so hostile headers must fail before it. Lets a 200+ Mpx RGBA image through.

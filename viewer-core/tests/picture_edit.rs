@@ -125,11 +125,6 @@ fn save_round_trips_every_save_type() {
     let dir = fixture_dir();
     let mut pic = load(&dir, "a.png", 40, 20);
     for ext in SAVE_FILE_TYPES {
-        if ext == ".jxl" && !picture::can_save_jxl() {
-            eprintln!("skipping .jxl round trip: no JPEG XL encoder");
-            assert!(matches!(pic.save(&dir.path().join("out.jxl"), ext, None), Err(SaveError::JxlUnavailable)));
-            continue;
-        }
         let path = dir.path().join(format!("out{ext}"));
         pic.save(&path, ext, None).unwrap();
         let back = picture::load_path(&path).unwrap_or_else(|e| panic!("{ext}: {e}"));

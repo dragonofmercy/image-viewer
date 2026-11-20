@@ -1,10 +1,10 @@
 mod support;
 
 use support::*;
-use viewer_core::picture::{self, LoadError, can_save_jxl, encode_jxl_wic};
+use viewer_core::picture::{self, LoadError, can_save_jxl, encode_jxl};
 
 /// 240x135 opaque codestream from jxl-oxide's own documentation (bare codestream, no container),
-/// so the read path is covered on machines without the Store "JPEG XL Image Extension".
+/// so the read path is covered by a file libjxl did not write.
 const TINY_JXL: [u8; 42] = [
     0xff, 0x0a, 0x30, 0x54, 0x10, 0x09, 0x08, 0x06, 0x01, 0x00, 0x78, 0x00, 0x4b, 0x38, 0x41, 0x3c, 0xb6, 0x3a, 0x51, 0xfe, 0x00, 0x47, 0x1e, 0xa0, 0x85, 0xb8, 0x27, 0x1a, 0x48, 0x45, 0x84, 0x1b, 0x71, 0x4f, 0xa8, 0x3e, 0x8e, 0x30, 0x03, 0x92, 0x84, 0x01,
 ];
@@ -22,30 +22,23 @@ fn load_embedded_jxl_codestream() {
 }
 
 #[test]
-fn save_jxl_round_trips_through_wic() {
-    if !can_save_jxl() {
-        eprintln!("skipped: no working WIC JPEG XL encoder (Store \"JPEG XL Image Extension\" not installed)");
-        return;
-    }
+fn save_jxl_round_trips_through_libjxl() {
+    assert!(can_save_jxl(), "bundled libjxl must load");
     let dir = fixture_dir();
     let p = dir.path().join("out.jxl");
-    encode_jxl_wic(&sample_image(4, 2), &p).unwrap();
+    encode_jxl(&sample_image(4, 2), &p).unwrap();
     let pic = picture::load_path(&p).unwrap();
     assert_eq!((pic.width(), pic.height()), (4, 2));
 }
 
 #[test]
-fn load_jxl_decodes_without_store_extension() {
-    if !can_save_jxl() {
-        eprintln!("skipped: no WIC JPEG XL encoder to build the fixture (load_embedded_jxl_codestream covers the read path)");
-        return;
-    }
+fn load_jxl_round_trips_pixels_under_a_non_ascii_path() {
     let dir = fixture_dir();
     let sub = dir.path().join("été 照片");
     std::fs::create_dir(&sub).unwrap();
     let p = sub.join("img.jxl");
     let src = sample_image(32, 16);
-    encode_jxl_wic(&src, &p).unwrap();
+    encode_jxl(&src, &p).unwrap();
     let pic = picture::load_path(&p).unwrap();
     assert_eq!((pic.width(), pic.height()), (32, 16));
     assert!(!pic.modified());
@@ -54,6 +47,18 @@ fn load_jxl_decodes_without_store_extension() {
     assert!(r > 170 && g < 40 && b < 60 && a == 255, "{r} {g} {b} {a}");
     let [r, g, _, _] = pic.current().get_pixel(0, 15).0;
     assert!(r < 40 && g > 120, "{r} {g}");
+}
+
+#[test]
+fn save_jxl_keeps_alpha_only_when_used() {
+    let dir = fixture_dir();
+    let (opaque, translucent) = (dir.path().join("opaque.jxl"), dir.path().join("alpha.jxl"));
+    let mut src = sample_image(8, 8);
+    encode_jxl(&src, &opaque).unwrap();
+    assert!(picture::load_path(&opaque).unwrap().current().pixels().all(|p| p[3] == 255));
+    src.get_pixel_mut(0, 0)[3] = 0;
+    encode_jxl(&src, &translucent).unwrap();
+    assert!(picture::load_path(&translucent).unwrap().current().get_pixel(0, 0)[3] < 32);
 }
 
 #[test]

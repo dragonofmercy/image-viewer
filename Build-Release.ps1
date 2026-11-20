@@ -61,6 +61,7 @@ try {
     Copy-Item 'target\release\ImageViewer.exe' 'publish\'
     Copy-Item 'native\*.dll' 'publish\'
     if (-not (Test-Path 'publish\libheif.dll')) { throw 'libheif.dll is missing from publish\' }
+    if (-not (Test-Path 'publish\jxl.dll')) { throw 'jxl.dll is missing from publish\' }
 
     Write-Host "==> vpk pack $Version" -ForegroundColor Yellow
     vpk pack `
