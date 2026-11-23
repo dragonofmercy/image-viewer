@@ -10,7 +10,7 @@ pub(super) fn read(decoder: &mut impl ImageDecoder) -> (Option<Vec<u8>>, Option<
 }
 
 /// Sets every IFD0 Orientation entry (tag 0x0112, one SHORT) to 1, since the loader rotates the pixels itself. `None` when the TIFF structure is not parseable.
-fn reset_orientation(mut exif: Vec<u8>) -> Option<Vec<u8>> {
+pub(super) fn reset_orientation(mut exif: Vec<u8>) -> Option<Vec<u8>> {
     let big = match exif.get(..4)? {
         b"II*\0" => false,
         b"MM\0*" => true,
@@ -35,7 +35,33 @@ fn reset_orientation(mut exif: Vec<u8>) -> Option<Vec<u8>> {
             exif[e + 8..e + 10].copy_from_slice(&one);
         }
     }
+    // The embedded thumbnail would show the pre-edit picture and bloat the saved file: zero its bytes and unlink IFD1.
+    let next = ifd + 2 + 12 * count;
+    if let Some(ifd1) = u32_at(&exif, next).and_then(|n| usize::try_from(n).ok()).filter(|&n| n != 0) {
+        if let Some(range) = thumbnail_range(&exif, ifd1, &u16_at, &u32_at) {
+            exif[range].fill(0);
+        }
+        exif[next..next + 4].fill(0);
+    }
     Some(exif)
+}
+
+/// The JPEG thumbnail byte range of IFD1 (tags 0x0201 offset and 0x0202 length, one LONG each), `None` when absent or out of bounds.
+fn thumbnail_range(exif: &[u8], ifd1: usize, u16_at: &impl Fn(&[u8], usize) -> Option<u16>, u32_at: &impl Fn(&[u8], usize) -> Option<u32>) -> Option<std::ops::Range<usize>> {
+    let count = usize::from(u16_at(exif, ifd1)?);
+    let (mut offset, mut len) = (None, None);
+    for e in (0..count).map(|i| ifd1.checked_add(2 + 12 * i)) {
+        let e = e?;
+        if u16_at(exif, e + 2)? == 4 && u32_at(exif, e + 4)? == 1 {
+            match u16_at(exif, e)? {
+                0x0201 => offset = usize::try_from(u32_at(exif, e + 8)?).ok(),
+                0x0202 => len = usize::try_from(u32_at(exif, e + 8)?).ok(),
+                _ => {}
+            }
+        }
+    }
+    let (offset, len) = (offset?, len?);
+    (offset.checked_add(len)? <= exif.len()).then_some(offset..offset + len)
 }
 
 const VP8X_ICC: u8 = 0x20;
@@ -167,6 +193,43 @@ mod tests {
         let mut huge_count = orientation_exif(false, 6);
         huge_count[8..10].copy_from_slice(&u16::MAX.to_le_bytes());
         assert_eq!(reset_orientation(huge_count), None);
+    }
+
+    /// Header, IFD0 (Orientation 6) at 8, IFD1 at 26 (JPEGInterchangeFormat 0x0201 + Length 0x0202), then 16 thumbnail bytes at 56.
+    fn exif_with_thumbnail(big: bool) -> Vec<u8> {
+        let mut e = if big { b"MM\0*".to_vec() } else { b"II*\0".to_vec() };
+        let mut put = |n: u32, len: usize| {
+            let be = &n.to_be_bytes()[4 - len..];
+            e.extend(if big { be.to_vec() } else { be.iter().rev().copied().collect() });
+        };
+        for (n, len) in [(8, 4), (1, 2), (0x0112, 2), (3, 2), (1, 4), (6, 2), (0, 2), (26, 4)] {
+            put(n, len);
+        }
+        for (n, len) in [(2, 2), (0x0201, 2), (4, 2), (1, 4), (56, 4), (0x0202, 2), (4, 2), (1, 4), (16, 4), (0, 4)] {
+            put(n, len);
+        }
+        e.extend([0xAB; 16]);
+        e
+    }
+
+    #[test]
+    fn reset_orientation_strips_the_thumbnail() {
+        for big in [false, true] {
+            let input = exif_with_thumbnail(big);
+            let out = reset_orientation(input.clone()).unwrap();
+            assert_eq!(out.len(), input.len());
+            assert_eq!(image::metadata::Orientation::from_exif_chunk(&out), Some(image::metadata::Orientation::NoTransforms));
+            assert_eq!(&out[22..26], &[0; 4], "IFD0 next-IFD");
+            assert!(out[56..72].iter().all(|&b| b == 0), "thumbnail bytes");
+        }
+    }
+
+    #[test]
+    fn reset_orientation_unlinks_a_malformed_ifd1() {
+        let mut e = exif_with_thumbnail(false);
+        e[22..26].copy_from_slice(&u32::MAX.to_le_bytes());
+        let out = reset_orientation(e).unwrap();
+        assert_eq!(&out[22..26], &[0; 4]);
     }
 
     #[test]
