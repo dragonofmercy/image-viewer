@@ -199,10 +199,22 @@ impl PictureCache {
     const ENTRIES: usize = 2;
     const ENTRY_BYTES: usize = 256 * 1024 * 1024;
 
+    fn picture_bytes(picture: &Picture) -> usize {
+        picture.frames().iter().map(|f| f.pixels.as_raw().len()).sum()
+    }
+
+    fn bytes_fit(bytes: usize) -> bool {
+        bytes <= Self::ENTRY_BYTES
+    }
+
+    /// Whether `put` would keep this picture: a neighbor preload is pointless next to one the cache refuses.
+    pub fn fits(picture: &Picture) -> bool {
+        Self::bytes_fit(Self::picture_bytes(picture))
+    }
+
     /// Keeps `picture`, dropping the oldest entry when full. A picture over the size limit is not kept.
     pub fn put(&mut self, path: PathBuf, stamp: Stamp, picture: Picture) {
-        let bytes: usize = picture.frames().iter().map(|f| f.pixels.as_raw().len()).sum();
-        if bytes > Self::ENTRY_BYTES {
+        if !Self::fits(&picture) {
             return;
         }
         self.entries.retain(|e| e.0 != path);
@@ -455,6 +467,14 @@ mod tests {
         cache.put(a.clone(), stamp(1), pic());
         assert!(cache.swap(Some((b.clone(), stamp(2), pic())), &a, Some(stamp(9))).is_none());
         assert!(!cache.contains(&a) && cache.contains(&b));
+    }
+
+    #[test]
+    fn fits_follows_the_entry_limit() {
+        assert!(PictureCache::fits(&picture::load_from_rgba(RgbaImage::new(1, 1))));
+        assert_eq!(PictureCache::picture_bytes(&picture::load_from_rgba(RgbaImage::new(3, 2))), 24);
+        assert!(PictureCache::bytes_fit(PictureCache::ENTRY_BYTES));
+        assert!(!PictureCache::bytes_fit(PictureCache::ENTRY_BYTES + 1));
     }
 
     #[test]

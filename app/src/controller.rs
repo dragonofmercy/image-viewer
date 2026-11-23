@@ -324,6 +324,10 @@ impl Controller {
         let target = {
             let doc = self.doc.borrow();
             let Some(current) = doc.path.as_ref() else { return };
+            // The shown picture is too big to be kept as the way back: a second one beside it would be the memory spike the limit avoids.
+            if doc.picture.as_ref().is_some_and(|p| !PictureCache::fits(p)) {
+                return;
+            }
             // Stepped on a copy: the real position does not move.
             let Some(mut peek) = doc.folder.clone() else { return };
             let target = if self.backward.get() { peek.prev(exists) } else { peek.next(exists) };
