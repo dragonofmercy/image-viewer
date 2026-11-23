@@ -207,8 +207,7 @@ impl Controller {
         }
         self.doc.borrow_mut().list_folder();
         // Only when the load already finished (a cached one ran `finished` before the folder was known); an uncached one preloads from `finished`.
-        let done = !self.doc.borrow().loading;
-        if done {
+        if !self.doc.borrow().loading {
             self.preload_neighbor();
         }
         self.refresh_ui();
