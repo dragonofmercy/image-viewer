@@ -57,7 +57,7 @@ impl Integration {
     }
 
     pub fn register(&self, exe: &Path) -> io::Result<()> {
-        let exe = exe.to_string_lossy().into_owned();
+        let exe = exe.to_str().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "executable path is not valid Unicode"))?;
         let (key, _) = Self::hkcu().create_subkey(self.classes(PROTOCOL))?;
         key.set_value("", &"URL:Image Viewer")?;
         key.set_value("URL Protocol", &"")?;
