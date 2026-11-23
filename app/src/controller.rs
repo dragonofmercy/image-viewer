@@ -206,8 +206,11 @@ impl Controller {
             return false;
         }
         self.doc.borrow_mut().list_folder();
-        // A cached load already ran `finished` before the folder was known, so its preload found no neighbor.
-        self.preload_neighbor();
+        // Only when the load already finished (a cached one ran `finished` before the folder was known); an uncached one preloads from `finished`.
+        let done = !self.doc.borrow().loading;
+        if done {
+            self.preload_neighbor();
+        }
         self.refresh_ui();
         true
     }
