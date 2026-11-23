@@ -5,8 +5,13 @@ use image::ImageDecoder;
 /// Reads the EXIF and ICC blobs of a decoder that has not decoded its pixels yet. A metadata read error loses the metadata only.
 pub(super) fn read(decoder: &mut impl ImageDecoder) -> (Option<Vec<u8>>, Option<Vec<u8>>) {
     let exif = decoder.exif_metadata().ok().flatten().and_then(reset_orientation);
-    let icc = decoder.icc_profile().ok().flatten().filter(|icc| !icc.is_empty());
+    let icc = decoder.icc_profile().ok().flatten().filter(|icc| !icc.is_empty()).and_then(rgb_icc);
     (exif, icc)
+}
+
+/// Keeps an ICC profile only when its color space (header bytes 16..20) is RGB: the pixels are always RGB, so a GRAY or CMYK profile would mis-tag them.
+pub(super) fn rgb_icc(icc: Vec<u8>) -> Option<Vec<u8>> {
+    (icc.get(16..20) == Some(b"RGB ")).then_some(icc)
 }
 
 /// Sets every IFD0 Orientation entry (tag 0x0112, one SHORT) to 1, since the loader rotates the pixels itself. `None` when the TIFF structure is not parseable.
@@ -230,6 +235,19 @@ mod tests {
         e[22..26].copy_from_slice(&u32::MAX.to_le_bytes());
         let out = reset_orientation(e).unwrap();
         assert_eq!(&out[22..26], &[0; 4]);
+    }
+
+    #[test]
+    fn only_rgb_icc_profiles_are_kept() {
+        let header = |space: &[u8; 4]| {
+            let mut h = vec![0u8; 128];
+            h[16..20].copy_from_slice(space);
+            h
+        };
+        assert_eq!(rgb_icc(header(b"RGB ")), Some(header(b"RGB ")));
+        assert_eq!(rgb_icc(header(b"GRAY")), None);
+        assert_eq!(rgb_icc(header(b"CMYK")), None);
+        assert_eq!(rgb_icc(vec![0; 10]), None);
     }
 
     #[test]

@@ -59,6 +59,7 @@ pub fn exif_block(make: &str, orientation: u16) -> Vec<u8> {
 pub fn fake_icc() -> Vec<u8> {
     let mut icc = vec![0u8; 160];
     icc[..4].copy_from_slice(&160u32.to_be_bytes());
+    icc[16..20].copy_from_slice(b"RGB ");
     icc[36..40].copy_from_slice(b"acsp");
     icc[128..].iter_mut().enumerate().for_each(|(i, b)| *b = i as u8 + 7);
     icc
