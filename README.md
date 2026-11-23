@@ -48,6 +48,12 @@ This project stands on the shoulders of these open-source libraries:
 - [libheif](https://github.com/strukturag/libheif) with [libde265](https://github.com/strukturag/libde265) and [aom](https://aomedia.googlesource.com/aom/) - HEIC, HEIF and AVIF decoding
 - [Velopack](https://github.com/velopack/velopack) - installer and auto-updates
 
+## AI disclaimer
+
+This application is developed with the help of [Claude Code](https://claude.com/claude-code),
+an AI coding assistant. I decide what gets built and review the changes, and every
+feature is tested by hand by me before it is released.
+
 ## Support
 
 If this project helps to increase your productivity, you can give me a cup of coffee :)
