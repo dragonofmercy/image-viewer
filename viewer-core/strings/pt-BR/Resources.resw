@@ -297,6 +297,12 @@
   <data name="ABOUT_BTN_DOWNLOAD_UPDATE_RETRY" xml:space="preserve">
     <value>Tentar novamente</value>
   </data>
+  <data name="ABOUT_BTN_INSTALL_UPDATE" xml:space="preserve">
+    <value>Instalar atualização</value>
+  </data>
+  <data name="TOAST_BTN_SHOW_UPDATE" xml:space="preserve">
+    <value>Mostrar atualização</value>
+  </data>
   <data name="ABOUT_UPDATE_CHECKING" xml:space="preserve">
     <value>Verificando atualizações...</value>
   </data>

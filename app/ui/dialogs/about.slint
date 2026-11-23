@@ -8,7 +8,8 @@ import { SettingsCard } from "../widgets/settings-card.slint";
 import { ContentDialog } from "content-dialog.slint";
 
 // Texts and update state of the About dialog, filled and handled by options.rs and main.rs (`open-url(true)` is the releases page).
-// update-state: 0 idle, 1 checking, 2 up to date, 3 available, 4 downloading, 5 failed. `error` is empty for a network failure.
+// update-state: 0 idle, 1 checking, 2 up to date, 3 available, 4 downloading, 5 failed, 6 ready (downloaded, waits for Install).
+// `error` is empty for a network failure; `installable`: a downloaded package waits, so a failure still offers Install.
 export global AboutState {
     in property <string> version;
     in property <string> last-check;
@@ -16,9 +17,11 @@ export global AboutState {
     in property <int> progress;
     in property <string> error;
     in property <bool> failed-download;
+    in property <bool> installable;
     callback open-url(bool);
     callback check();
     callback download();
+    callback install();
     // The dialog was closed (by any means).
     callback closed();
 }
@@ -132,16 +135,23 @@ export component AboutDialog inherits ContentDialog {
                     : AboutState.update-state == 5 ? (AboutState.error != "" ? AboutState.error : Tr.t("ABOUT_UPDATE_INFO_ERROR_NO_INTERNET"))
                     : Tr.t("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE");
                 // 1.x: bold HyperlinkButton, Margin="0,0,-10,0".
-                if AboutState.update-state == 3 || AboutState.update-state == 4 || (AboutState.update-state == 5 && AboutState.failed-download): HorizontalLayout {
+                if AboutState.update-state == 3 || AboutState.update-state == 4 || AboutState.update-state == 6 || (AboutState.update-state == 5 && (AboutState.failed-download || AboutState.installable)): HorizontalLayout {
+                    // Retry wins over Install after a failed apply: the retried download ends ready at once.
+                    property <bool> install: AboutState.update-state == 6 || (AboutState.update-state == 5 && !AboutState.failed-download);
                     padding-right: -10px;
                     HyperlinkButton {
                         font-weight: 700;
-                        text: AboutState.update-state == 4 ? Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING") + " " + AboutState.progress + "%"
+                        text: install ? Tr.t("ABOUT_BTN_INSTALL_UPDATE")
+                            : AboutState.update-state == 4 ? Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE_DOWNLOADING") + " " + AboutState.progress + "%"
                             : AboutState.update-state == 5 ? Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE_RETRY")
                             : Tr.t("ABOUT_BTN_DOWNLOAD_UPDATE");
                         enabled: AboutState.update-state != 4;
                         clicked => {
-                            AboutState.download();
+                            if install {
+                                AboutState.install();
+                            } else {
+                                AboutState.download();
+                            }
                         }
                     }
                 }

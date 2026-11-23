@@ -150,11 +150,20 @@ fn main() -> Result<(), slint::PlatformError> {
     let controller = controller::Controller::new(&ui, image_host::ImageHost::new(&ui), strings.clone());
     let c = controller.clone();
     let (weak, s) = (ui.as_weak(), strings.clone());
-    let updates = updates::Updates::new(move |state| {
-        if let Some(ui) = weak.upgrade() {
-            options::show_update_state(&ui, &s.borrow(), &state);
-        }
-    });
+    let quit_weak = ui.as_weak();
+    let updates = updates::Updates::new(
+        move |state, installable| {
+            if let Some(ui) = weak.upgrade() {
+                options::show_update_state(&ui, &s.borrow(), &state, installable);
+            }
+        },
+        // Through the close handler: a running save finishes first, and the geometry is saved.
+        move || {
+            if let Some(ui) = quit_weak.upgrade() {
+                ui.window().dispatch_event(slint::platform::WindowEvent::CloseRequested);
+            }
+        },
+    );
     options::install(&ui, &strings, &updates, move || c.language_changed());
     let c = controller.clone();
     ui.window().on_close_requested(move || {
@@ -174,15 +183,19 @@ fn main() -> Result<(), slint::PlatformError> {
     if let launch::Launch::File(path) = launch {
         controller.open_startup(path);
     }
-    // Once the window is up: the background check (toast when an update exists), and the About download when launched from the toast.
+    // Once the window is up: the background check (toast when an update exists or waits), and the About download when launched from the toast.
     let (weak, s, u) = (ui.as_weak(), strings.clone(), updates.clone());
     slint::Timer::single_shot(std::time::Duration::ZERO, move || {
         let s2 = s.clone();
         // A toast launch skips the quiet check: it would overwrite the state of the About dialog opened below (and show a second toast).
         if !from_toast {
-            u.check_if_due(move || {
+            u.check_if_due(move |toast| {
                 let tr = |key: &str| s2.borrow().get(key);
-                win::toast::show_update(&tr("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"), &tr("ABOUT_BTN_DOWNLOAD_UPDATE"));
+                let (button, argument) = match toast {
+                    updates::Toast::Available => ("ABOUT_BTN_DOWNLOAD_UPDATE", launch::UPDATE_URI),
+                    updates::Toast::Ready => ("TOAST_BTN_SHOW_UPDATE", launch::ABOUT_URI),
+                };
+                win::toast::show_update(&tr("ABOUT_UPDATE_INFO_UPDATE_AVAILABLE"), &tr(button), argument);
             });
         }
         if from_toast && let Some(ui) = weak.upgrade() {

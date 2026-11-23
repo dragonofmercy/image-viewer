@@ -106,7 +106,9 @@ pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, updates: &Rc<Upd
     let u = updates.clone();
     ui.global::<AboutState>().on_check(move || u.check());
     let u = updates.clone();
-    ui.global::<AboutState>().on_download(move || u.download_and_restart());
+    ui.global::<AboutState>().on_download(move || u.download());
+    let u = updates.clone();
+    ui.global::<AboutState>().on_install(move || u.install());
     let u = updates.clone();
     ui.global::<AboutState>().on_closed(move || u.abandon());
     ui.global::<AboutState>().on_open_url(|release| {
@@ -114,16 +116,18 @@ pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, updates: &Rc<Upd
     });
 }
 
-/// (update-state, progress, error, failed-download) of the About dialog for an update state.
-fn about_view(state: &State) -> (i32, i32, String, bool) {
-    match state {
+/// (update-state, progress, error, failed-download, installable) of the About dialog for an update state.
+fn about_view(state: &State, installable: bool) -> (i32, i32, String, bool, bool) {
+    let (update_state, progress, error, failed_download) = match state {
         State::Idle => (0, 0, String::new(), false),
         State::Checking => (1, 0, String::new(), false),
         State::UpToDate => (2, 0, String::new(), false),
         State::Available => (3, 0, String::new(), false),
         State::Downloading(percent) => (4, i32::from(*percent), String::new(), false),
         State::Failed { message, during_download } => (5, 0, message.clone(), *during_download),
-    }
+        State::Ready => (6, 0, String::new(), false),
+    };
+    (update_state, progress, error, failed_download, installable)
 }
 
 fn refresh_last_check(ui: &MainWindow, strings: &Strings) {
@@ -132,13 +136,15 @@ fn refresh_last_check(ui: &MainWindow, strings: &Strings) {
 }
 
 /// Shows an update state in the About dialog and refreshes its last check line (the service reports on the UI thread).
-pub fn show_update_state(ui: &MainWindow, strings: &Strings, state: &State) {
-    let (update_state, progress, error, failed_download) = about_view(state);
+/// `installable`: a downloaded package waits, so a failure still offers Install.
+pub fn show_update_state(ui: &MainWindow, strings: &Strings, state: &State, installable: bool) {
+    let (update_state, progress, error, failed_download, installable) = about_view(state, installable);
     let about = ui.global::<AboutState>();
     about.set_update_state(update_state);
     about.set_progress(progress);
     about.set_error(error.into());
     about.set_failed_download(failed_download);
+    about.set_installable(installable);
     refresh_last_check(ui, strings);
 }
 
@@ -149,11 +155,11 @@ pub fn show_about(ui: &MainWindow, strings: &Strings, updates: &Rc<Updates>, sta
             return;
         }
         ui.global::<AboutState>().set_version(format!("v{}", env!("CARGO_PKG_VERSION")).into());
-        show_update_state(ui, strings, &updates.state());
+        show_update_state(ui, strings, &updates.state(), updates.installable());
         ui.set_about_open(true);
     }
     if start_update {
-        updates.download_and_restart();
+        updates.download();
     }
 }
 
@@ -162,14 +168,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn about_view_maps_the_six_states() {
-        assert_eq!(about_view(&State::Idle), (0, 0, String::new(), false));
-        assert_eq!(about_view(&State::Checking), (1, 0, String::new(), false));
-        assert_eq!(about_view(&State::UpToDate), (2, 0, String::new(), false));
-        assert_eq!(about_view(&State::Available), (3, 0, String::new(), false));
-        assert_eq!(about_view(&State::Downloading(42)), (4, 42, String::new(), false));
-        assert_eq!(about_view(&State::Failed { message: "boom".into(), during_download: true }), (5, 0, "boom".to_string(), true));
-        assert_eq!(about_view(&State::Failed { message: String::new(), during_download: false }), (5, 0, String::new(), false));
+    fn about_view_maps_the_seven_states() {
+        assert_eq!(about_view(&State::Idle, false), (0, 0, String::new(), false, false));
+        assert_eq!(about_view(&State::Checking, false), (1, 0, String::new(), false, false));
+        assert_eq!(about_view(&State::UpToDate, false), (2, 0, String::new(), false, false));
+        assert_eq!(about_view(&State::Available, false), (3, 0, String::new(), false, false));
+        assert_eq!(about_view(&State::Downloading(42), false), (4, 42, String::new(), false, false));
+        assert_eq!(about_view(&State::Failed { message: "boom".into(), during_download: true }, false), (5, 0, "boom".to_string(), true, false));
+        assert_eq!(about_view(&State::Failed { message: String::new(), during_download: false }, true), (5, 0, String::new(), false, true));
+        assert_eq!(about_view(&State::Ready, true), (6, 0, String::new(), false, true));
     }
 
     #[test]
