@@ -313,7 +313,9 @@ pub fn encode_av1_heif_with_metadata(rgba: &RgbaImage, path: &Path, exif: Option
 /// The TIFF structure of a HEIF Exif item: a 4-byte big-endian offset to the TIFF header, then the data. `None` when out of bounds.
 fn tiff_of_exif_block(block: &[u8]) -> Option<&[u8]> {
     let offset = usize::try_from(u32::from_be_bytes(block.get(..4)?.try_into().ok()?)).ok()?;
-    block.get(4usize.checked_add(offset)?..).filter(|t| !t.is_empty())
+    let tiff = block.get(4usize.checked_add(offset)?..)?;
+    // Some writers keep the JPEG APP1 header with a zero offset.
+    Some(tiff.strip_prefix(b"Exif\0\0").unwrap_or(tiff)).filter(|t| !t.is_empty())
 }
 
 #[cfg(test)]
@@ -327,6 +329,9 @@ mod tests {
         assert_eq!(tiff_of_exif_block(&zero), Some(&tiff[..]));
         let two = [&[0, 0, 0, 2, 9, 9][..], tiff].concat();
         assert_eq!(tiff_of_exif_block(&two), Some(&tiff[..]));
+        // Some writers keep the JPEG APP1 "Exif\0\0" header and leave the offset at 0.
+        let prefixed = [&[0, 0, 0, 0][..], b"Exif\0\0", tiff].concat();
+        assert_eq!(tiff_of_exif_block(&prefixed), Some(&tiff[..]));
         assert_eq!(tiff_of_exif_block(&[0, 0, 0]), None);
         assert_eq!(tiff_of_exif_block(&[0, 0, 0, 9, 1, 2]), None);
     }
