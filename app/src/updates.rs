@@ -161,6 +161,8 @@ pub struct Updates {
     state: RefCell<State>,
     found: RefCell<Option<Found>>,
     download: Cell<Download>,
+    /// `Update.exe` already waits for the exit: a second Install click while a save delays the close must not start another.
+    applied: Cell<bool>,
 }
 
 impl Updates {
@@ -182,6 +184,7 @@ impl Updates {
             state: RefCell::new(state),
             found: RefCell::new(None),
             download: Cell::new(Download::None),
+            applied: Cell::new(false),
         })
     }
 
@@ -252,8 +255,14 @@ impl Updates {
 
     /// Install click: `Update.exe` waits for the app to exit, so it quits through the normal close path (a running save finishes first).
     pub fn install(&self) {
+        if self.applied.get() {
+            return;
+        }
         match self.backend.apply() {
-            Ok(()) => (self.quit)(),
+            Ok(()) => {
+                self.applied.set(true);
+                (self.quit)();
+            }
             Err(message) => self.set_state(State::Failed { message, during_download: true }),
         }
     }
@@ -384,7 +393,8 @@ mod tests {
     struct Rig {
         updates: Rc<Updates>,
         rx: mpsc::Receiver<Msg>,
-        seen: Rc<RefCell<Vec<State>>>,
+        /// Every `on_state` call: the state and its `installable` flag.
+        seen: Rc<RefCell<Vec<(State, bool)>>>,
         quits: Rc<Cell<usize>>,
         backend: Arc<Fake>,
     }
@@ -396,7 +406,12 @@ mod tests {
         let seen = Rc::new(RefCell::new(Vec::new()));
         let quits = Rc::new(Cell::new(0));
         let (log, q) = (seen.clone(), quits.clone());
-        let updates = Updates::with_backend(backend.clone(), Arc::new(move |m| drop(tx.lock().unwrap().send(m))), Box::new(move |s, _| log.borrow_mut().push(s)), Box::new(move || q.set(q.get() + 1)));
+        let updates = Updates::with_backend(
+            backend.clone(),
+            Arc::new(move |m| drop(tx.lock().unwrap().send(m))),
+            Box::new(move |s, i| log.borrow_mut().push((s, i))),
+            Box::new(move || q.set(q.get() + 1)),
+        );
         Rig { updates, rx, seen, quits, backend }
     }
 
@@ -446,7 +461,7 @@ mod tests {
         });
         r.updates.check();
         assert_eq!(r.updates.state(), State::UpToDate);
-        assert_eq!(*r.seen.borrow(), vec![State::UpToDate]);
+        assert_eq!(*r.seen.borrow(), vec![(State::UpToDate, false)]);
     }
 
     #[test]
@@ -481,6 +496,15 @@ mod tests {
     fn install_applies_then_quits_once() {
         let r = rig(fake(Ok(Some("2.1.0")), Some("2.1.0")));
         assert_eq!(r.updates.state(), State::Ready);
+        r.updates.install();
+        assert_eq!(r.applied(), 1);
+        assert_eq!(r.quits.get(), 1);
+    }
+
+    #[test]
+    fn second_install_does_nothing() {
+        let r = rig(fake(Ok(Some("2.1.0")), Some("2.1.0")));
+        r.updates.install();
         r.updates.install();
         assert_eq!(r.applied(), 1);
         assert_eq!(r.quits.get(), 1);
@@ -526,6 +550,7 @@ mod tests {
         r.pump();
         assert_eq!(r.updates.state(), State::Failed { message: String::new(), during_download: false });
         assert!(r.updates.installable());
+        assert_eq!(r.seen.borrow().last(), Some(&(State::Failed { message: String::new(), during_download: false }, true)));
     }
 
     #[test]
@@ -571,7 +596,7 @@ mod tests {
         r.pump();
         assert_eq!(r.updates.state(), State::Ready);
         assert_eq!(r.applied(), 0);
-        assert_eq!(r.seen.borrow().last(), Some(&State::Downloading(0)));
+        assert_eq!(r.seen.borrow().last(), Some(&(State::Downloading(0), false)));
     }
 
     #[test]
