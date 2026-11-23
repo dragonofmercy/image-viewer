@@ -192,15 +192,14 @@ impl Updates {
         self.state.borrow().clone()
     }
 
-    /// A downloaded package is on disk: installable whatever the network does.
-    pub fn installable(&self) -> bool {
-        self.backend.pending_version().is_some()
+    /// A failure still offers Install when a downloaded package is on disk. Looked up only for a failure: it reads the packages folder, too slow for every progress tick.
+    pub fn installable_for(&self, state: &State) -> bool {
+        matches!(state, State::Failed { .. }) && self.backend.pending_version().is_some()
     }
 
     fn set_state(&self, state: State) {
         *self.state.borrow_mut() = state.clone();
-        // Looked up only for a failure: it reads the packages folder, too slow for every progress tick.
-        let installable = matches!(state, State::Failed { .. }) && self.installable();
+        let installable = self.installable_for(&state);
         (self.on_state)(state, installable);
     }
 
@@ -554,7 +553,7 @@ mod tests {
         r.updates.check();
         r.pump();
         assert_eq!(r.updates.state(), State::Failed { message: String::new(), during_download: false });
-        assert!(r.updates.installable());
+        assert!(r.updates.installable_for(&r.updates.state()));
         assert_eq!(r.seen.borrow().last(), Some(&(State::Failed { message: String::new(), during_download: false }, true)));
     }
 
