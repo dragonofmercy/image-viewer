@@ -206,6 +206,8 @@ impl Controller {
             return false;
         }
         self.doc.borrow_mut().list_folder();
+        // A cached load already ran `finished` before the folder was known, so its preload found no neighbor.
+        self.preload_neighbor();
         self.refresh_ui();
         true
     }
