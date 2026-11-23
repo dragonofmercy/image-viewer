@@ -1,4 +1,4 @@
-//! Velopack install integration: startup hooks, the update protocol, the toast identity and the 1.x leftovers.
+//! Velopack install integration: startup hooks, the update protocol, the toast identity and the 1.x toast activator.
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -94,22 +94,6 @@ fn log(step: &str, r: io::Result<()>) {
     }
 }
 
-/// Port of `Helpers\LegacyCleanup.cs`: 1.x data folder, the registry settings key is kept.
-fn legacy_cleanup_in(dir: &Path) {
-    log("legacy cleanup", ignore_missing(std::fs::remove_dir_all(dir)));
-}
-
-/// The 1.x folder under `LOCALAPPDATA`, only when that value is an absolute path (an empty one must not resolve against the current directory).
-fn legacy_dir(local_app_data: Option<std::ffi::OsString>) -> Option<PathBuf> {
-    local_app_data.map(PathBuf::from).filter(|p| p.is_absolute()).map(|p| p.join("Dragon Industries"))
-}
-
-fn legacy_cleanup() {
-    if let Some(dir) = legacy_dir(std::env::var_os("LOCALAPPDATA")) {
-        legacy_cleanup_in(&dir);
-    }
-}
-
 fn integrate() {
     if let Some(exe) = exe() {
         log("register integration", Integration::new("").register(&exe));
@@ -170,7 +154,6 @@ pub fn run_hooks() {
     velopack::VelopackApp::build()
         // Keeps a downloaded package waiting for the Install click instead of applying it at the next start (updates.rs applies it).
         .set_auto_apply_on_startup(false)
-        .on_first_run(|_| legacy_cleanup())
         .on_after_install_fast_callback(|_| integrate())
         .on_after_update_fast_callback(|_| integrate())
         .on_before_uninstall_fast_callback(|_| uninstall())
@@ -269,23 +252,5 @@ mod tests {
         assert!(velopack_safe(&["--veloapp-install".into(), "2.0.0".into()]));
         assert!(velopack_safe(&[r"C:\photos\a.jpg".into()]));
         assert!(!velopack_safe(&[std::ffi::OsString::from_wide(&[0x61, 0xD800, 0x62])]));
-    }
-
-    #[test]
-    fn legacy_dir_requires_an_absolute_local_app_data() {
-        assert_eq!(legacy_dir(Some(r"C:\Users\x\AppData\Local".into())), Some(PathBuf::from(r"C:\Users\x\AppData\Local\Dragon Industries")));
-        assert_eq!(legacy_dir(Some("".into())), None);
-        assert_eq!(legacy_dir(Some(r"relative\dir".into())), None);
-        assert_eq!(legacy_dir(None), None);
-    }
-
-    #[test]
-    fn legacy_cleanup_removes_only_the_given_folder() {
-        let tmp = tempfile::tempdir().unwrap();
-        let dir = tmp.path().join("Dragon Industries");
-        std::fs::create_dir_all(dir.join("sub")).unwrap();
-        legacy_cleanup_in(&dir);
-        assert!(!dir.exists());
-        legacy_cleanup_in(&dir); // already gone
     }
 }
