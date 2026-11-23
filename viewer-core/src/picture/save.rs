@@ -1,5 +1,5 @@
 use std::fmt;
-use std::io::{Cursor, Write};
+use std::io::{BufWriter, Seek, Write};
 use std::path::Path;
 
 use image::buffer::ConvertBuffer;
@@ -114,10 +114,12 @@ impl Picture {
         if !SAVE_FILE_TYPES.contains(&ext.as_str()) {
             return Err(SaveError::UnsupportedFormat(ext));
         }
-        let bytes = self.encode(&ext, quality.unwrap_or(100).clamp(1, 100))?;
         let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
         let mut temp = tempfile::Builder::new().prefix(".save-").tempfile_in(dir)?;
-        temp.write_all(&bytes)?;
+        let mut out = BufWriter::new(temp.as_file_mut());
+        self.encode(&ext, quality.unwrap_or(100).clamp(1, 100), &mut out)?;
+        // Explicit flush: BufWriter's Drop would swallow a write error and persist a truncated file.
+        out.into_inner().map_err(|e| SaveError::Io(e.into_error()))?;
         // Flush to disk before the replace: a power cut must not leave a journaled rename over unwritten data.
         temp.as_file().sync_all()?;
         temp.persist(path).map_err(|e| SaveError::Io(e.error))?;
@@ -125,23 +127,22 @@ impl Picture {
         Ok(())
     }
 
-    fn encode(&self, ext: &str, quality: u8) -> Result<Vec<u8>, SaveError> {
+    fn encode(&self, ext: &str, quality: u8, out: &mut (impl Write + Seek)) -> Result<(), SaveError> {
         let frames = self.frames();
         let pixels: &RgbaImage = &frames[0].pixels;
         let (w, h) = pixels.dimensions();
-        let mut out = Cursor::new(Vec::new());
         match ext {
-            ".jxl" => return encode_jxl(pixels).map_err(SaveError::Encode),
+            ".jxl" => out.write_all(&encode_jxl(pixels).map_err(SaveError::Encode)?)?,
             // JPEG has no alpha: ImageSharp drops it without compositing, so do the same.
-            ".jpg" => ConvertBuffer::<image::RgbImage>::convert(pixels).write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
-            ".png" => pixels.write_with_encoder(self.with_metadata(PngEncoder::new(&mut out), usize::MAX, usize::MAX))?,
-            ".bmp" => pixels.write_to(&mut out, ImageFormat::Bmp)?,
-            ".tga" => pixels.write_to(&mut out, ImageFormat::Tga)?,
+            ".jpg" => ConvertBuffer::<image::RgbImage>::convert(pixels).write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut *out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
+            ".png" => pixels.write_with_encoder(self.with_metadata(PngEncoder::new(&mut *out), usize::MAX, usize::MAX))?,
+            ".bmp" => pixels.write_to(&mut *out, ImageFormat::Bmp)?,
+            ".tga" => pixels.write_to(&mut *out, ImageFormat::Tga)?,
             // The image crate's TIFF encoder takes the ICC profile but has no EXIF support.
-            ".tiff" => pixels.write_with_encoder(self.with_metadata(TiffEncoder::new(&mut out), usize::MAX, usize::MAX))?,
+            ".tiff" => pixels.write_with_encoder(self.with_metadata(TiffEncoder::new(&mut *out), usize::MAX, usize::MAX))?,
             ".gif" => {
                 // The default quantizer speed (1) is the slowest; the gif crate documents 10 as a good speed/quality compromise.
-                let mut enc = GifEncoder::new_with_speed(&mut out, 10);
+                let mut enc = GifEncoder::new_with_speed(&mut *out, 10);
                 enc.set_repeat(Repeat::Infinite)?;
                 enc.encode_frames(frames.iter().map(|f| image::Frame::from_parts(f.pixels.clone(), 0, 0, Delay::from_numer_denom_ms(f.delay_ms, 1))))?;
                 drop(enc);
@@ -152,11 +153,11 @@ impl Picture {
                 } else {
                     webp::Encoder::from_rgba(pixels.as_raw(), w, h).encode_simple(false, f32::from(quality)).map_err(|e| SaveError::Encode(format!("{e:?}")))?.to_vec()
                 };
-                return Ok(metadata::add_webp_chunks(bare, w, h, self.icc.as_deref(), self.exif.as_deref()));
+                out.write_all(&metadata::add_webp_chunks(bare, w, h, self.icc.as_deref(), self.exif.as_deref()))?;
             }
             _ => return Err(SaveError::UnsupportedFormat(ext.to_string())),
         }
-        Ok(out.into_inner())
+        Ok(())
     }
 
     /// Hands the picture's metadata to an encoder. A blob over the format's limit is left out rather than failing the save or writing a corrupt file.
@@ -199,6 +200,7 @@ fn encode_animated_webp(frames: &[Frame], quality: u8) -> Result<Vec<u8>, SaveEr
 mod tests {
     use super::*;
     use image::ImageDecoder;
+    use std::io::Cursor;
 
     #[test]
     fn animated_gif_keeps_every_frame_and_delay() {
@@ -208,7 +210,9 @@ mod tests {
             pixels: RgbaImage::from_pixel(8, 8, image::Rgba([255, 0, 0, 255])),
             delay_ms: 70,
         });
-        let bytes = pic.encode(".gif", 100).unwrap();
+        let mut bytes = Cursor::new(Vec::new());
+        pic.encode(".gif", 100, &mut bytes).unwrap();
+        let bytes = bytes.into_inner();
         let dec = image::codecs::gif::GifDecoder::new(Cursor::new(bytes)).unwrap();
         let frames = image::AnimationDecoder::into_frames(dec).collect_frames().unwrap();
         let delays: Vec<_> = frames.iter().map(|f| f.delay().numer_denom_ms()).map(|(n, d)| n / d).collect();
@@ -227,7 +231,9 @@ mod tests {
         }
         pic.icc = Some(b"icc!".to_vec());
         pic.exif = Some(b"II*\0exif".to_vec());
-        let bytes = pic.encode(".webp", 90).unwrap();
+        let mut bytes = Cursor::new(Vec::new());
+        pic.encode(".webp", 90, &mut bytes).unwrap();
+        let bytes = bytes.into_inner();
         let fourccs: Vec<&[u8]> = metadata::webp_chunks(&bytes).unwrap().iter().map(|c| c.0).collect();
         assert_eq!(fourccs, [&b"VP8X"[..], b"ICCP", b"ANIM", b"ANMF", b"ANMF", b"ANMF", b"EXIF"]);
         let mut dec = image::codecs::webp::WebPDecoder::new(Cursor::new(bytes)).unwrap();
