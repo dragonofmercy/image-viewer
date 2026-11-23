@@ -170,9 +170,10 @@ pub fn to_pixels(sel: Sel, image: (u32, u32)) -> (u32, u32, u32, u32) {
     let s = fit(sel, image);
     let (iw, ih) = dims(image);
     let axis = |pos: f32, len: f32, limit: f32| {
-        let start = pos.round().min(limit - 1.0);
-        let end = between((pos + len).round(), start + 1.0, limit);
-        (start as u32, (end - start) as u32)
+        // Round the length, not the far end, so equal sides stay equal.
+        let len = len.round().clamp(1.0, limit);
+        let start = pos.round().clamp(0.0, limit - len);
+        (start as u32, len as u32)
     };
     let (x, w) = axis(s.x, s.w, iw);
     let (y, h) = axis(s.y, s.h, ih);
@@ -240,6 +241,12 @@ mod tests {
         assert_eq!(to_pixels(sel(0.4, 0.4, 0.2, 0.2), IMAGE), (0, 0, 1, 1));
         assert_eq!(to_pixels(sel(10.4, 20.6, 99.8, 50.0), IMAGE), (10, 21, 100, 50));
         assert_eq!(to_pixels(sel(399.9, 299.9, 5.0, 5.0), IMAGE), (395, 295, 5, 5));
+    }
+
+    #[test]
+    fn to_pixels_keeps_equal_lengths_equal() {
+        let (_, _, w, h) = to_pixels(sel(0.0, 99.7, 100.6, 100.6), IMAGE);
+        assert_eq!((w, h), (101, 101));
     }
 
     #[test]
