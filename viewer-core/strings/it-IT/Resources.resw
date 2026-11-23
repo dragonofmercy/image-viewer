@@ -93,6 +93,9 @@
   <data name="SETTINGS_FIELD_WEBP_QUALITY" xml:space="preserve">
     <value>Qualità WebP</value>
   </data>
+  <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
+    <value>Scacchiera sotto la trasparenza</value>
+  </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>Immagine {0}</value>
   </data>

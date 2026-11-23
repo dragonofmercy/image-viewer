@@ -93,6 +93,9 @@
   <data name="SETTINGS_FIELD_WEBP_QUALITY" xml:space="preserve">
     <value>WebP-Qualität</value>
   </data>
+  <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
+    <value>Schachbrettmuster hinter Transparenz</value>
+  </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>{0}-Bild</value>
   </data>

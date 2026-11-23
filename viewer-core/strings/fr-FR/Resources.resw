@@ -93,6 +93,9 @@
   <data name="SETTINGS_FIELD_WEBP_QUALITY" xml:space="preserve">
     <value>Qualité WebP</value>
   </data>
+  <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
+    <value>Damier sous la transparence</value>
+  </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>Image {0}</value>
   </data>

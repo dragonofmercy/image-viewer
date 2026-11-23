@@ -93,6 +93,9 @@
   <data name="SETTINGS_FIELD_WEBP_QUALITY" xml:space="preserve">
     <value>WebP 质量</value>
   </data>
+  <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
+    <value>透明区域显示棋盘格</value>
+  </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>{0} 图像</value>
   </data>

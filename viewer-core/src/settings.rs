@@ -211,6 +211,15 @@ impl Settings {
     pub fn set_file_assoc_stamp(&self, v: &str) -> std::io::Result<()> {
         self.write_str("FileAssocStamp", v)
     }
+
+    /// Draw a checkerboard behind transparent pixels (2.x only, off by default).
+    pub fn checkerboard(&self) -> bool {
+        self.dword("Checkerboard") == Some(1)
+    }
+
+    pub fn set_checkerboard(&self, v: bool) -> std::io::Result<()> {
+        self.write_dword("Checkerboard", u32::from(v))
+    }
 }
 
 /// Port of `UpdateService.CheckUpdate`: "day" = +1 day, "week" = +7 days, any other non-empty value = +1 calendar month, "" = manual only.

@@ -243,6 +243,7 @@ export component MainWindow inherits Window {
                 img-w: root.view-w;
                 img-h: root.view-h;
                 smooth: root.view-smooth;
+                checkerboard: SettingsState.checkerboard;
                 image-visible: !root.loading;
                 wheel(delta, x, y) => {
                     root.view-wheel(delta, x, y);

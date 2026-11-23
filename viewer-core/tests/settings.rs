@@ -68,6 +68,7 @@ fn defaults_on_an_empty_key() {
     assert_eq!(s.jpeg_quality(), 100);
     assert_eq!(s.webp_quality(), 80);
     assert_eq!(s.file_assoc_stamp(), "");
+    assert!(!s.checkerboard());
 }
 
 #[test]
@@ -85,6 +86,7 @@ fn round_trip_every_value() {
     s.set_language("fr").unwrap();
     s.set_jpeg_quality(55).unwrap();
     s.set_webp_quality(66).unwrap();
+    s.set_checkerboard(true).unwrap();
     s.set_file_assoc_stamp(r"1|C:\app.exe").unwrap();
 
     assert_eq!(s.theme(), Theme::Dark);
@@ -98,6 +100,7 @@ fn round_trip_every_value() {
     assert_eq!(s.language(), "fr");
     assert_eq!(s.jpeg_quality(), 55);
     assert_eq!(s.webp_quality(), 66);
+    assert!(s.checkerboard());
     assert_eq!(s.file_assoc_stamp(), r"1|C:\app.exe");
 
     s.set_pos_x(None).unwrap();

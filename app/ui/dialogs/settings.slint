@@ -2,6 +2,7 @@ import { Theme } from "../theme.slint";
 import { Tr } from "../tr.slint";
 import { ComboBox } from "../widgets/combo-box.slint";
 import { Slider } from "../widgets/slider.slint";
+import { ToggleSwitch } from "../widgets/toggle-switch.slint";
 import { HyperlinkButton } from "../widgets/hyperlink-button.slint";
 import { SettingsCard, SettingsGroup } from "../widgets/settings-card.slint";
 import { ContentDialog } from "content-dialog.slint";
@@ -14,11 +15,14 @@ export global SettingsState {
     in-out property <int> interval-index;
     in-out property <int> jpeg-quality;
     in-out property <int> webp-quality;
+    // Also read by the image view, so it is set at startup, not when the dialog opens.
+    in-out property <bool> checkerboard;
     callback language-chosen(int);
     callback theme-chosen(int);
     callback interval-chosen(int);
     callback jpeg-quality-edited(int);
     callback webp-quality-edited(int);
+    callback checkerboard-toggled(bool);
 }
 
 export component SettingsDialog inherits ContentDialog {
@@ -80,6 +84,17 @@ export component SettingsDialog inherits ContentDialog {
                     current-index <=> SettingsState.interval-index;
                     selected(i) => {
                         SettingsState.interval-chosen(i);
+                    }
+                }
+            }
+            SettingsCard {
+                glyph: "\u{F0E2}";
+                label: Tr.t("SETTINGS_FIELD_CHECKERBOARD");
+                ToggleSwitch {
+                    label: Tr.t("SETTINGS_FIELD_CHECKERBOARD");
+                    checked <=> SettingsState.checkerboard;
+                    toggled(on) => {
+                        SettingsState.checkerboard-toggled(on);
                     }
                 }
             }

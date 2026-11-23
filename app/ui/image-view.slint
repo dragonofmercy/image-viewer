@@ -11,6 +11,8 @@ export component ImageView inherits Rectangle {
     in property <bool> smooth: true;
     // False while loading: the ring replaces the image (XAML Opacity 0).
     in property <bool> image-visible: true;
+    // Checkerboard under the image, so transparent pixels show as such.
+    in property <bool> checkerboard;
     // Wheel delta in 1/120 notches (WinUI MouseWheelDelta), cursor in this element's coordinates.
     callback wheel(float, length, length);
     callback drag(length, length);
@@ -30,6 +32,23 @@ export component ImageView inherits Rectangle {
     }
     changed height => {
         root.resized();
+    }
+
+    // Limited to the visible part of the image: a zoomed image can be far larger than the view.
+    if root.checkerboard && root.image-visible && root.img-w > 0px: Rectangle {
+        x: max(root.img-x, 0px);
+        y: max(root.img-y, 0px);
+        width: max(min(root.img-x + root.img-w, root.width) - self.x, 0px);
+        height: max(min(root.img-y + root.img-h, root.height) - self.y, 0px);
+        background: Theme.checker-even;
+        Image {
+            width: parent.width;
+            height: parent.height;
+            source: @image-url("../assets/checker.svg");
+            colorize: Theme.checker-odd;
+            horizontal-tiling: repeat;
+            vertical-tiling: repeat;
+        }
     }
 
     Image {

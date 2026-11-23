@@ -50,6 +50,7 @@ fn save<E: std::fmt::Display>(what: &str, result: Result<(), E>) {
 /// A language change applies at once: the strings are reloaded, every `Tr.t` binding re-evaluates and `language_changed` runs.
 pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, updates: &Rc<Updates>, language_changed: impl Fn() + 'static) {
     let state = ui.global::<SettingsState>();
+    state.set_checkerboard(Settings::app().checkerboard());
     let weak = ui.as_weak();
     let s = strings.clone();
     ui.global::<Commands>().on_settings(move || {
@@ -93,6 +94,7 @@ pub fn install(ui: &MainWindow, strings: &Rc<RefCell<Strings>>, updates: &Rc<Upd
     });
     state.on_interval_chosen(|i| save("update interval", Settings::app().set_update_interval(UPDATE_INTERVALS.get(i as usize).copied().unwrap_or(""))));
     state.on_jpeg_quality_edited(|v| save("JPEG quality", Settings::app().set_jpeg_quality(v.clamp(1, 100) as u8)));
+    state.on_checkerboard_toggled(|on| save("checkerboard", Settings::app().set_checkerboard(on)));
     state.on_webp_quality_edited(|v| save("WebP quality", Settings::app().set_webp_quality(v.clamp(1, 100) as u8)));
 
     let weak = ui.as_weak();

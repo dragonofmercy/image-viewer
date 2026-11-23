@@ -1,0 +1,72 @@
+import { Theme } from "../theme.slint";
+
+// WinUI ToggleSwitch without its On/Off text: click or Space flips it, `toggled` reports the new state.
+export component ToggleSwitch inherits Rectangle {
+    in-out property <bool> checked;
+    in property <string> label;
+    callback toggled(bool);
+
+    function flip() {
+        root.checked = !root.checked;
+        root.toggled(root.checked);
+    }
+
+    width: 40px;
+    height: 20px;
+    accessible-role: checkbox;
+    accessible-label: root.label;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => {
+        root.flip();
+    }
+
+    // Track: outlined when off, accent filled when on.
+    Rectangle {
+        border-radius: self.height / 2;
+        background: root.checked ? (touch.pressed ? Theme.accent-pressed : touch.has-hover ? Theme.accent-hover : Theme.accent) : (touch.pressed ? Theme.control-fill-pressed : touch.has-hover ? Theme.control-fill-hover : Theme.control-fill);
+        border-width: root.checked ? 0px : 1px;
+        border-color: Theme.text-secondary;
+    }
+
+    // Knob: grows under the pointer and slides to the right when on.
+    Rectangle {
+        property <length> size: touch.pressed || touch.has-hover ? 14px : 12px;
+        x: root.checked ? root.width - self.size - 4px : 4px;
+        y: (root.height - self.size) / 2;
+        width: self.size;
+        height: self.size;
+        border-radius: self.size / 2;
+        background: root.checked ? Theme.text-on-accent : Theme.text-secondary;
+        animate x, size { duration: 100ms; }
+    }
+
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == " " && !event.modifiers.control && !event.modifiers.alt {
+                root.flip();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            root.flip();
+        }
+    }
+
+    // Focus visual (keyboard only: a click does not focus the switch).
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        border-radius: root.height / 2 + 3px;
+        border-width: 2px;
+        border-color: Theme.text-primary;
+    }
+}
