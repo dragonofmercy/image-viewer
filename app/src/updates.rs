@@ -241,7 +241,8 @@ impl Updates {
             self.download.set(Download::Active(p));
             return self.set_state(State::Downloading(p));
         }
-        if self.busy() || *self.state.borrow() == State::Ready {
+        // Ready is final only when this process checked: one started by the toast must look for a version newer than the pending package.
+        if self.busy() || (*self.state.borrow() == State::Ready && self.backend.has_latest()) {
             return;
         }
         if !self.backend.installed() {
@@ -330,6 +331,7 @@ fn run_download(backend: &dyn Backend, post: &Post) -> State {
     if !backend.has_latest() {
         match backend.check() {
             Ok(Some(_)) => {}
+            Ok(None) if backend.pending_version().is_some() => return State::Ready,
             Ok(None) => return State::UpToDate,
             Err(message) => return State::Failed { message, during_download: false },
         }
@@ -347,6 +349,7 @@ mod tests {
 
     struct Fake {
         installed: bool,
+        has_latest: bool,
         check: Result<Option<String>, String>,
         pending: Option<String>,
         apply: Result<(), String>,
@@ -358,6 +361,7 @@ mod tests {
     fn fake(check: Result<Option<&str>, &str>, pending: Option<&str>) -> Fake {
         Fake {
             installed: true,
+            has_latest: true,
             check: check.map(|v| v.map(Into::into)).map_err(Into::into),
             pending: pending.map(Into::into),
             apply: Ok(()),
@@ -371,7 +375,7 @@ mod tests {
             self.installed
         }
         fn has_latest(&self) -> bool {
-            true
+            self.has_latest
         }
         fn pending_version(&self) -> Option<String> {
             self.pending.clone()
@@ -419,7 +423,8 @@ mod tests {
         /// Delivers worker messages until the operation ends (`Done`, or the single `Checked`).
         fn pump(&self) {
             loop {
-                let msg = self.rx.recv().unwrap();
+                // A missing worker message fails the test instead of hanging it.
+                let msg = self.rx.recv_timeout(std::time::Duration::from_secs(10)).expect("no worker message");
                 let last = matches!(msg, Msg::Done(_) | Msg::Checked { .. });
                 self.updates.on_msg(msg);
                 if last {
@@ -585,6 +590,34 @@ mod tests {
         assert_eq!(r.updates.state(), State::Ready);
         assert!(r.seen.borrow().is_empty());
         assert!(r.rx.recv_timeout(std::time::Duration::from_millis(100)).is_err());
+    }
+
+    #[test]
+    fn toast_download_fetches_a_newer_version_over_a_pending_one() {
+        // A new process started by the toast: a package waits and no check ran yet.
+        let r = rig(Fake {
+            has_latest: false,
+            ..fake(Ok(Some("2.2.0")), Some("2.1.0"))
+        });
+        assert_eq!(r.updates.state(), State::Ready);
+        r.updates.download();
+        assert_eq!(r.updates.state(), State::Downloading(0));
+        r.pump();
+        assert_eq!(r.backend.downloads.load(Ordering::SeqCst), 1);
+        assert_eq!(r.updates.state(), State::Ready);
+    }
+
+    #[test]
+    fn toast_download_finding_nothing_newer_keeps_the_pending_package() {
+        let r = rig(Fake {
+            has_latest: false,
+            ..fake(Ok(None), Some("2.1.0"))
+        });
+        r.updates.download();
+        assert_eq!(r.updates.state(), State::Downloading(0));
+        r.pump();
+        assert_eq!(r.backend.downloads.load(Ordering::SeqCst), 0);
+        assert_eq!(r.updates.state(), State::Ready);
     }
 
     #[test]
