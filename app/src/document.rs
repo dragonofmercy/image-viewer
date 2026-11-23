@@ -230,10 +230,14 @@ impl PictureCache {
 
     /// Takes the picture of `path` first, then keeps `left`: storing first could evict the very entry about to be taken.
     pub fn swap(&mut self, left: Option<(PathBuf, Stamp, Picture)>, path: &Path, on_disk: Option<Stamp>) -> Option<(Picture, Stamp)> {
-        let taken = self.take(path, on_disk);
-        if let Some((p, stamp, picture)) = left {
-            self.put(p, stamp, picture);
+        let Some((p, stamp, picture)) = left else { return self.take(path, on_disk) };
+        // Reloading the picture being left (one-image folder, re-open of the current file): it is the target itself.
+        if p == path {
+            self.entries.retain(|e| e.0 != p);
+            return (Some(stamp) == on_disk).then_some((picture, stamp));
         }
+        let taken = self.take(path, on_disk);
+        self.put(p, stamp, picture);
         taken
     }
 
@@ -467,6 +471,19 @@ mod tests {
         cache.put(a.clone(), stamp(1), pic());
         assert!(cache.swap(Some((b.clone(), stamp(2), pic())), &a, Some(stamp(9))).is_none());
         assert!(!cache.contains(&a) && cache.contains(&b));
+    }
+
+    #[test]
+    fn swap_returns_the_picture_being_left_when_it_is_the_target() {
+        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
+        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
+        let a = PathBuf::from("a");
+        let mut cache = PictureCache::default();
+        assert_eq!(cache.swap(Some((a.clone(), stamp(1), pic())), &a, Some(stamp(1))).map(|g| g.1), Some(stamp(1)));
+        assert!(!cache.contains(&a));
+        // The file changed on disk: it must be decoded again.
+        assert!(cache.swap(Some((a.clone(), stamp(1), pic())), &a, Some(stamp(2))).is_none());
+        assert!(!cache.contains(&a));
     }
 
     #[test]
