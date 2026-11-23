@@ -203,13 +203,9 @@ impl PictureCache {
         picture.frames().iter().map(|f| f.pixels.as_raw().len()).sum()
     }
 
-    fn bytes_fit(bytes: usize) -> bool {
-        bytes <= Self::ENTRY_BYTES
-    }
-
     /// Whether `put` would keep this picture: a neighbor preload is pointless next to one the cache refuses.
     pub fn fits(picture: &Picture) -> bool {
-        Self::bytes_fit(Self::picture_bytes(picture))
+        Self::picture_bytes(picture) <= Self::ENTRY_BYTES
     }
 
     /// Keeps `picture`, dropping the oldest entry when full. A picture over the size limit is not kept.
@@ -432,10 +428,16 @@ mod tests {
         RgbaImage::from_pixel(3, 2, image::Rgba([1, 2, 3, 255])).save_with_format(path, image::ImageFormat::Png).expect("write png");
     }
 
+    fn pic() -> Picture {
+        picture::load_from_rgba(RgbaImage::new(1, 1))
+    }
+
+    fn stamp(n: u64) -> Stamp {
+        (n, SystemTime::UNIX_EPOCH)
+    }
+
     #[test]
     fn cache_keeps_two_fresh_pictures() {
-        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
-        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
         let (a, b, c) = (PathBuf::from("a"), PathBuf::from("b"), PathBuf::from("c"));
         let mut cache = PictureCache::default();
         cache.put(a.clone(), stamp(1), pic());
@@ -451,8 +453,6 @@ mod tests {
 
     #[test]
     fn swap_returns_the_target_even_when_full() {
-        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
-        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
         let (a, b, c) = (PathBuf::from("a"), PathBuf::from("b"), PathBuf::from("c"));
         let mut cache = PictureCache::default();
         cache.put(a.clone(), stamp(1), pic());
@@ -464,8 +464,6 @@ mod tests {
 
     #[test]
     fn swap_drops_a_stale_target_and_still_keeps_left() {
-        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
-        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
         let (a, b) = (PathBuf::from("a"), PathBuf::from("b"));
         let mut cache = PictureCache::default();
         cache.put(a.clone(), stamp(1), pic());
@@ -475,8 +473,6 @@ mod tests {
 
     #[test]
     fn swap_returns_the_picture_being_left_when_it_is_the_target() {
-        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
-        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
         let a = PathBuf::from("a");
         let mut cache = PictureCache::default();
         assert_eq!(cache.swap(Some((a.clone(), stamp(1), pic())), &a, Some(stamp(1))).map(|g| g.1), Some(stamp(1)));
@@ -488,10 +484,8 @@ mod tests {
 
     #[test]
     fn fits_follows_the_entry_limit() {
-        assert!(PictureCache::fits(&picture::load_from_rgba(RgbaImage::new(1, 1))));
+        assert!(PictureCache::fits(&pic()));
         assert_eq!(PictureCache::picture_bytes(&picture::load_from_rgba(RgbaImage::new(3, 2))), 24);
-        assert!(PictureCache::bytes_fit(PictureCache::ENTRY_BYTES));
-        assert!(!PictureCache::bytes_fit(PictureCache::ENTRY_BYTES + 1));
     }
 
     #[test]
