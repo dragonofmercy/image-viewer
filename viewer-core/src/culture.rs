@@ -66,7 +66,8 @@ fn parse(tag: &str) -> HashMap<String, String> {
         .collect()
 }
 
-pub fn keys_of(tag: &str) -> Vec<String> {
+#[cfg(test)]
+fn keys_of(tag: &str) -> Vec<String> {
     parse(tag).into_keys().collect()
 }
 
