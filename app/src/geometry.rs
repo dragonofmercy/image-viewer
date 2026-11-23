@@ -119,23 +119,20 @@ impl Tracker {
     }
 }
 
+fn monitor_info(monitor: HMONITOR) -> Option<MONITORINFO> {
+    let mut info = MONITORINFO {
+        cbSize: size_of::<MONITORINFO>() as u32,
+        ..Default::default()
+    };
+    unsafe { GetMonitorInfoW(monitor, &mut info) }.as_bool().then_some(info)
+}
+
 /// Monitor work areas (excluding the taskbar) in physical pixels.
 pub fn monitors() -> Vec<Rect> {
     unsafe extern "system" fn push(monitor: HMONITOR, _: HDC, _: *mut RECT, data: LPARAM) -> BOOL {
-        let mut info = MONITORINFO {
-            cbSize: size_of::<MONITORINFO>() as u32,
-            ..Default::default()
-        };
-        unsafe {
-            if GetMonitorInfoW(monitor, &mut info).as_bool() {
-                let rc = info.rcWork;
-                (*(data.0 as *mut Vec<Rect>)).push(Rect {
-                    left: rc.left,
-                    top: rc.top,
-                    right: rc.right,
-                    bottom: rc.bottom,
-                });
-            }
+        if let Some(info) = monitor_info(monitor) {
+            let rc = info.rcWork;
+            unsafe { (*(data.0 as *mut Vec<Rect>)).push(Rect { left: rc.left, top: rc.top, right: rc.right, bottom: rc.bottom }) };
         }
         true.into()
     }
@@ -165,13 +162,9 @@ pub fn apply(window: &slint::Window, saved: &Saved) {
         }
     };
     let (mut dpi, mut dpi_y) = (96, 96);
-    let mut info = MONITORINFO {
-        cbSize: size_of::<MONITORINFO>() as u32,
-        ..Default::default()
-    };
+    let info = monitor_info(monitor).unwrap_or_default();
     let caption = unsafe {
         let _ = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut dpi, &mut dpi_y);
-        let _ = GetMonitorInfoW(monitor, &mut info);
         GetSystemMetricsForDpi(SM_CYCAPTION, dpi)
     };
     let (side, bottom) = crate::frame::border_sizes(dpi);
