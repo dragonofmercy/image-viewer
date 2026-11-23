@@ -111,7 +111,10 @@ impl Backend for Velopack {
         if let Ok(mut latest) = self.latest.lock() {
             *latest = found;
         }
-        Ok(Checked { latest: version, pending: self.pending_version() })
+        Ok(Checked {
+            latest: version,
+            pending: self.pending_version(),
+        })
     }
 
     fn download(&self, progress: &(dyn Fn(u8) + Sync)) -> Result<(), String> {
@@ -452,7 +455,13 @@ mod tests {
     }
 
     fn checked(latest: Option<&str>, pending: Option<&str>, quiet: bool) -> Msg {
-        Msg::Checked { result: Ok(Checked { latest: latest.map(Into::into), pending: pending.map(Into::into) }), quiet }
+        Msg::Checked {
+            result: Ok(Checked {
+                latest: latest.map(Into::into),
+                pending: pending.map(Into::into),
+            }),
+            quiet,
+        }
     }
 
     #[test]

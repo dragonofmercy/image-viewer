@@ -132,7 +132,14 @@ pub fn monitors() -> Vec<Rect> {
     unsafe extern "system" fn push(monitor: HMONITOR, _: HDC, _: *mut RECT, data: LPARAM) -> BOOL {
         if let Some(info) = monitor_info(monitor) {
             let rc = info.rcWork;
-            unsafe { (*(data.0 as *mut Vec<Rect>)).push(Rect { left: rc.left, top: rc.top, right: rc.right, bottom: rc.bottom }) };
+            unsafe {
+                (*(data.0 as *mut Vec<Rect>)).push(Rect {
+                    left: rc.left,
+                    top: rc.top,
+                    right: rc.right,
+                    bottom: rc.bottom,
+                })
+            };
         }
         true.into()
     }
