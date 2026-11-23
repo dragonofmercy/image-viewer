@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use image::{Rgba, RgbaImage};
 use support::*;
-use viewer_core::picture::{self, LoadError, encode_av1_heif};
+use viewer_core::picture::{self, LoadError, encode_av1_heif, encode_av1_heif_with_metadata};
 
 /// Left half fully transparent, right half opaque.
 fn half_transparent(w: u32, h: u32) -> RgbaImage {
@@ -63,4 +63,24 @@ fn load_garbage_heic_is_error() {
     let r = picture::load_path(&p);
     // A missing or unloadable DLL is a Decode error too: make sure libheif itself rejected the bytes.
     assert!(matches!(&r, Err(LoadError::Decode(m)) if m != "libheif.dll not found" && !m.starts_with("libheif.dll:")), "{:?}", r.err());
+}
+
+#[test]
+fn heif_keeps_exif_and_icc() {
+    let dir = fixture_dir();
+    let p = dir.path().join("m.heic");
+    encode_av1_heif_with_metadata(&sample_image(32, 16), &p, Some(&exif_block("TestCam", 6)), Some(&fake_icc())).unwrap();
+    let pic = picture::load_path(&p).unwrap();
+    let exif = pic.exif().expect("exif kept");
+    assert!(contains(exif, b"TestCam"));
+    assert_eq!(image::metadata::Orientation::from_exif_chunk(exif), Some(image::metadata::Orientation::NoTransforms));
+    assert_eq!(pic.icc_profile(), Some(&fake_icc()[..]));
+}
+
+#[test]
+fn heif_without_metadata_has_none() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&save_heif(&dir, "a.heic", &sample_image(32, 16))).unwrap();
+    assert!(pic.exif().is_none());
+    assert!(pic.icc_profile().is_none());
 }

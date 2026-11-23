@@ -15,7 +15,7 @@ mod save;
 mod svg;
 
 #[doc(hidden)]
-pub use heif::encode_av1_heif;
+pub use heif::{encode_av1_heif, encode_av1_heif_with_metadata};
 #[doc(hidden)]
 pub use jxl::encode_jxl;
 pub use save::{Flip, Rotate, SaveError};
@@ -97,8 +97,12 @@ pub fn load_path(path: &Path) -> Result<Picture, LoadError> {
         ".svg" => Ok(Picture::from_rgba(svg::rasterize_svg(path)?, 32)),
         ".ico" => Ok(Picture::from_icon_frames(ico::decode_ico(path)?)),
         ".heic" | ".heif" | ".avif" => {
-            let (pixels, has_alpha) = heif::decode_heif(&std::fs::read(path)?)?;
-            Ok(Picture::from_rgba(pixels, if has_alpha { 32 } else { 24 }))
+            let d = heif::decode_heif(&std::fs::read(path)?)?;
+            Ok(Picture {
+                exif: d.exif,
+                icc: d.icc,
+                ..Picture::from_rgba(d.pixels, if d.has_alpha { 32 } else { 24 })
+            })
         }
         ".jxl" => {
             let (pixels, has_alpha) = jxl::decode_jxl(&std::fs::read(path)?)?;
