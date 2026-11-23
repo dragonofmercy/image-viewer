@@ -141,6 +141,8 @@ struct State {
     shown: Option<usize>,
     view: Option<View>,
     fit_pending: bool,
+    /// The last update left the image at the fit zoom: a resize then refits instead of keeping the zoom.
+    fitted: bool,
 }
 
 pub struct ImageHost {
@@ -322,8 +324,8 @@ impl ImageHost {
         let Some(ui) = self.ui.upgrade() else { return };
         let (fit_now, pending) = resolve_pending(self.state.borrow().fit_pending, (ui.get_view_width(), ui.get_view_height()));
         self.state.borrow_mut().fit_pending = pending;
-        // The cropper keeps the image fitted: its selection is in image pixels, so the overlay follows.
-        if fit_now || self.locked.get() { self.fit() } else { self.update(viewport::clamp) }
+        // The cropper keeps the image fitted: its selection is in image pixels, so the overlay follows. A fitted image follows the window.
+        if fit_now || self.locked.get() || self.state.borrow().fitted { self.fit() } else { self.update(viewport::clamp) }
     }
 
     fn attach(&self, token: u64, index: usize, buffer: Buffer) {
@@ -373,6 +375,7 @@ impl ImageHost {
             s.shown = level;
         }
         let adjust = !viewport::is_fit(&view, image, view_size);
+        s.fitted = !adjust;
         // The Slint source holds its own clone; `update` copies level 0 back when the zoom asks for it again.
         if drop_full(&present, s.shown) {
             s.levels[0] = None;
