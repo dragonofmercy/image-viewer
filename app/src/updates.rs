@@ -40,6 +40,12 @@ enum Download {
     Abandoned(u8),
 }
 
+/// What a check found: `latest` is newer than the running version, `pending` is the downloaded package waiting.
+struct Checked {
+    latest: Option<String>,
+    pending: Option<String>,
+}
+
 /// Blocking operations of one update source. Errors are the UI message: empty for a network failure.
 trait Backend: Send + Sync {
     fn installed(&self) -> bool;
@@ -47,8 +53,8 @@ trait Backend: Send + Sync {
     fn has_latest(&self) -> bool;
     /// Version of the downloaded package not applied yet (no network).
     fn pending_version(&self) -> Option<String>;
-    /// The remote latest version when it is newer than the running one.
-    fn check(&self) -> Result<Option<String>, String>;
+    /// The remote latest version when it is newer than the running one, with the pending package looked up on the same worker.
+    fn check(&self) -> Result<Checked, String>;
     fn download(&self, progress: &(dyn Fn(u8) + Sync)) -> Result<(), String>;
     /// Starts `Update.exe`, which waits for this process to exit, applies the pending package and restarts.
     fn apply(&self) -> Result<(), String>;
@@ -92,7 +98,7 @@ impl Backend for Velopack {
         install::installed()?.get_update_pending_restart().map(|asset| asset.Version)
     }
 
-    fn check(&self) -> Result<Option<String>, String> {
+    fn check(&self) -> Result<Checked, String> {
         let um = install::installed().ok_or_else(|| "not installed".to_string())?;
         let found = match um.check_for_updates().map_err(message_of)? {
             UpdateCheck::UpdateAvailable(info) => Some(*info),
@@ -105,7 +111,7 @@ impl Backend for Velopack {
         if let Ok(mut latest) = self.latest.lock() {
             *latest = found;
         }
-        Ok(version)
+        Ok(Checked { latest: version, pending: self.pending_version() })
     }
 
     fn download(&self, progress: &(dyn Fn(u8) + Sync)) -> Result<(), String> {
@@ -128,7 +134,7 @@ impl Backend for Velopack {
 enum Msg {
     /// `quiet`: background check, nothing shown but a toast.
     Checked {
-        result: Result<Option<String>, String>,
+        result: Result<Checked, String>,
         quiet: bool,
     },
     Progress(u8),
@@ -287,7 +293,7 @@ impl Updates {
                 let state = match result {
                     Err(message) if quiet => return eprintln!("background update check failed: {message}"),
                     Err(message) => return self.set_state(State::Failed { message, during_download: false }),
-                    Ok(latest) => match self.backend.pending_version() {
+                    Ok(Checked { latest, pending }) => match pending {
                         // Plain equality: Velopack deletes older packages and the feed's latest is never older than a downloaded one.
                         Some(pending) if latest.as_ref().is_none_or(|v| *v == pending) => State::Ready,
                         _ if latest.is_some() => State::Available,
@@ -329,9 +335,9 @@ impl Updates {
 fn run_download(backend: &dyn Backend, post: &Post) -> State {
     if !backend.has_latest() {
         match backend.check() {
-            Ok(Some(_)) => {}
-            Ok(None) if backend.pending_version().is_some() => return State::Ready,
-            Ok(None) => return State::UpToDate,
+            Ok(Checked { latest: Some(_), .. }) => {}
+            Ok(Checked { pending: Some(_), .. }) => return State::Ready,
+            Ok(Checked { .. }) => return State::UpToDate,
             Err(message) => return State::Failed { message, during_download: false },
         }
     }
@@ -379,8 +385,8 @@ mod tests {
         fn pending_version(&self) -> Option<String> {
             self.pending.clone()
         }
-        fn check(&self) -> Result<Option<String>, String> {
-            self.check.clone()
+        fn check(&self) -> Result<Checked, String> {
+            self.check.clone().map(|latest| Checked { latest, pending: self.pending.clone() })
         }
         fn download(&self, progress: &(dyn Fn(u8) + Sync)) -> Result<(), String> {
             self.downloads.fetch_add(1, Ordering::SeqCst);
@@ -445,8 +451,8 @@ mod tests {
         }
     }
 
-    fn checked(version: Option<&str>, quiet: bool) -> Msg {
-        Msg::Checked { result: Ok(version.map(Into::into)), quiet }
+    fn checked(latest: Option<&str>, pending: Option<&str>, quiet: bool) -> Msg {
+        Msg::Checked { result: Ok(Checked { latest: latest.map(Into::into), pending: pending.map(Into::into) }), quiet }
     }
 
     #[test]
@@ -561,9 +567,9 @@ mod tests {
     fn manual_reply_never_shows_a_toast() {
         let r = rig(fake(Ok(Some("2.1.0")), None));
         let toasts = r.expect_toast();
-        r.updates.on_msg(checked(Some("2.1.0"), false));
+        r.updates.on_msg(checked(Some("2.1.0"), None, false));
         assert_eq!(r.updates.state(), State::Available);
-        r.updates.on_msg(checked(Some("2.1.0"), true));
+        r.updates.on_msg(checked(Some("2.1.0"), None, true));
         assert!(toasts.borrow().is_empty());
     }
 
@@ -571,13 +577,13 @@ mod tests {
     fn quiet_reply_over_ready_picks_the_toast() {
         let r = rig(fake(Ok(None), Some("2.1.0")));
         let toasts = r.expect_toast();
-        r.updates.on_msg(checked(Some("2.1.0"), true));
+        r.updates.on_msg(checked(Some("2.1.0"), Some("2.1.0"), true));
         assert_eq!(*toasts.borrow(), vec![Toast::Ready]);
         assert_eq!(r.updates.state(), State::Ready);
 
         let r = rig(fake(Ok(None), Some("2.1.0")));
         let toasts = r.expect_toast();
-        r.updates.on_msg(checked(Some("2.2.0"), true));
+        r.updates.on_msg(checked(Some("2.2.0"), Some("2.1.0"), true));
         assert_eq!(*toasts.borrow(), vec![Toast::Available]);
         assert_eq!(r.updates.state(), State::Available);
     }
@@ -635,7 +641,7 @@ mod tests {
     fn quiet_check_during_download_does_not_unabandon_it() {
         let r = rig(fake(Ok(Some("2.1.0")), None));
         r.updates.download();
-        r.updates.on_msg(checked(Some("2.1.0"), true));
+        r.updates.on_msg(checked(Some("2.1.0"), None, true));
         assert_eq!(r.updates.state(), State::Downloading(0));
         r.updates.abandon();
         r.pump();
