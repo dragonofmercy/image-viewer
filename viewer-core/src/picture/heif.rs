@@ -236,7 +236,9 @@ unsafe fn read_exif(api: &Api, handle: Ptr) -> Option<Vec<u8>> {
     let mut block = vec![0u8; size];
     // SAFETY: libheif writes exactly get_metadata_size bytes, the buffer's length.
     check(unsafe { (api.image_handle_get_metadata)(handle, id, block.as_mut_ptr().cast()) }).ok()?;
-    tiff_of_exif_block(&block).map(<[u8]>::to_vec)
+    let start = tiff_start(&block)?;
+    block.drain(..start);
+    Some(block)
 }
 
 /// The raw ICC profile when the handle carries one (`prof` or `rICC`; `nclx` has none); `None` on any failure.
@@ -310,29 +312,31 @@ pub fn encode_av1_heif_with_metadata(rgba: &RgbaImage, path: &Path, exif: Option
     }
 }
 
-/// The TIFF structure of a HEIF Exif item: a 4-byte big-endian offset to the TIFF header, then the data. `None` when out of bounds.
-fn tiff_of_exif_block(block: &[u8]) -> Option<&[u8]> {
+/// Start of the TIFF structure in a HEIF Exif item: a 4-byte big-endian offset to the TIFF header, then the data. `None` when out of bounds or empty.
+fn tiff_start(block: &[u8]) -> Option<usize> {
     let offset = usize::try_from(u32::from_be_bytes(block.get(..4)?.try_into().ok()?)).ok()?;
-    let tiff = block.get(4usize.checked_add(offset)?..)?;
+    let start = 4usize.checked_add(offset)?;
+    let tiff = block.get(start..)?;
     // Some writers keep the JPEG APP1 header with a zero offset.
-    Some(tiff.strip_prefix(b"Exif\0\0").unwrap_or(tiff)).filter(|t| !t.is_empty())
+    let start = if tiff.starts_with(b"Exif  ") { start + 6 } else { start };
+    (start < block.len()).then_some(start)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::tiff_of_exif_block;
+    use super::tiff_start;
 
     #[test]
     fn exif_block_skips_its_tiff_offset() {
-        let tiff = b"II*\0\x08\0\0\0";
+        let tiff = b"II*    ";
         let zero = [&[0, 0, 0, 0][..], tiff].concat();
-        assert_eq!(tiff_of_exif_block(&zero), Some(&tiff[..]));
+        assert_eq!(tiff_start(&zero), Some(4));
         let two = [&[0, 0, 0, 2, 9, 9][..], tiff].concat();
-        assert_eq!(tiff_of_exif_block(&two), Some(&tiff[..]));
-        // Some writers keep the JPEG APP1 "Exif\0\0" header and leave the offset at 0.
-        let prefixed = [&[0, 0, 0, 0][..], b"Exif\0\0", tiff].concat();
-        assert_eq!(tiff_of_exif_block(&prefixed), Some(&tiff[..]));
-        assert_eq!(tiff_of_exif_block(&[0, 0, 0]), None);
-        assert_eq!(tiff_of_exif_block(&[0, 0, 0, 9, 1, 2]), None);
+        assert_eq!(tiff_start(&two), Some(6));
+        // Some writers keep the JPEG APP1 "Exif  " header and leave the offset at 0.
+        let prefixed = [&[0, 0, 0, 0][..], b"Exif  ", tiff].concat();
+        assert_eq!(tiff_start(&prefixed), Some(10));
+        assert_eq!(tiff_start(&[0, 0, 0]), None);
+        assert_eq!(tiff_start(&[0, 0, 0, 9, 1, 2]), None);
     }
 }
