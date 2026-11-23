@@ -112,3 +112,45 @@ fn frames_yields_the_displayed_icon_frame_and_is_never_animated() {
         assert!(!pic.is_animated());
     }
 }
+
+/// Two-entry ICO: the real 16x16 entry of `save_ico`, then a second entry pointing at `second_payload` (appended) or at `second_offset` when given.
+fn ico_with_second_entry(dir: &tempfile::TempDir, second_payload: &[u8], second_offset: Option<u32>) -> std::path::PathBuf {
+    let good = std::fs::read(save_ico(dir, "g.ico", &[(16, 16)])).unwrap();
+    let (entry, payload) = (&good[6..22], &good[22..]);
+    let mut second = entry.to_vec();
+    second[8..12].copy_from_slice(&(second_payload.len() as u32).to_le_bytes());
+    let payload_end = 38 + payload.len() as u32;
+    second[12..16].copy_from_slice(&second_offset.unwrap_or(payload_end).to_le_bytes());
+    let mut first = entry.to_vec();
+    first[12..16].copy_from_slice(&38u32.to_le_bytes());
+    let mut ico = vec![0, 0, 1, 0, 2, 0];
+    ico.extend_from_slice(&first);
+    ico.extend_from_slice(&second);
+    ico.extend_from_slice(payload);
+    ico.extend_from_slice(second_payload);
+    write_bytes(dir, "two.ico", &ico)
+}
+
+#[test]
+fn load_ico_skips_a_corrupt_entry() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&ico_with_second_entry(&dir, &[0xAB; 40], None)).unwrap();
+    assert_eq!(pic.width(), 16);
+    assert!(!pic.has_icon_sizes());
+}
+
+#[test]
+fn load_ico_with_only_corrupt_entries_fails() {
+    let dir = fixture_dir();
+    let mut ico = vec![0, 0, 1, 0, 1, 0];
+    ico.extend_from_slice(&[16, 16, 0, 0, 1, 0, 32, 0, 40, 0, 0, 0, 22, 0, 0, 0]);
+    ico.extend_from_slice(&[0xAB; 40]);
+    assert!(picture::load_path(&write_bytes(&dir, "bad.ico", &ico)).is_err());
+}
+
+#[test]
+fn load_ico_skips_an_out_of_range_entry() {
+    let dir = fixture_dir();
+    let pic = picture::load_path(&ico_with_second_entry(&dir, &[0xAB; 40], Some(1 << 30))).unwrap();
+    assert_eq!(pic.width(), 16);
+}
