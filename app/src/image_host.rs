@@ -57,6 +57,11 @@ fn pick_level(present: &[bool], want: usize) -> Option<usize> {
     (0..=want).rev().chain(want + 1..present.len()).find(|&i| present[i])
 }
 
+/// Level 0 can go once the pyramid is complete and a smaller level is on screen.
+fn drop_full(present: &[bool], shown: Option<usize>) -> bool {
+    present.iter().all(|&p| p) && shown.is_some_and(|i| i > 0)
+}
+
 /// Smallest view (logical px) worth fitting into: a fit against a few pixels would leave a useless zoom.
 const MIN_FIT_VIEW: f32 = 32.0;
 
@@ -334,11 +339,6 @@ impl ImageHost {
             s.shown = None;
         }
         self.update(|v, _, _| v);
-        // Pyramid complete and a smaller level on screen: level 0 goes, `update` copies it back if the zoom asks for it.
-        let mut s = self.state.borrow_mut();
-        if index + 1 == s.levels.len() && s.shown.is_some_and(|shown| shown > 0) {
-            s.levels[0] = None;
-        }
     }
 
     /// Computes the next view from the current one, clamps it and pushes everything to the UI. No-op without an image.
@@ -373,6 +373,10 @@ impl ImageHost {
             s.shown = level;
         }
         let adjust = !viewport::is_fit(&view, image, view_size);
+        // The Slint source holds its own clone; `update` copies level 0 back when the zoom asks for it again.
+        if drop_full(&present, s.shown) {
+            s.levels[0] = None;
+        }
         drop(s);
         ui.set_view_x(x);
         ui.set_view_y(y);
@@ -416,6 +420,15 @@ mod tests {
         let sizes = level_sizes(20000, 100);
         assert_eq!(first_displayable(&sizes), 1);
         assert_eq!(first_displayable(&level_sizes(16384, 10)), 0);
+    }
+
+    #[test]
+    fn full_level_goes_once_a_smaller_one_is_shown() {
+        assert!(drop_full(&[true, true, true], Some(1)));
+        assert!(!drop_full(&[true, true, true], Some(0)));
+        assert!(!drop_full(&[true, true, true], None));
+        assert!(!drop_full(&[true, true, false], Some(1)));
+        assert!(!drop_full(&[true], Some(0)));
     }
 
     #[test]
