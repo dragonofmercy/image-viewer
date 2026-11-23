@@ -57,7 +57,7 @@ const GRIP_MIN_WIDTH: i32 = 100;
 pub fn placement(saved: &Saved, monitors: &[Rect]) -> Placement {
     let (w, h) = saved.size;
     match saved.pos {
-        Some((x, y)) if x > PARKED && y > PARKED && monitors.iter().any(|m| y >= m.top && y.saturating_add(GRIP_HEIGHT) <= m.bottom && end(x, w).min(m.right) - x.max(m.left) >= GRIP_MIN_WIDTH) => Placement::At { x, y, w, h },
+        Some((x, y)) if x > PARKED && y > PARKED && monitors.iter().any(|m| y >= m.top && y.saturating_add(GRIP_HEIGHT) <= m.bottom && end(x, w).min(m.right).saturating_sub(x.max(m.left)) >= GRIP_MIN_WIDTH) => Placement::At { x, y, w, h },
         _ => Placement::Centered { w, h },
     }
 }
@@ -255,6 +255,21 @@ mod tests {
     fn placement_keeps_a_window_whose_title_bar_is_on_screen() {
         // 780 px of title bar visible on the monitor.
         assert_eq!(placement(&saved(Some((-500, 10))), &MONITORS), Placement::At { x: -500, y: 10, w: 1280, h: 768 });
+    }
+
+    #[test]
+    fn placement_centers_an_absurd_x_next_to_a_negative_monitor() {
+        let left = [Rect { left: -1920, top: 0, right: 0, bottom: 1040 }];
+        assert_eq!(placement(&saved(Some((i32::MAX - 10, 100))), &left), Placement::Centered { w: 1280, h: 768 });
+        // Right edge further left than 0: right - x would overflow.
+        let far_left = [Rect { left: -3840, top: 0, right: -1920, bottom: 1040 }];
+        assert_eq!(placement(&saved(Some((i32::MAX - 10, 100))), &far_left), Placement::Centered { w: 1280, h: 768 });
+    }
+
+    #[test]
+    fn placement_keeps_a_window_on_a_monitor_at_negative_coordinates() {
+        let left = [Rect { left: -1920, top: 0, right: 0, bottom: 1040 }];
+        assert_eq!(placement(&saved(Some((-1800, 100))), &left), Placement::At { x: -1800, y: 100, w: 1280, h: 768 });
     }
 
     #[test]
