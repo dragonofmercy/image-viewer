@@ -156,10 +156,19 @@ pub fn ensure_associations() {
     log("register file associations", AssociationService::new("", Settings::app()).ensure_registered(&plan).map(drop));
 }
 
+/// `VelopackApp::build()` panics in `env::args()` on a non-Unicode argument, and the hook launches are ASCII.
+fn velopack_safe(args: &[std::ffi::OsString]) -> bool {
+    args.iter().all(|a| a.to_str().is_some())
+}
+
 /// First statement of `main`. Velopack does nothing when the exe is not an installed copy.
 pub fn run_hooks() {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if !velopack_safe(&args) {
+        return;
+    }
     velopack::VelopackApp::build()
-        // A download the user abandoned must not install itself at the next start: updates apply only through updates.rs.
+        // Keeps a downloaded package waiting for the Install click instead of applying it at the next start (updates.rs applies it).
         .set_auto_apply_on_startup(false)
         .on_first_run(|_| legacy_cleanup())
         .on_after_install_fast_callback(|_| integrate())
@@ -251,6 +260,15 @@ mod tests {
         assert!(!should_register(true, true, false)); // debug build
         assert!(!should_register(false, false, false)); // loose copy
         assert!(!should_register(false, true, true)); // portable zip
+    }
+
+    #[test]
+    fn velopack_is_skipped_on_a_non_unicode_argument() {
+        use std::os::windows::ffi::OsStringExt;
+        assert!(velopack_safe(&[]));
+        assert!(velopack_safe(&["--veloapp-install".into(), "2.0.0".into()]));
+        assert!(velopack_safe(&[r"C:\photos\a.jpg".into()]));
+        assert!(!velopack_safe(&[std::ffi::OsString::from_wide(&[0x61, 0xD800, 0x62])]));
     }
 
     #[test]
