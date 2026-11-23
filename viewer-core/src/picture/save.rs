@@ -2,7 +2,6 @@ use std::fmt;
 use std::io::{BufWriter, Seek, Write};
 use std::path::Path;
 
-use image::buffer::ConvertBuffer;
 use image::codecs::gif::{GifEncoder, Repeat};
 use image::codecs::jpeg::JpegEncoder;
 use image::codecs::png::PngEncoder;
@@ -133,8 +132,7 @@ impl Picture {
         let (w, h) = pixels.dimensions();
         match ext {
             ".jxl" => out.write_all(&encode_jxl(pixels).map_err(SaveError::Encode)?)?,
-            // JPEG has no alpha: ImageSharp drops it without compositing, so do the same.
-            ".jpg" => ConvertBuffer::<image::RgbImage>::convert(pixels).write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut *out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
+            ".jpg" => on_white(pixels).write_with_encoder(self.with_metadata(JpegEncoder::new_with_quality(&mut *out, quality), JPEG_MAX_EXIF, JPEG_MAX_ICC))?,
             ".png" => pixels.write_with_encoder(self.with_metadata(PngEncoder::new(&mut *out), usize::MAX, usize::MAX))?,
             ".bmp" => pixels.write_to(&mut *out, ImageFormat::Bmp)?,
             ".tga" => pixels.write_to(&mut *out, ImageFormat::Tga)?,
@@ -174,6 +172,15 @@ impl Picture {
 }
 
 /// Lossy animated WebP, looping forever, with the still encoder's quality mapping.
+/// JPEG has no alpha: composite over white. Dropping it (as 1.x did) shows whatever colour hides under transparent pixels.
+fn on_white(pixels: &RgbaImage) -> image::RgbImage {
+    image::RgbImage::from_fn(pixels.width(), pixels.height(), |x, y| {
+        let [r, g, b, a] = pixels.get_pixel(x, y).0;
+        let over = |c: u8| ((u32::from(c) * u32::from(a) + 255 * (255 - u32::from(a)) + 127) / 255) as u8;
+        image::Rgb([over(r), over(g), over(b)])
+    })
+}
+
 fn encode_animated_webp(frames: &[Frame], quality: u8) -> Result<Vec<u8>, SaveError> {
     let err = |e: String| SaveError::Encode(format!("animated WebP: {e}"));
     let (w, h) = frames[0].pixels.dimensions();
@@ -201,6 +208,12 @@ mod tests {
     use super::*;
     use image::ImageDecoder;
     use std::io::Cursor;
+
+    #[test]
+    fn jpeg_composites_transparency_on_white() {
+        let pixels = RgbaImage::from_fn(3, 1, |x, _| image::Rgba([[0, 128, 0, 0], [0, 0, 0, 128], [10, 20, 30, 255]][x as usize]));
+        assert_eq!(on_white(&pixels).into_raw(), [255, 255, 255, 127, 127, 127, 10, 20, 30]);
+    }
 
     #[test]
     fn animated_gif_keeps_every_frame_and_delay() {
