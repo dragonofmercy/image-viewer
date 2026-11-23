@@ -33,3 +33,43 @@ fn missing_current_gives_index_minus_one_and_missing_folder_gives_none() {
     assert_eq!(FolderNav::list(&dir.path().join("gone.png")).unwrap().index, -1);
     assert!(FolderNav::list(&dir.path().join("nodir").join("a.png")).is_none());
 }
+
+fn nav(names: &[&str], index: isize) -> FolderNav {
+    FolderNav {
+        files: names.iter().map(std::path::PathBuf::from).collect(),
+        index,
+    }
+}
+
+#[test]
+fn peek_finds_the_neighbor_both_ways_with_wrap_around() {
+    let n = nav(&["a", "b", "c"], 0);
+    assert_eq!(n.peek(false, |_| true), Some(std::path::Path::new("b")));
+    assert_eq!(n.peek(true, |_| true), Some(std::path::Path::new("c")));
+}
+
+#[test]
+fn peek_skips_unopenable_files_without_removing_them() {
+    let n = nav(&["a", "b", "c"], 0);
+    assert_eq!(n.peek(false, |p| p != std::path::Path::new("b")), Some(std::path::Path::new("c")));
+    assert_eq!(n.files.len(), 3);
+}
+
+#[test]
+fn peek_returns_none_when_nothing_else_opens() {
+    let n = nav(&["a", "b", "c"], 0);
+    assert_eq!(n.peek(false, |p| p == std::path::Path::new("a")), None);
+    assert_eq!(n.peek(true, |_| false), None);
+}
+
+#[test]
+fn peek_on_an_empty_list_is_none() {
+    assert_eq!(nav(&[], -1).peek(false, |_| true), None);
+}
+
+#[test]
+fn peek_with_index_minus_one() {
+    let n = nav(&["a", "b", "c"], -1);
+    assert_eq!(n.peek(false, |_| true), Some(std::path::Path::new("a")));
+    assert_eq!(n.peek(true, |_| true), Some(std::path::Path::new("c")));
+}

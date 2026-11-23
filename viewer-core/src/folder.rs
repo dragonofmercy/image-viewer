@@ -52,6 +52,13 @@ impl FolderNav {
         None
     }
 
+    /// The file `next` (or `prev` when `backward`) would land on, without moving or dropping anything. Never the current file.
+    pub fn peek(&self, backward: bool, mut can_open: impl FnMut(&Path) -> bool) -> Option<&Path> {
+        let len = self.files.len() as isize;
+        let (step, start) = if backward { (-1, self.index.max(0)) } else { (1, self.index) };
+        (1..=len).map(|k| (start + step * k).rem_euclid(len)).filter(|&i| i != self.index).map(|i| self.files[i as usize].as_path()).find(|p| can_open(p))
+    }
+
     pub fn first(&mut self, can_open: impl FnMut(&Path) -> bool) -> Option<PathBuf> {
         self.index = -1;
         self.next(can_open)

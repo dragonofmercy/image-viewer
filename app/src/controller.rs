@@ -328,10 +328,9 @@ impl Controller {
             if doc.picture.as_ref().is_some_and(|p| !PictureCache::fits(p)) {
                 return;
             }
-            // Stepped on a copy: the real position does not move.
-            let Some(mut peek) = doc.folder.clone() else { return };
-            let target = if self.backward.get() { peek.prev(exists) } else { peek.next(exists) };
-            target.filter(|t| t != current)
+            // Peeked, not stepped: the real position does not move and the list is not cloned.
+            let Some(target) = doc.folder.as_ref().and_then(|f| f.peek(self.backward.get(), exists)) else { return };
+            (target != current).then(|| target.to_path_buf())
         };
         let Some(target) = target else { return };
         if self.cache.borrow().contains(&target) || self.preloading.borrow().as_ref().is_some_and(|p| p.0 == target) {
