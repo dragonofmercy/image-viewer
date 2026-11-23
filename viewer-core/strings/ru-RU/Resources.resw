@@ -94,7 +94,7 @@
     <value>Качество WebP</value>
   </data>
   <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
-    <value>Шахматный фон под прозрачностью</value>
+    <value>Шахматный фон для прозрачных изображений</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>Изображение {0}</value>

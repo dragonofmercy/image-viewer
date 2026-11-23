@@ -199,7 +199,7 @@
     <value>Qualidade WebP</value>
   </data>
   <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
-    <value>Fundo quadriculado sob a transparência</value>
+    <value>Fundo quadriculado para imagens transparentes</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>{0} imagem</value>

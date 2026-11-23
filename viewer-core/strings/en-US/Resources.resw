@@ -94,7 +94,7 @@
     <value>WebP quality</value>
   </data>
   <data name="SETTINGS_FIELD_CHECKERBOARD" xml:space="preserve">
-    <value>Checkerboard behind transparency</value>
+    <value>Checkerboard background for transparent images</value>
   </data>
   <data name="FOOTER_TOOLBAR_MENU_FILE_SAVE_FORMAT" xml:space="preserve">
     <value>{0} image</value>
