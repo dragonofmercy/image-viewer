@@ -14,6 +14,16 @@ pub(super) fn rgb_icc(icc: Vec<u8>) -> Option<Vec<u8>> {
     (icc.get(16..20) == Some(b"RGB ")).then_some(icc)
 }
 
+fn u16_at(b: &[u8], i: usize, big: bool) -> Option<u16> {
+    let v = b.get(i..i.checked_add(2)?)?.try_into().ok()?;
+    Some(if big { u16::from_be_bytes(v) } else { u16::from_le_bytes(v) })
+}
+
+fn u32_at(b: &[u8], i: usize, big: bool) -> Option<u32> {
+    let v = b.get(i..i.checked_add(4)?)?.try_into().ok()?;
+    Some(if big { u32::from_be_bytes(v) } else { u32::from_le_bytes(v) })
+}
+
 /// Sets every IFD0 Orientation entry (tag 0x0112, one SHORT) to 1, since the loader rotates the pixels itself. `None` when the TIFF structure is not parseable.
 pub(super) fn reset_orientation(mut exif: Vec<u8>) -> Option<Vec<u8>> {
     let big = match exif.get(..4)? {
@@ -21,29 +31,21 @@ pub(super) fn reset_orientation(mut exif: Vec<u8>) -> Option<Vec<u8>> {
         b"MM\0*" => true,
         _ => return None,
     };
-    let u16_at = |b: &[u8], i: usize| -> Option<u16> {
-        let v = b.get(i..i.checked_add(2)?)?.try_into().ok()?;
-        Some(if big { u16::from_be_bytes(v) } else { u16::from_le_bytes(v) })
-    };
-    let u32_at = |b: &[u8], i: usize| -> Option<u32> {
-        let v = b.get(i..i.checked_add(4)?)?.try_into().ok()?;
-        Some(if big { u32::from_be_bytes(v) } else { u32::from_le_bytes(v) })
-    };
-    let ifd = usize::try_from(u32_at(&exif, 4)?).ok()?;
-    let count = usize::from(u16_at(&exif, ifd)?);
+    let ifd = usize::try_from(u32_at(&exif, 4, big)?).ok()?;
+    let count = usize::from(u16_at(&exif, ifd, big)?);
     if ifd.checked_add(2 + 12 * count)? > exif.len() {
         return None;
     }
     let one = if big { 1u16.to_be_bytes() } else { 1u16.to_le_bytes() };
     for e in (0..count).map(|i| ifd + 2 + 12 * i) {
-        if u16_at(&exif, e)? == 0x0112 && u16_at(&exif, e + 2)? == 3 && u32_at(&exif, e + 4)? == 1 {
+        if u16_at(&exif, e, big)? == 0x0112 && u16_at(&exif, e + 2, big)? == 3 && u32_at(&exif, e + 4, big)? == 1 {
             exif[e + 8..e + 10].copy_from_slice(&one);
         }
     }
     // The embedded thumbnail would show the pre-edit picture and bloat the saved file: zero its bytes and unlink IFD1.
     let next = ifd + 2 + 12 * count;
-    if let Some(ifd1) = u32_at(&exif, next).and_then(|n| usize::try_from(n).ok()).filter(|&n| n != 0) {
-        if let Some(range) = thumbnail_range(&exif, ifd1, &u16_at, &u32_at) {
+    if let Some(ifd1) = u32_at(&exif, next, big).and_then(|n| usize::try_from(n).ok()).filter(|&n| n != 0) {
+        if let Some(range) = thumbnail_range(&exif, ifd1, big) {
             exif[range].fill(0);
         }
         exif[next..next + 4].fill(0);
@@ -52,15 +54,15 @@ pub(super) fn reset_orientation(mut exif: Vec<u8>) -> Option<Vec<u8>> {
 }
 
 /// The JPEG thumbnail byte range of IFD1 (tags 0x0201 offset and 0x0202 length, one LONG each), `None` when absent or out of bounds.
-fn thumbnail_range(exif: &[u8], ifd1: usize, u16_at: &impl Fn(&[u8], usize) -> Option<u16>, u32_at: &impl Fn(&[u8], usize) -> Option<u32>) -> Option<std::ops::Range<usize>> {
-    let count = usize::from(u16_at(exif, ifd1)?);
+fn thumbnail_range(exif: &[u8], ifd1: usize, big: bool) -> Option<std::ops::Range<usize>> {
+    let count = usize::from(u16_at(exif, ifd1, big)?);
     let (mut offset, mut len) = (None, None);
     for e in (0..count).map(|i| ifd1.checked_add(2 + 12 * i)) {
         let e = e?;
-        if u16_at(exif, e + 2)? == 4 && u32_at(exif, e + 4)? == 1 {
-            match u16_at(exif, e)? {
-                0x0201 => offset = usize::try_from(u32_at(exif, e + 8)?).ok(),
-                0x0202 => len = usize::try_from(u32_at(exif, e + 8)?).ok(),
+        if u16_at(exif, e + 2, big)? == 4 && u32_at(exif, e + 4, big)? == 1 {
+            match u16_at(exif, e, big)? {
+                0x0201 => offset = usize::try_from(u32_at(exif, e + 8, big)?).ok(),
+                0x0202 => len = usize::try_from(u32_at(exif, e + 8, big)?).ok(),
                 _ => {}
             }
         }
