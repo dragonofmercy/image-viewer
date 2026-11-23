@@ -147,7 +147,8 @@ fn velopack_safe(args: &[std::ffi::OsString]) -> bool {
 
 /// First statement of `main`. Velopack does nothing when the exe is not an installed copy.
 pub fn run_hooks() {
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    // Includes argv[0]: `build()` converts the exe path too.
+    let args: Vec<_> = std::env::args_os().collect();
     if !velopack_safe(&args) {
         return;
     }

@@ -160,7 +160,7 @@ fn main() -> Result<(), slint::PlatformError> {
         // Through the close handler: a running save finishes first, and the geometry is saved.
         move || {
             if let Some(ui) = quit_weak.upgrade() {
-                ui.window().dispatch_event(slint::platform::WindowEvent::CloseRequested);
+                ui.window().dispatch_event(WindowEvent::CloseRequested);
             }
         },
     );
