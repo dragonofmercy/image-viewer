@@ -47,12 +47,17 @@ fn end(start: i32, len: u32) -> i32 {
     start.saturating_add(i32::try_from(len).unwrap_or(i32::MAX))
 }
 
-/// The saved position is kept only when its rectangle still intersects a monitor (1.x: `DisplayArea.GetFromRect` with no fallback,
-/// fed with the stored size as is).
+/// Title bar height (`title-bar-height` in main.slint) in physical pixels at 100% scale: an approximation at higher DPI, which only makes the check lenient.
+const GRIP_HEIGHT: i32 = 48;
+/// Least width of title bar that must stay inside a work area to grab the window.
+const GRIP_MIN_WIDTH: i32 = 100;
+
+/// The saved position is kept only when a strip of its title bar is fully inside a work area and wide enough to grab. Deliberately stricter
+/// than 1.x (plain rectangle intersection): a window dragged above the screen or under the taskbar could not be moved back.
 pub fn placement(saved: &Saved, monitors: &[Rect]) -> Placement {
     let (w, h) = saved.size;
     match saved.pos {
-        Some((x, y)) if x > PARKED && y > PARKED && monitors.iter().any(|m| x < m.right && end(x, w) > m.left && y < m.bottom && end(y, h) > m.top) => Placement::At { x, y, w, h },
+        Some((x, y)) if x > PARKED && y > PARKED && monitors.iter().any(|m| y >= m.top && y.saturating_add(GRIP_HEIGHT) <= m.bottom && end(x, w).min(m.right) - x.max(m.left) >= GRIP_MIN_WIDTH) => Placement::At { x, y, w, h },
         _ => Placement::Centered { w, h },
     }
 }
@@ -114,17 +119,23 @@ impl Tracker {
     }
 }
 
-/// Monitor rectangles in physical pixels.
+/// Monitor work areas (excluding the taskbar) in physical pixels.
 pub fn monitors() -> Vec<Rect> {
-    unsafe extern "system" fn push(_: HMONITOR, _: HDC, rc: *mut RECT, data: LPARAM) -> BOOL {
+    unsafe extern "system" fn push(monitor: HMONITOR, _: HDC, _: *mut RECT, data: LPARAM) -> BOOL {
+        let mut info = MONITORINFO {
+            cbSize: size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
         unsafe {
-            let rc = &*rc;
-            (*(data.0 as *mut Vec<Rect>)).push(Rect {
-                left: rc.left,
-                top: rc.top,
-                right: rc.right,
-                bottom: rc.bottom,
-            });
+            if GetMonitorInfoW(monitor, &mut info).as_bool() {
+                let rc = info.rcWork;
+                (*(data.0 as *mut Vec<Rect>)).push(Rect {
+                    left: rc.left,
+                    top: rc.top,
+                    right: rc.right,
+                    bottom: rc.bottom,
+                });
+            }
         }
         true.into()
     }
@@ -236,8 +247,20 @@ mod tests {
     #[test]
     fn placement_restores_a_position_on_a_present_monitor() {
         assert_eq!(placement(&saved(Some((2000, 100))), &MONITORS), Placement::At { x: 2000, y: 100, w: 1280, h: 768 });
-        // Partly offscreen still intersects.
-        assert_eq!(placement(&saved(Some((-500, -10))), &MONITORS), Placement::At { x: -500, y: -10, w: 1280, h: 768 });
+        // Title bar above the work area: unreachable.
+        assert_eq!(placement(&saved(Some((-500, -10))), &MONITORS), Placement::Centered { w: 1280, h: 768 });
+    }
+
+    #[test]
+    fn placement_keeps_a_window_whose_title_bar_is_on_screen() {
+        // 780 px of title bar visible on the monitor.
+        assert_eq!(placement(&saved(Some((-500, 10))), &MONITORS), Placement::At { x: -500, y: 10, w: 1280, h: 768 });
+    }
+
+    #[test]
+    fn placement_centers_a_title_bar_under_the_taskbar() {
+        let work = [Rect { left: 0, top: 0, right: 1920, bottom: 1040 }];
+        assert_eq!(placement(&saved(Some((100, 1030))), &work), Placement::Centered { w: 1280, h: 768 });
     }
 
     #[test]
