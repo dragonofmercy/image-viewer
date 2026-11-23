@@ -216,6 +216,15 @@ impl PictureCache {
         self.entries.iter().any(|e| e.0 == path)
     }
 
+    /// Takes the picture of `path` first, then keeps `left`: storing first could evict the very entry about to be taken.
+    pub fn swap(&mut self, left: Option<(PathBuf, Stamp, Picture)>, path: &Path, on_disk: Option<Stamp>) -> Option<(Picture, Stamp)> {
+        let taken = self.take(path, on_disk);
+        if let Some((p, stamp, picture)) = left {
+            self.put(p, stamp, picture);
+        }
+        taken
+    }
+
     /// Removes and returns the picture of `path` when the file still has the stamp `current`; a stale entry is dropped.
     pub fn take(&mut self, path: &Path, current: Option<Stamp>) -> Option<(Picture, Stamp)> {
         let index = self.entries.iter().position(|e| e.0 == path)?;
@@ -422,6 +431,30 @@ mod tests {
         assert!(!cache.contains(&b));
         assert!(cache.take(&c, Some(stamp(3))).is_some());
         assert!(cache.take(&c, Some(stamp(3))).is_none());
+    }
+
+    #[test]
+    fn swap_returns_the_target_even_when_full() {
+        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
+        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
+        let (a, b, c) = (PathBuf::from("a"), PathBuf::from("b"), PathBuf::from("c"));
+        let mut cache = PictureCache::default();
+        cache.put(a.clone(), stamp(1), pic());
+        cache.put(c.clone(), stamp(3), pic());
+        let got = cache.swap(Some((b.clone(), stamp(2), pic())), &a, Some(stamp(1)));
+        assert_eq!(got.map(|g| g.1), Some(stamp(1)));
+        assert!(!cache.contains(&a) && cache.contains(&b) && cache.contains(&c));
+    }
+
+    #[test]
+    fn swap_drops_a_stale_target_and_still_keeps_left() {
+        let pic = || picture::load_from_rgba(RgbaImage::new(1, 1));
+        let stamp = |n: u64| (n, SystemTime::UNIX_EPOCH);
+        let (a, b) = (PathBuf::from("a"), PathBuf::from("b"));
+        let mut cache = PictureCache::default();
+        cache.put(a.clone(), stamp(1), pic());
+        assert!(cache.swap(Some((b.clone(), stamp(2), pic())), &a, Some(stamp(9))).is_none());
+        assert!(!cache.contains(&a) && cache.contains(&b));
     }
 
     #[test]

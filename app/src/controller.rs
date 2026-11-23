@@ -294,13 +294,10 @@ impl Controller {
             }
             return false;
         };
-        if let Some((path, stamp, picture)) = left {
-            self.cache.borrow_mut().put(path, stamp, picture);
-        }
         self.stop_animation();
         let requested = self.trace.then(Instant::now);
         let on_disk = stamp(&path);
-        let cached = self.cache.borrow_mut().take(&path, on_disk);
+        let cached = self.cache.borrow_mut().swap(left, &path, on_disk);
         if let Some((picture, stamp)) = cached {
             self.stamp.set(Some(stamp));
             self.finished(generation, Ok(picture), Duration::ZERO, requested);
