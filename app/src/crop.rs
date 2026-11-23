@@ -171,8 +171,8 @@ pub fn to_pixels(sel: Sel, image: (u32, u32)) -> (u32, u32, u32, u32) {
     let (iw, ih) = dims(image);
     let axis = |pos: f32, len: f32, limit: f32| {
         // Round the length, not the far end, so equal sides stay equal.
-        let len = len.round().clamp(1.0, limit);
-        let start = pos.round().clamp(0.0, limit - len);
+        let len = between(len.round(), 1.0, limit);
+        let start = between(pos.round(), 0.0, limit - len);
         (start as u32, len as u32)
     };
     let (x, w) = axis(s.x, s.w, iw);
